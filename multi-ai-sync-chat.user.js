@@ -18,14 +18,18 @@
 
     // 确保页面加载完成后再执行初始化
     if (document.readyState === 'complete') {
-        injectSyncButton();
+        init();
     } else {
         window.addEventListener('load', () => {
             // 延迟5秒后执行初始化
-            setTimeout(injectSyncButton, 5000);
+            setTimeout(init, 5000);
         });
     }
 
+    function init() {
+        injectSyncButton();
+    }
+    
     // 注入同步对比按钮
     function injectSyncButton() {
         const button = document.createElement('button');
@@ -137,6 +141,7 @@
                             display: flex;
                             flex-direction: column;
                             height: 100%;
+                            position: relative;
                         }
                         .chat-header {
                             display: flex;
@@ -146,20 +151,36 @@
                             background-color: #f9f9f9;
                             border-bottom: 1px solid #ddd;
                         }
+                        .chat-header-left {
+                            display: flex;
+                            gap: 10px;
+                            align-items: center;
+                        }
+                        .chat-header-right {
+                            display: flex;
+                            gap: 10px;
+                            align-items: center;
+                        }
                         .chat-iframe {
                             flex-grow: 1;
                             border: none;
                         }
                         .input-toggle {
-                            display: none;
-                            padding: 8px;
-                            background-color: #f9f9f9;
-                            border-top: 1px solid #ddd;
-                            text-align: center;
+                            position: absolute;
+                            bottom: 10px;
+                            left: 50%;
+                            transform: translateX(-50%);
+                            background-color: rgba(255, 255, 255, 0.8);
+                            padding: 5px 10px;
+                            border-radius: 20px;
+                            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
                             cursor: pointer;
+                            opacity: 0;
+                            transition: opacity 0.3s;
+                            z-index: 10;
                         }
                         .chat-area:hover .input-toggle {
-                            display: block;
+                            opacity: 1;
                         }
                         .native-input {
                             display: none;
@@ -280,11 +301,14 @@
             // 聊天区域标题
             const chatHeader = document.createElement('div');
             chatHeader.className = 'chat-header';
+            
+            // 左侧容器
+            const headerLeft = document.createElement('div');
+            headerLeft.className = 'chat-header-left';
 
             // AI选择下拉框
             const aiSelect = document.createElement('select');
             aiSelect.innerHTML = `
-                <option value="auto">自动识别</option>
                 <option value="kimi">Kimi</option>
                 <option value="gemini">Gemini</option>
                 <option value="chatgpt">ChatGPT</option>
@@ -293,7 +317,71 @@
                 <option value="tongyi">通义千问</option>
             `;
             aiSelect.addEventListener('change', function() {
-                // 切换AI逻辑
+                const selectedAi = this.value;
+                const iframe = chatArea.querySelector('.chat-iframe');
+                const hasContent = iframe.contentDocument && iframe.contentDocument.body.textContent.trim().length > 0;
+                
+                if (hasContent) {
+                    if (confirm('切换AI类型将跳转到新的AI对话页面，当前对话内容将会丢失。是否继续？')) {
+                        let newUrl;
+                        switch(selectedAi) {
+                            case 'kimi':
+                                newUrl = 'https://www.kimi.com/chat';
+                                break;
+                            case 'gemini':
+                                newUrl = 'https://gemini.google.com/';
+                                break;
+                            case 'chatgpt':
+                                newUrl = 'https://chat.openai.com/';
+                                break;
+                            case 'deepseek':
+                                newUrl = 'https://chat.deepseek.com/';
+                                break;
+                            case 'grok':
+                                newUrl = 'https://x.com/i/grok';
+                                break;
+                            case 'tongyi':
+                                newUrl = 'https://www.tongyi.com/';
+                                break;
+                        }
+                        
+                        if (newUrl) {
+                            iframe.src = newUrl;
+                        }
+                    } else {
+                        // 恢复之前的选择
+                        this.value = this.previousValue || '';
+                    }
+                } else {
+                    let newUrl;
+                    switch(selectedAi) {
+                        case 'kimi':
+                            newUrl = 'https://www.kimi.com/chat';
+                            break;
+                        case 'gemini':
+                            newUrl = 'https://gemini.google.com/';
+                            break;
+                        case 'chatgpt':
+                            newUrl = 'https://chat.openai.com/';
+                            break;
+                        case 'deepseek':
+                            newUrl = 'https://chat.deepseek.com/';
+                            break;
+                        case 'grok':
+                            newUrl = 'https://x.com/i/grok';
+                            break;
+                        case 'tongyi':
+                            newUrl = 'https://www.tongyi.com/';
+                            break;
+                    }
+                    
+                    if (newUrl) {
+                        iframe.src = newUrl;
+                    }
+                }
+                
+                // 保存当前选择
+                this.previousValue = this.value;
             });
 
             // 网络检索开关
@@ -306,6 +394,10 @@
                 iframe.contentWindow.postMessage({type: 'config', name: 'webSearch', value: !this.classList.contains('active')}, '*');
                 this.classList.toggle('active');
             });
+            
+            // 右侧容器
+            const headerRight = document.createElement('div');
+            headerRight.className = 'chat-header-right';
 
             // 分享按钮
             const shareBtn = document.createElement('span');
@@ -347,11 +439,13 @@
             }.bind(this));
 
             // 组装标题栏
-            chatHeader.appendChild(aiSelect);
-            chatHeader.appendChild(searchToggle);
-            chatHeader.appendChild(shareBtn);
-            chatHeader.appendChild(openInNewWindowBtn);
-            chatHeader.appendChild(closeBtn);
+            headerLeft.appendChild(aiSelect);
+            headerLeft.appendChild(searchToggle);
+            headerRight.appendChild(shareBtn);
+            headerRight.appendChild(openInNewWindowBtn);
+            headerRight.appendChild(closeBtn);
+            chatHeader.appendChild(headerLeft);
+            chatHeader.appendChild(headerRight);
 
             // 创建iframe
             const iframe = document.createElement('iframe');
