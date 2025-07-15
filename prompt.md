@@ -6,16 +6,18 @@
 
 1. 使用面向对象的风格
 2. 把js作为函数写在油猴脚本中，然后组装的时候用fun1.toString()方式把源码注入到html字符串中，然后把html放到新页面。
-3. 用传统的function模拟对象，这样可以简化html嵌入js的难度。类似 `function ClassA{ this.prop = xxx; this.method=function(){}; }`，不要用prototype链，也不要往prototype中增加成员。
+3. 用传统的function模拟对象，这样可以简化html嵌入js的难度。类似 `function ClassA{ this.prop = xxx; this.method=function(){}; }`，所有成员函数都用 this.method = function的方式。
 4. 要嵌入的html内容用常量字符串存放，不要在代码中到处随意嵌入。尤其注意用反引号(`)包含的文本块内容，千万不要嵌套使用。
 5. 默认支持多语言，包括英语、中文、法语、日语、朝鲜语、西班牙语、葡萄牙语、阿拉伯语，根据浏览器当前语言切换，要注意阿拉伯语的从右向左的写作方式的支持。
 6. 要注意一些嵌入到html中的脚本会引用其他的对象，要把这些对象的源代码也用toString的方式加入到html中
 
-## 名词定义：
+## 第一阶段
 
-* 主窗口：包含多个ai对话内容的页面，该窗口名字为multi-ai-sync-chat-window
+### 名词定义：
+
 * ai对话页面：也叫做原生页面，是浏览器中输入url访问到的ai服务提供商的对话页面
 * ai会话：在ai对话页面中进行人机对话的所有问答内容
+* 主窗口：包含多个ai对话内容的页面，该窗口名字为multi-ai-sync-chat-window
 * 内容块：也叫chatarea，是主窗口中存放每一个ai会话内容的区域，该区域包含一些对ai对话页面的控制部件
 
 ## 基础逻辑：
