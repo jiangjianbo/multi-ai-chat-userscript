@@ -18,8 +18,8 @@
     /* ========================= 常量定义 ========================= */
     const CONST = {
         STORAGE: {
-            PROVIDERS: 'mac_providers_v3',
-            LANGUAGE: 'mac_lang_v3'
+            PROVIDERS: 'multi_ai_sync_providers',
+            LANGUAGE: 'multi_ai_sync_lang'
         },
         DEFAULT_PROVIDERS: [
             { name: 'Kimi', url: 'https://www.kimi.com/chat/' },
@@ -231,42 +231,42 @@
                 collapse: 'طي'
             }
         };
+
+        /**
+         * Detect browser language
+         * @returns {string} language code
+         */
+        this.detectLanguage = function () {
+            return localStorage.getItem(CONST.STORAGE.LANGUAGE) ||
+                navigator.language.substring(0, 2) || 'en';
+        };
+
+        /**
+         * Get translated text
+         * @param {string} key - Message key
+         * @returns {string} Translated text
+         */
+        this.t = function (key) {
+            return this.messages[this.lang]?.[key] || this.messages.en[key];
+        };
+
+        /**
+         * Check if RTL language
+         * @returns {boolean} True if RTL
+         */
+        this.isRTL = function () {
+            return this.lang === 'ar';
+        };
+
+        /**
+         * Set language
+         * @param {string} lang - Language code
+         */
+        this.setLanguage = function (lang) {
+            this.lang = lang;
+            localStorage.setItem(CONST.STORAGE.LANGUAGE, lang);
+        };
     }
-
-    /**
-     * Detect browser language
-     * @returns {string} language code
-     */
-    I18n.prototype.detectLanguage = function () {
-        return localStorage.getItem(CONST.STORAGE.LANGUAGE) ||
-            navigator.language.substring(0, 2) || 'en';
-    };
-
-    /**
-     * Get translated text
-     * @param {string} key - Message key
-     * @returns {string} Translated text
-     */
-    I18n.prototype.t = function (key) {
-        return this.messages[this.lang]?.[key] || this.messages.en[key];
-    };
-
-    /**
-     * Check if RTL language
-     * @returns {boolean} True if RTL
-     */
-    I18n.prototype.isRTL = function () {
-        return this.lang === 'ar';
-    };
-
-    /**
-     * Set language
-     * @param {string} lang - Language code
-     */
-    I18n.prototype.setLanguage = function (lang) {
-        this.lang = lang;
-        localStorage.setItem(CONST.STORAGE.LANGUAGE, lang);
-    };
 
     /* ========================= 工具类 ========================= */
     function Utils() {
@@ -347,13 +347,19 @@
         this.handlers = {};
 
         // Auto-register onMsg* methods
-        const proto = Object.getPrototypeOf(this);
-        Object.getOwnPropertyNames(proto).forEach(name => {
-            if (name.startsWith('onMsg') && typeof this[name] === 'function') {
-                const type = name.slice(5).toLowerCase();
-                this.on(type, this[name].bind(this));
-            }
-        });
+        /**
+         * register message handlers from target object
+         * @param {Object} target object with onMsg* methods
+         */
+        this.register = function (target) {
+            const proto = Object.getPrototypeOf(target);
+            Object.getOwnPropertyNames(proto).forEach(name => {
+                if (name.startsWith('onMsg') && typeof this[name] === 'function') {
+                    const type = name.slice(5).toLowerCase();
+                    this.on(type, target[name].bind(target));
+                }
+            });
+        };
 
         /**
          * Register message handler
@@ -409,11 +415,15 @@
         };
     }
 
+    const notifier = new MessageNotifier();
+    const config = new ConfigManager();
+    const i18n = new I18n();
+    const utils = new Utils();
+
     /* ========================= 通用页面驱动 ========================= */
     function GenericPageDriver(name, url) {
         this.name = name;
         this.url = url;
-        this.utils = new Utils();
 
         this.selectors = {
             input: [
@@ -475,14 +485,14 @@
 
         /**
          * Get username
-         * @returns {string} Username
+         * @returns {string} Username or empty string
          */
         this.getUsername = function () {
             for (const selector of this.selectors.username) {
-                const el = this.utils.$(selector);
+                const el = utils.$(selector);
                 if (el) return el.textContent.trim();
             }
-            return 'User';
+            return '';
         };
 
         /**
@@ -491,7 +501,7 @@
          */
         this.getWebSearchStatus = function () {
             for (const selector of this.selectors.webSearchToggle) {
-                const el = this.utils.$(selector);
+                const el = utils.$(selector);
                 if (el) return el.checked;
             }
             return false;
@@ -502,7 +512,7 @@
          * @returns {string} Model name
          */
         this.getCurrentModel = function () {
-            const modelSelect = this.utils.$('select[name="model"], .model-selector');
+            const modelSelect = utils.$('select[name="model"], .model-selector');
             return modelSelect ? modelSelect.value : 'default';
         };
 
@@ -512,7 +522,7 @@
          */
         this.getLongThinkingStatus = function () {
             for (const selector of this.selectors.longThinkingToggle) {
-                const el = this.utils.$(selector);
+                const el = utils.$(selector);
                 if (el) return el.checked;
             }
             return false;
@@ -524,11 +534,11 @@
          * @returns {Promise} Promise that resolves when message is sent
          */
         this.sendMessage = async function (message) {
-            const input = await this.utils.waitFor(this.selectors.input.join(', '));
+            const input = await utils.waitFor(this.selectors.input.join(', '));
             input.value = message;
             input.dispatchEvent(new Event('input', { bubbles: true }));
 
-            const sendBtn = await this.utils.waitFor(this.selectors.sendButton.join(', '));
+            const sendBtn = await utils.waitFor(this.selectors.sendButton.join(', '));
             if (sendBtn && !sendBtn.disabled) {
                 sendBtn.click();
             }
@@ -539,7 +549,7 @@
          */
         this.createNewThread = function () {
             for (const selector of this.selectors.newChat) {
-                const el = this.utils.$(selector);
+                const el = utils.$(selector);
                 if (el) {
                     el.click();
                     return;
@@ -552,7 +562,7 @@
          */
         this.shareChat = function () {
             for (const selector of this.selectors.shareButton) {
-                const el = this.utils.$(selector);
+                const el = utils.$(selector);
                 if (el) {
                     el.click();
                     return;
@@ -573,7 +583,7 @@
 
             if (selectors[key]) {
                 for (const selector of selectors[key]) {
-                    const el = this.utils.$(selector);
+                    const el = utils.$(selector);
                     if (el && el.checked !== value) {
                         el.click();
                         break;
@@ -585,10 +595,6 @@
 
     /* ========================= 注入控制器 ========================= */
     function InjectionController() {
-        this.notifier = new MessageNotifier();
-        this.config = new ConfigManager();
-        this.i18n = new I18n();
-        this.utils = new Utils();
         this.driver = null;
 
         /**
@@ -604,7 +610,7 @@
          */
         this.detectProvider = function () {
             const url = window.location.href;
-            const providers = this.config.getProviders();
+            const providers = config.getProviders();
             const provider = providers.find(p => url.includes(p.url));
             if (provider) {
                 this.driver = new GenericPageDriver(provider.name, url);
@@ -616,12 +622,12 @@
          */
         this.injectButton = function () {
             setTimeout(() => {
-                const btn = this.utils.createElement('button', {
-                    textContent: this.i18n.t('syncBtn'),
+                const btn = utils.createElement('button', {
+                    textContent: i18n.t('syncBtn'),
                     style: {
                         position: 'fixed',
                         top: '10px',
-                        [this.i18n.isRTL() ? 'left' : 'right']: '10px',
+                        [i18n.isRTL() ? 'left' : 'right']: '10px',
                         zIndex: '10000',
                         padding: '8px 16px',
                         backgroundColor: '#007bff',
@@ -661,28 +667,334 @@
         };
     }
 
+    /* ========================= 同步聊天窗口脚本 ========================= */
+    function SyncChatWindowScript() {
+        const areas = {};
+        let layout = 1;
+
+        /* ========================= 布局管理 ========================= */
+        function setLayout(num) {
+            layout = num;
+            const container = document.getElementById('chatContainer');
+            container.style.gridTemplateColumns = `repeat(${Math.min(num, 3)}, 1fr)`;
+            container.style.gridTemplateRows = '1fr';
+
+            if (num === 4) {
+                container.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                container.style.gridTemplateRows = 'repeat(2, 1fr)';
+            } else if (num === 6) {
+                container.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                container.style.gridTemplateRows = 'repeat(2, 1fr)';
+            }
+
+            document.querySelectorAll('.layout-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.layout) === num);
+            });
+        }
+
+        /* ========================= 聊天区域 ========================= */
+        function createChatArea(url, tabId) {
+            const id = `area-${Date.now()}`;
+            const area = document.createElement('div');
+            area.className = 'chat-area';
+            area.id = id;
+
+            area.innerHTML = `
+                    <div class="chat-header">
+                        <select class="ai-select">
+                            ${config.getProviders().map(p =>
+                `<option value="${p.url}" ${p.url === url ? 'selected' : ''}>${p.name}</option>`
+            ).join('')}
+                        </select>
+                        <button class="icon-btn web-search-btn" title="${i18n.t('webSearch')}">🔍</button>
+                        <div style="margin-${i18n.isRTL() ? 'right' : 'left'}: auto; display: flex; gap: 5px;">
+                            <button class="icon-btn share-btn" title="${i18n.t('share')}">📤</button>
+                            <button class="icon-btn open-window-btn" title="${i18n.t('openWindow')}">🔗</button>
+                            <button class="icon-btn close-btn" title="${i18n.t('close')}">❌</button>
+                        </div>
+                    </div>
+                    <div class="chat-content" data-url="${url}" data-tabid="${tabId}">
+                        <p style="text-align: center; color: #666;">${i18n.t('waiting')}</p>
+                    </div>
+                    <button class="hover-trigger">⬆️</button>
+                    <div class="hover-input">
+                        <input type="text" placeholder="${i18n.t('promptPlaceholder')}">
+                    </div>
+                `;
+
+            document.getElementById('chatContainer').appendChild(area);
+            areas[id] = { url, tabId };
+
+            /* 绑定事件 */
+            area.querySelector('.close-btn').onclick = () => {
+                showConfirmDialog(area, () => {
+                    area.remove();
+                    delete areas[id];
+                });
+            };
+
+            area.querySelector('.open-window-btn').onclick = () => {
+                window.open(url, '_blank');
+            };
+
+            area.querySelector('.ai-select').onchange = (e) => {
+                const newUrl = e.target.value;
+                if (area.querySelector('.chat-content').children.length > 1) {
+                    showConfirmDialog(area, () => {
+                        switchProvider(id, newUrl);
+                    });
+                } else {
+                    switchProvider(id, newUrl);
+                }
+            };
+
+            /* 悬停输入框 */
+            const trigger = area.querySelector('.hover-trigger');
+            const hoverInput = area.querySelector('.hover-input');
+            const hoverInputField = hoverInput.querySelector('input');
+
+            trigger.onclick = () => {
+                trigger.style.display = 'none';
+                hoverInput.style.display = 'block';
+                hoverInputField.focus();
+            };
+
+            hoverInputField.onblur = () => {
+                hoverInput.style.display = 'none';
+                trigger.style.display = 'flex';
+            };
+
+            hoverInputField.onkeypress = (e) => {
+                if (e.key === 'Enter') {
+                    const message = hoverInputField.value.trim();
+                    if (message) {
+                        notifier.emit('chat', {
+                            chatId: Date.now(),
+                            message,
+                            url: areas[id].url,
+                            tabId: areas[id].tabId
+                        });
+                        hoverInputField.value = '';
+                    }
+                    hoverInputField.blur();
+                }
+            };
+        }
+
+        function switchProvider(areaId, newUrl) {
+            const area = document.getElementById(areaId);
+            if (!area) return;
+
+            area.querySelector('.chat-content').dataset.url = newUrl;
+            area.querySelector('.chat-content').innerHTML = `<p style="text-align: center; color: #666;">${i18n.t('waiting')}</p>`;
+            areas[areaId] = { url: newUrl, tabId: areas[areaId].tabId };
+
+            notifier.emit('switch', { id: areaId, url: newUrl });
+        }
+
+        /* ========================= 确认对话框 ========================= */
+        function showConfirmDialog(parent, onConfirm) {
+            const backdrop = document.createElement('div');
+            backdrop.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 100;
+                `;
+
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    text-align: center;
+                    max-width: 300px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                `;
+            dialog.innerHTML = `
+                    <p>${i18n.t('confirmSwitch')}</p>
+                    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                        <button class="confirm-btn" style="padding: 5px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">${i18n.t('config')}</button>
+                        <button class="cancel-btn" style="padding: 5px 15px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">${i18n.t('close')}</button>
+                    </div>
+                `;
+
+            backdrop.appendChild(dialog);
+            parent.appendChild(backdrop);
+
+            dialog.querySelector('.confirm-btn').onclick = () => {
+                onConfirm();
+                backdrop.remove();
+            };
+
+            dialog.querySelector('.cancel-btn').onclick = () => {
+                backdrop.remove();
+            };
+        }
+
+        /* ========================= 配置管理 ========================= */
+        function updateProviderList() {
+            const list = document.getElementById('providerList');
+            list.innerHTML = config.getProviders().map((p, i) => `
+                    <div class="provider-item">
+                        <input placeholder="Name" value="${p.name}" onchange="updateProvider(${i}, 'name', this.value)">
+                        <input placeholder="URL" value="${p.url}" onchange="updateProvider(${i}, 'url', this.value)">
+                        <button onclick="removeProvider(${i})">🗑️</button>
+                    </div>
+                `).join('');
+        }
+
+        window.updateProvider = (i, key, value) => {
+            const providers = config.getProviders();
+            providers[i][key] = value;
+        };
+
+        window.addProvider = () => {
+            const providers = config.getProviders();
+            providers.push({ name: 'New Provider', url: 'https://example.com' });
+            updateProviderList();
+        };
+
+        window.removeProvider = (i) => {
+            if (confirm(i18n.t('confirmDelete'))) {
+                const providers = config.getProviders();
+                providers.splice(i, 1);
+                updateProviderList();
+            }
+        };
+
+        window.saveConfig = () => {
+            config.saveProviders(config.getProviders());
+            closeConfig();
+        };
+
+        window.restoreDefaults = () => {
+            if (confirm(i18n.t('confirmRestore'))) {
+                config.restoreDefaults();
+                updateProviderList();
+            }
+        };
+
+        function openConfig() {
+            document.querySelector('.config-modal').style.display = 'block';
+            document.querySelector('.modal-backdrop').style.display = 'block';
+            updateProviderList();
+        }
+
+        function closeConfig() {
+            document.querySelector('.config-modal').style.display = 'none';
+            document.querySelector('.modal-backdrop').style.display = 'none';
+        }
+
+        /* ========================= 事件绑定 ========================= */
+        document.querySelector('.config-btn').onclick = openConfig;
+        document.querySelector('.modal-backdrop').onclick = closeConfig;
+        window.closeConfig = closeConfig;
+
+        document.querySelector('.send-btn').onclick = () => {
+            const message = document.querySelector('.prompt-input').value.trim();
+            if (!message) return;
+
+            Object.keys(areas).forEach(id => {
+                notifier.emit('chat', {
+                    chatId: Date.now(),
+                    message,
+                    url: areas[id].url,
+                    tabId: areas[id].tabId
+                });
+            });
+
+            document.querySelector('.prompt-input').value = '';
+        };
+
+        document.querySelector('.prompt-input').onkeypress = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.querySelector('.send-btn').click();
+            }
+        };
+
+        /* ========================= 语言切换 ========================= */
+        document.querySelector('.lang-btn').onclick = () => {
+            const dropdown = document.querySelector('.lang-dropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        };
+
+        document.querySelectorAll('.lang-option').forEach(option => {
+            option.onclick = () => {
+                const lang = option.dataset.lang;
+                i18n.setLanguage(lang);
+                location.reload();
+            };
+
+            if (option.dataset.lang === i18n.lang) {
+                option.classList.add('active');
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.lang-selector')) {
+                document.querySelector('.lang-dropdown').style.display = 'none';
+            }
+        });
+
+        /* ========================= 布局按钮 ========================= */
+        document.querySelectorAll('.layout-btn').forEach(btn => {
+            btn.onclick = () => setLayout(parseInt(btn.dataset.layout));
+        });
+
+        /* ========================= 消息监听 ========================= */
+        notifier.onMsg('create', (data) => {
+            if (Object.keys(areas).length >= layout) {
+                setLayout(Math.min(layout + 1, 6));
+            }
+
+            setTimeout(() => {
+                createChatArea(data.url, data.tabId);
+            }, 100);
+        });
+
+        notifier.onMsg('answer', (data) => {
+            Object.keys(areas).forEach(id => {
+                if (areas[id].url === data.url && areas[id].tabId === data.tabId) {
+                    const content = document.getElementById(id).querySelector('.chat-content');
+                    const div = document.createElement('div');
+                    div.className = 'message';
+                    div.innerHTML = data.answer;
+                    content.appendChild(div);
+                    content.scrollTop = content.scrollHeight;
+                }
+            });
+        });
+
+        /* ========================= 初始化 ========================= */
+        setLayout(1);
+    }
+
     /* ========================= 同步聊天窗口 ========================= */
     function SyncChatWindow() {
-        this.notifier = new MessageNotifier();
-        this.config = new ConfigManager();
-        this.i18n = new I18n();
-        this.utils = new Utils();
         this.areas = {};
         this.layout = 1;
         this.win = null;
 
         const HTML_TEMPLATE = `<!DOCTYPE html>
-<html lang="${new I18n().lang}">
+<html lang="${i18n.lang}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${new I18n().t('title')}</title>
+    <title>${i18n.t('title')}</title>
     <style>
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f5f5f5;
-            direction: ${new I18n().isRTL() ? 'rtl' : 'ltr'};
+            direction: ${i18n.isRTL() ? 'rtl' : 'ltr'};
         }
         .header {
             display: flex;
@@ -717,7 +1029,7 @@
             display: none;
             position: absolute;
             top: 100%;
-            ${new I18n().isRTL() ? 'right' : 'left'}: 0;
+            ${i18n.isRTL() ? 'right' : 'left'}: 0;
             background: white;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -901,7 +1213,7 @@
         .hover-input {
             position: absolute;
             bottom: 10px;
-            ${new I18n().isRTL() ? 'left' : 'right'}: 10px;
+            ${i18n.isRTL() ? 'left' : 'right'}: 10px;
             display: none;
             background: white;
             border: 1px solid #ddd;
@@ -919,7 +1231,7 @@
         .hover-trigger {
             position: absolute;
             bottom: 10px;
-            ${new I18n().isRTL() ? 'left' : 'right'}: 10px;
+            ${i18n.isRTL() ? 'left' : 'right'}: 10px;
             background: #007bff;
             color: white;
             border: none;
@@ -949,7 +1261,7 @@
             display: none;
             position: absolute;
             top: 5px;
-            ${new I18n().isRTL() ? 'left' : 'right'}: 5px;
+            ${i18n.isRTL() ? 'left' : 'right'}: 5px;
             background: rgba(0,0,0,0.7);
             border-radius: 4px;
             padding: 2px;
@@ -967,7 +1279,7 @@
 </head>
 <body>
     <div class="header">
-        <div class="title">${new I18n().t('title')}</div>
+        <div class="title">${i18n.t('title')}</div>
         <div class="lang-selector">
             <button class="lang-btn" title="Language">🌐</button>
             <div class="lang-dropdown">
@@ -989,343 +1301,43 @@
             <button class="layout-btn" data-layout="6">6️⃣</button>
         </div>
         <div class="right-btns">
-            <button class="icon-btn config-btn" title="${new I18n().t('config')}">⚙️</button>
-            <button class="icon-btn new-chat-btn" title="${new I18n().t('newChat')}">➕</button>
+            <button class="icon-btn config-btn" title="${i18n.t('config')}">⚙️</button>
+            <button class="icon-btn new-chat-btn" title="${i18n.t('newChat')}">➕</button>
         </div>
     </div>
     
     <div class="chat-container" id="chatContainer"></div>
     
     <div class="prompt-bar">
-        <textarea class="prompt-input" placeholder="${new I18n().t('promptPlaceholder')}"></textarea>
-        <button class="send-btn">${new I18n().t('send')}</button>
+        <textarea class="prompt-input" placeholder="${i18n.t('promptPlaceholder')}"></textarea>
+        <button class="send-btn">${i18n.t('send')}</button>
     </div>
 
     <div class="modal-backdrop"></div>
     <div class="config-modal">
-        <h3>${new I18n().t('config')}</h3>
+        <h3>${i18n.t('config')}</h3>
         <div id="providerList"></div>
         <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="addProvider()">➕ ${new I18n().t('addProvider')}</button>
-            <button onclick="restoreDefaults()">🔄 ${new I18n().t('restoreDefaults')}</button>
-            <button onclick="saveConfig()">💾 ${new I18n().t('saveConfig')}</button>
-            <button onclick="closeConfig()">❌ ${new I18n().t('closeConfig')}</button>
+            <button onclick="addProvider()">➕ ${i18n.t('addProvider')}</button>
+            <button onclick="restoreDefaults()">🔄 ${i18n.t('restoreDefaults')}</button>
+            <button onclick="saveConfig()">💾 ${i18n.t('saveConfig')}</button>
+            <button onclick="closeConfig()">❌ ${i18n.t('closeConfig')}</button>
         </div>
     </div>
 
     <script>
-        ${function () {
-                const notifier = new MessageNotifier();
-                const config = new ConfigManager();
-                const i18n = new I18n();
-                const utils = new Utils();
-                const areas = {};
-                let layout = 1;
+        ${MessageNotifier.toString()}
+        ${ConfigManager.toString()}
+        ${I18n.toString()}
+        ${Utils.toString()}
 
-                /* ========================= 布局管理 ========================= */
-                function setLayout(num) {
-                    layout = num;
-                    const container = document.getElementById('chatContainer');
-                    container.style.gridTemplateColumns = `repeat(${Math.min(num, 3)}, 1fr)`;
-                    container.style.gridTemplateRows = '1fr';
+        const notifier = new MessageNotifier();
+        const config = new ConfigManager();
+        const i18n = new I18n();
+        const utils = new Utils();
 
-                    if (num === 4) {
-                        container.style.gridTemplateColumns = 'repeat(2, 1fr)';
-                        container.style.gridTemplateRows = 'repeat(2, 1fr)';
-                    } else if (num === 6) {
-                        container.style.gridTemplateColumns = 'repeat(3, 1fr)';
-                        container.style.gridTemplateRows = 'repeat(2, 1fr)';
-                    }
-
-                    document.querySelectorAll('.layout-btn').forEach(btn => {
-                        btn.classList.toggle('active', parseInt(btn.dataset.layout) === num);
-                    });
-                }
-
-                /* ========================= 聊天区域 ========================= */
-                function createChatArea(url, tabId) {
-                    const id = `area-${Date.now()}`;
-                    const area = document.createElement('div');
-                    area.className = 'chat-area';
-                    area.id = id;
-
-                    area.innerHTML = `
-                    <div class="chat-header">
-                        <select class="ai-select">
-                            ${config.getProviders().map(p =>
-                        `<option value="${p.url}" ${p.url === url ? 'selected' : ''}>${p.name}</option>`
-                    ).join('')}
-                        </select>
-                        <button class="icon-btn web-search-btn" title="${i18n.t('webSearch')}">🔍</button>
-                        <div style="margin-${i18n.isRTL() ? 'right' : 'left'}: auto; display: flex; gap: 5px;">
-                            <button class="icon-btn share-btn" title="${i18n.t('share')}">📤</button>
-                            <button class="icon-btn open-window-btn" title="${i18n.t('openWindow')}">🔗</button>
-                            <button class="icon-btn close-btn" title="${i18n.t('close')}">❌</button>
-                        </div>
-                    </div>
-                    <div class="chat-content" data-url="${url}" data-tabid="${tabId}">
-                        <p style="text-align: center; color: #666;">${i18n.t('waiting')}</p>
-                    </div>
-                    <button class="hover-trigger">⬆️</button>
-                    <div class="hover-input">
-                        <input type="text" placeholder="${i18n.t('promptPlaceholder')}">
-                    </div>
-                `;
-
-                    document.getElementById('chatContainer').appendChild(area);
-                    areas[id] = { url, tabId };
-
-                    /* 绑定事件 */
-                    area.querySelector('.close-btn').onclick = () => {
-                        showConfirmDialog(area, () => {
-                            area.remove();
-                            delete areas[id];
-                        });
-                    };
-
-                    area.querySelector('.open-window-btn').onclick = () => {
-                        window.open(url, '_blank');
-                    };
-
-                    area.querySelector('.ai-select').onchange = (e) => {
-                        const newUrl = e.target.value;
-                        if (area.querySelector('.chat-content').children.length > 1) {
-                            showConfirmDialog(area, () => {
-                                switchProvider(id, newUrl);
-                            });
-                        } else {
-                            switchProvider(id, newUrl);
-                        }
-                    };
-
-                    /* 悬停输入框 */
-                    const trigger = area.querySelector('.hover-trigger');
-                    const hoverInput = area.querySelector('.hover-input');
-                    const hoverInputField = hoverInput.querySelector('input');
-
-                    trigger.onclick = () => {
-                        trigger.style.display = 'none';
-                        hoverInput.style.display = 'block';
-                        hoverInputField.focus();
-                    };
-
-                    hoverInputField.onblur = () => {
-                        hoverInput.style.display = 'none';
-                        trigger.style.display = 'flex';
-                    };
-
-                    hoverInputField.onkeypress = (e) => {
-                        if (e.key === 'Enter') {
-                            const message = hoverInputField.value.trim();
-                            if (message) {
-                                notifier.emit('chat', {
-                                    chatId: Date.now(),
-                                    message,
-                                    url: areas[id].url,
-                                    tabId: areas[id].tabId
-                                });
-                                hoverInputField.value = '';
-                            }
-                            hoverInputField.blur();
-                        }
-                    };
-                }
-
-                function switchProvider(areaId, newUrl) {
-                    const area = document.getElementById(areaId);
-                    if (!area) return;
-
-                    area.querySelector('.chat-content').dataset.url = newUrl;
-                    area.querySelector('.chat-content').innerHTML = `<p style="text-align: center; color: #666;">${i18n.t('waiting')}</p>`;
-                    areas[areaId] = { url: newUrl, tabId: areas[areaId].tabId };
-
-                    notifier.emit('switch', { id: areaId, url: newUrl });
-                }
-
-                /* ========================= 确认对话框 ========================= */
-                function showConfirmDialog(parent, onConfirm) {
-                    const backdrop = document.createElement('div');
-                    backdrop.style.cssText = `
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0,0,0,0.5);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 100;
-                `;
-
-                    const dialog = document.createElement('div');
-                    dialog.style.cssText = `
-                    background: white;
-                    padding: 20px;
-                    border-radius: 8px;
-                    text-align: center;
-                    max-width: 300px;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                `;
-                    dialog.innerHTML = `
-                    <p>${i18n.t('confirmSwitch')}</p>
-                    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
-                        <button class="confirm-btn" style="padding: 5px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">${i18n.t('config')}</button>
-                        <button class="cancel-btn" style="padding: 5px 15px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">${i18n.t('close')}</button>
-                    </div>
-                `;
-
-                    backdrop.appendChild(dialog);
-                    parent.appendChild(backdrop);
-
-                    dialog.querySelector('.confirm-btn').onclick = () => {
-                        onConfirm();
-                        backdrop.remove();
-                    };
-
-                    dialog.querySelector('.cancel-btn').onclick = () => {
-                        backdrop.remove();
-                    };
-                }
-
-                /* ========================= 配置管理 ========================= */
-                function updateProviderList() {
-                    const list = document.getElementById('providerList');
-                    list.innerHTML = config.getProviders().map((p, i) => `
-                    <div class="provider-item">
-                        <input placeholder="Name" value="${p.name}" onchange="updateProvider(${i}, 'name', this.value)">
-                        <input placeholder="URL" value="${p.url}" onchange="updateProvider(${i}, 'url', this.value)">
-                        <button onclick="removeProvider(${i})">🗑️</button>
-                    </div>
-                `).join('');
-                }
-
-                window.updateProvider = (i, key, value) => {
-                    const providers = config.getProviders();
-                    providers[i][key] = value;
-                };
-
-                window.addProvider = () => {
-                    const providers = config.getProviders();
-                    providers.push({ name: 'New Provider', url: 'https://example.com' });
-                    updateProviderList();
-                };
-
-                window.removeProvider = (i) => {
-                    if (confirm(i18n.t('confirmDelete'))) {
-                        const providers = config.getProviders();
-                        providers.splice(i, 1);
-                        updateProviderList();
-                    }
-                };
-
-                window.saveConfig = () => {
-                    config.saveProviders(config.getProviders());
-                    closeConfig();
-                };
-
-                window.restoreDefaults = () => {
-                    if (confirm(i18n.t('confirmRestore'))) {
-                        config.restoreDefaults();
-                        updateProviderList();
-                    }
-                };
-
-                function openConfig() {
-                    document.querySelector('.config-modal').style.display = 'block';
-                    document.querySelector('.modal-backdrop').style.display = 'block';
-                    updateProviderList();
-                }
-
-                function closeConfig() {
-                    document.querySelector('.config-modal').style.display = 'none';
-                    document.querySelector('.modal-backdrop').style.display = 'none';
-                }
-
-                /* ========================= 事件绑定 ========================= */
-                document.querySelector('.config-btn').onclick = openConfig;
-                document.querySelector('.modal-backdrop').onclick = closeConfig;
-                window.closeConfig = closeConfig;
-
-                document.querySelector('.send-btn').onclick = () => {
-                    const message = document.querySelector('.prompt-input').value.trim();
-                    if (!message) return;
-
-                    Object.keys(areas).forEach(id => {
-                        notifier.emit('chat', {
-                            chatId: Date.now(),
-                            message,
-                            url: areas[id].url,
-                            tabId: areas[id].tabId
-                        });
-                    });
-
-                    document.querySelector('.prompt-input').value = '';
-                };
-
-                document.querySelector('.prompt-input').onkeypress = (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        document.querySelector('.send-btn').click();
-                    }
-                };
-
-                /* ========================= 语言切换 ========================= */
-                document.querySelector('.lang-btn').onclick = () => {
-                    const dropdown = document.querySelector('.lang-dropdown');
-                    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-                };
-
-                document.querySelectorAll('.lang-option').forEach(option => {
-                    option.onclick = () => {
-                        const lang = option.dataset.lang;
-                        i18n.setLanguage(lang);
-                        location.reload();
-                    };
-
-                    if (option.dataset.lang === i18n.lang) {
-                        option.classList.add('active');
-                    }
-                });
-
-                document.addEventListener('click', (e) => {
-                    if (!e.target.closest('.lang-selector')) {
-                        document.querySelector('.lang-dropdown').style.display = 'none';
-                    }
-                });
-
-                /* ========================= 布局按钮 ========================= */
-                document.querySelectorAll('.layout-btn').forEach(btn => {
-                    btn.onclick = () => setLayout(parseInt(btn.dataset.layout));
-                });
-
-                /* ========================= 消息监听 ========================= */
-                notifier.onMsg('create', (data) => {
-                    if (Object.keys(areas).length >= layout) {
-                        setLayout(Math.min(layout + 1, 6));
-                    }
-
-                    setTimeout(() => {
-                        createChatArea(data.url, data.tabId);
-                    }, 100);
-                });
-
-                notifier.onMsg('answer', (data) => {
-                    Object.keys(areas).forEach(id => {
-                        if (areas[id].url === data.url && areas[id].tabId === data.tabId) {
-                            const content = document.getElementById(id).querySelector('.chat-content');
-                            const div = document.createElement('div');
-                            div.className = 'message';
-                            div.innerHTML = data.answer;
-                            content.appendChild(div);
-                            content.scrollTop = content.scrollHeight;
-                        }
-                    });
-                });
-
-                /* ========================= 初始化 ========================= */
-                setLayout(1);
-            }.toString()}
+        ${SyncChatWindowScript.toString()}
+        SyncChatWindowScript();
     </script>
 </html>`;
 
@@ -1338,7 +1350,7 @@
                 return;
             }
 
-            this.win = window.open('', CONST.WINDOW_NAME, 'width=1400,height=900');
+            this.win = window.open('', CONST.WINDOW_NAME);
             this.win.document.write(HTML_TEMPLATE);
             this.win.document.close();
         };
