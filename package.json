@@ -1,0 +1,19 @@
+{
+  "scripts": {
+    "build": "webpack --config webpack.userscript.js",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "babel-loader": "^9.1.0",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.4",
+    "terser-webpack-plugin": "^5.3.9",
+    "wrapper-webpack-plugin": "^2.2.2",
+    "jest": "^29.5.0",
+    "babel-jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0"
+  }
+}
