@@ -1,23 +1,32 @@
+
 /**
  * @jest-environment jsdom
  */
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 import MainWindowController from '../src/main-window-controller';
+import ChatArea from '../src/chat-area';
+
+jest.mock('../src/utils');
+// This mock is now safe and doesn't access out-of-scope variables.
+jest.mock('../src/chat-area', () => {
+    return jest.fn().mockImplementation(() => ({
+        init: jest.fn(),
+        element: {},
+    }));
+});
+jest.mock('../src/message-notifier.js', () => {
+    return jest.fn().mockImplementation(function() { this.register = jest.fn(); this.send = jest.fn(); return this; });
+});
 
 describe('MainWindowController', () => {
-    beforeEach(() => {
-        // 1. 把 HTML 读进来并塞进 jsdom
-        const html = readFileSync(resolve(__dirname, 'main4debug.html'), 'utf8');
-        document.documentElement.innerHTML = html;
-    });
+    it('should add a chat area without error', () => {
+        const mainController = new MainWindowController();
+        mainController.utils.$ = () => ({ appendChild: jest.fn(), style: {} });
+        mainController.utils.$$ = () => [];
+        global.localStorage = { setItem: jest.fn() };
 
-    it('should update #output when button is clicked', () => {
-        // 2. 实例化类，它会自动绑定事件
-        const mainWin = new MainWindowController();
-
-        mainWin.init();
-        // 4. 断言
-        
+        expect(() => {
+            mainController.onMsgCreate({ url: 'http://test.com', tabId: 'tab1' });
+        }).not.toThrow();
+        expect(ChatArea).toHaveBeenCalledTimes(1);
     });
 });

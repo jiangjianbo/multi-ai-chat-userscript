@@ -11,5 +11,6 @@
 // @match        *://x.com/i/grok*
 // @match        *://www.tongyi.com/*
 // @match        *://*/*multi-ai-sync-chat-window*
-// @grant        none
+// @grant        GM_addStyle
+// @grant        unsafeWindow
 // ==/UserScript==

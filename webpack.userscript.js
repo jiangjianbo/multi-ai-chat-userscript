@@ -47,8 +47,8 @@ module.exports = {
     plugins: [
         // 把油猴头拼在最前面
         new WrapperPlugin({
-            header: userscriptHeader + '\n\n',
-            footer: '' // 不需要尾部
+            header: userscriptHeader + '\n\n(function() {\n    \'use strict\';\n',
+            footer: '\n})();'
         }),
         // 禁止 webpack 生成运行时
         new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
