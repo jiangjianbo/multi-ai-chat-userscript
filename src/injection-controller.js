@@ -67,7 +67,26 @@ function InjectionController() {
         <head>
             <meta charset="UTF-8">
             <title>${utils.getLangText('multipleAiChat')}</title>
-            <style>/* ... CSS styles ... */</style>
+            <style>
+                body { margin:0; padding:0; font-family:Arial, sans-serif; background-color:#f0f2f5; color:#333; }
+                .header { display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background-color:white; border-bottom:1px solid #ddd; }
+                .title { font-size:1.3rem; font-weight:bold; }
+                .layout-buttons button { margin:0 5px; padding:8px 12px; border:1px solid #ccc; border-radius:4px; background-color:#fff; cursor:pointer; }
+                .layout-buttons button.active { background-color:#007bff; color:white; border-color:#007bff; }
+                .control-buttons button { margin:0 5px; padding:8px 12px; border:none; background:none; font-size:1.5rem; cursor:pointer; }
+                .chat-areas { display:grid; grid-template-columns:repeat(2, 1fr); gap:15px; padding:15px; height:calc(100vh - 140px); box-sizing:border-box; }
+                .chatarea { border:1px solid #ccc; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; background-color:white; }
+                .chatarea-header { padding:10px; background:#f7f7f7; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; font-weight:bold; }
+                .chatarea-content { flex:1; overflow-y:auto; padding:15px; }
+                .main-input { display:flex; padding:15px; border-top:1px solid #ddd; background-color:white; }
+                .main-input textarea { flex:1; padding:10px; border:1px solid #ccc; border-radius:4px; resize:none; }
+                .main-input button { margin-left:10px; padding:10px 20px; border:none; border-radius:4px; background-color:#007bff; color:white; cursor:pointer; }
+                .user-message { text-align:right; margin-bottom:10px; }
+                .user-message div { display:inline-block; padding:8px 12px; background-color:#dcf8c6; border-radius:10px; }
+                .ai-message { text-align:left; margin-bottom:10px; }
+                .ai-message div { display:inline-block; padding:8px 12px; background-color:#fff; border:1px solid #eee; border-radius:10px; }
+                .rtl { direction:rtl; text-align:right; }
+            </style>
         </head>
         <body>
             <div class="header">
@@ -80,17 +99,17 @@ function InjectionController() {
                     <button data-layout="6">6</button>
                 </div>
                 <div class="control-buttons">
-                    <button id="settings-btn">⚙️</button>
-                    <button id="new-chat-btn">➕</button>
+                    <button id="settings-btn" title="${utils.getLangText('settings')}">⚙️</button>
+                    <button id="new-chat-btn" title="${utils.getLangText('newChat')}">➕</button>
                 </div>
             </div>
             <div class="chat-areas" id="chat-areas-container"></div>
             <div class="main-input">
-                <textarea id="main-prompt"></textarea>
+                <textarea id="main-prompt" placeholder="${utils.getLangText('send')}..."></textarea>
                 <button id="send-all-btn">${utils.getLangText('send')}</button>
             </div>
             <script>
-                // The main script is already loaded, so we just need to initialize the controller.
+                // The main script is already loaded and will initialize the window
             </script>
         </body>
         </html>
