@@ -1,33 +1,37 @@
+// Mock Utils globally before any imports that might use it
+jest.mock('../src/utils.js', () => {
+    return jest.fn().mockImplementation(() => ({
+        getDefaultAiProviders: jest.fn().mockReturnValue([{ name: 'MockAI', url: 'mock.com' }]),
+        createElement: jest.fn(() => ({
+            innerHTML: '',
+            querySelector: jest.fn(() => ({ addEventListener: jest.fn(), style: {}, classList: { remove: jest.fn() }, parentNode: { insertBefore: jest.fn() } })),
+            addEventListener: jest.fn(),
+        })),
+        $: jest.fn(() => ({ addEventListener: jest.fn() })),
+        isRTL: jest.fn().mockReturnValue(false),
+        getLangText: jest.fn(key => key),
+    }));
+});
 
-/**
- * @jest-environment jsdom
- */
-import ChatArea from '../src/chat-area';
-import MainWindowController from '../src/main-window-controller';
-import Utils from '../src/utils';
+import ChatArea from '../src/chat-area.js';
+import MainWindowController from '../src/main-window-controller.js';
 
-global.BroadcastChannel = jest.fn(() => ({ postMessage: jest.fn() }));
-jest.mock('../src/main-window-controller');
-jest.mock('../src/utils');
-// Correctly mock MessageNotifier to preserve the `register` method
+jest.mock('../src/main-window-controller.js');
+jest.mock('../src/message-notifier.js');
+
+// This mock ensures that the constructor runs and methods are attached.
+global.BroadcastChannel = jest.fn(() => ({ postMessage: jest.fn(), close: jest.fn() }));
 jest.mock('../src/message-notifier.js', () => {
-    return jest.fn().mockImplementation(function() {
-        this.register = jest.fn();
-        this.send = jest.fn();
+    const original = jest.requireActual('../src/message-notifier.js');
+    return jest.fn().mockImplementation(function(...args) {
+        original.default.call(this, ...args);
     });
 });
 
 describe('ChatArea', () => {
     it('should initialize without errors', () => {
-        Utils.mockImplementation(() => ({
-            getDefaultAiProviders: jest.fn().mockReturnValue([{ name: 'Kimi', url: 'kimi.com' }]),
-            isRTL: jest.fn().mockReturnValue(false),
-            getLangText: jest.fn(key => key),
-            createElement: jest.fn(() => ({ innerHTML: '', appendChild: jest.fn() })),
-            $: jest.fn(() => ({ addEventListener: jest.fn(), classList: { toggle: jest.fn(), contains: jest.fn() }, focus: jest.fn() })),
-        }));
-
-        const chatArea = new ChatArea(new MainWindowController(), { id: 'chat1', url: 'kimi.com' });
+        const mockMainController = new MainWindowController();
+        const chatArea = new ChatArea(mockMainController, { id: 'chat1' });
         expect(() => chatArea.init()).not.toThrow();
     });
 });

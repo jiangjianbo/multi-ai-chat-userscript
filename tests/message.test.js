@@ -1,11 +1,21 @@
 
-import MessageNotifier from '../src/message-notifier';
+import MessageNotifier from '../src/message-notifier.js';
 
-// Mock BroadcastChannel
+// Mock BroadcastChannel with the new methods
 const mockPostMessage = jest.fn();
+const mockClose = jest.fn();
+let onmessageerror = null;
+
 global.BroadcastChannel = jest.fn(() => ({
     postMessage: mockPostMessage,
+    close: mockClose,
     onmessage: null,
+    set onmessageerror(handler) {
+        onmessageerror = handler;
+    },
+    get onmessageerror() {
+        return onmessageerror;
+    }
 }));
 
 describe('MessageNotifier', () => {
@@ -21,53 +31,55 @@ describe('MessageNotifier', () => {
         expect(BroadcastChannel).toHaveBeenCalledWith(channelName);
     });
 
-    it('should register onMsg* methods as handlers', () => {
-        const handlerObject = {
-            onMsgTest: jest.fn(),
-            onMsgAnother: jest.fn(),
-            notAHandler: () => {},
-        };
-
+    it('should register onMsg* methods as normalized handlers', () => {
+        const handlerObject = { onMsgTestMessage: jest.fn() };
         notifier.register(handlerObject);
-
-        expect(notifier.messageHandlers['test']).toBeDefined();
-        expect(notifier.messageHandlers['another']).toBeDefined();
-        expect(notifier.messageHandlers['notahandler']).toBeUndefined();
+        expect(notifier.messageHandlers['testmessage']).toBeDefined();
     });
 
-    it('should call the correct handler when a message is received', () => {
-        const testHandler = jest.fn();
-        notifier.messageHandlers['test'] = testHandler;
+    it('should call the correct handler, ignoring case and separators', () => {
+        const handlerObject = {
+            onMsgShareReturn: jest.fn(),
+            onMsgAnotherTest: jest.fn(),
+        };
+        notifier.register(handlerObject);
 
-        // Simulate receiving a message
-        const messageEvent = { data: { type: 'test', data: { payload: 'abc' } } };
-        notifier.broadcastChannel.onmessage(messageEvent);
+        // Test underscore
+        const messageEvent1 = { data: { type: 'share_return', data: { link: 'url' } } };
+        notifier.broadcastChannel.onmessage(messageEvent1);
+        expect(handlerObject.onMsgShareReturn).toHaveBeenCalledWith({ link: 'url' });
 
-        expect(testHandler).toHaveBeenCalledWith({ payload: 'abc' });
+        // Test hyphen and case
+        const messageEvent2 = { data: { type: 'ANOTHER-TEST', data: { val: 1 } } };
+        notifier.broadcastChannel.onmessage(messageEvent2);
+        expect(handlerObject.onMsgAnotherTest).toHaveBeenCalledWith({ val: 1 });
     });
 
     it('should send a message via BroadcastChannel', () => {
-        const messageData = { id: 1, text: 'hello' };
-        notifier.send('greeting', messageData);
-
-        expect(mockPostMessage).toHaveBeenCalledWith({
-            type: 'greeting',
-            data: messageData,
-        });
+        notifier.send('greeting', { id: 1 });
+        expect(mockPostMessage).toHaveBeenCalledWith({ type: 'greeting', data: { id: 1 } });
     });
 
-    it('should send a message via postMessage to a target window', () => {
-        const mockTargetWindow = {
-            postMessage: jest.fn(),
-        };
-        const messageData = { id: 2, text: 'direct' };
-        
-        notifier.send('direct_message', messageData, mockTargetWindow);
+    it('should log an error if sending fails', () => {
+        const error = new Error('Failed to post');
+        mockPostMessage.mockImplementationOnce(() => { throw error; });
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-        expect(mockTargetWindow.postMessage).toHaveBeenCalledWith(
-            { type: 'direct_message', data: messageData },
-            '*'
+        notifier.send('greeting', { id: 1 });
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            `MessageNotifier (${channelName}) failed to send message:`,
+            error
         );
-        expect(mockPostMessage).not.toHaveBeenCalled();
+        consoleErrorSpy.mockRestore();
+    });
+
+    it('should close the broadcast channel', () => {
+        notifier.close();
+        expect(mockClose).toHaveBeenCalled();
+    });
+
+    it('should have an onmessageerror handler', () => {
+        expect(notifier.broadcastChannel.onmessageerror).toBeInstanceOf(Function);
     });
 });

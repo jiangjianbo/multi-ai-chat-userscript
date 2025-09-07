@@ -1,32 +1,34 @@
+import MainWindowController from '../src/main-window-controller.js';
 
-/**
- * @jest-environment jsdom
- */
-import MainWindowController from '../src/main-window-controller';
-import ChatArea from '../src/chat-area';
-
-jest.mock('../src/utils');
-// This mock is now safe and doesn't access out-of-scope variables.
-jest.mock('../src/chat-area', () => {
-    return jest.fn().mockImplementation(() => ({
-        init: jest.fn(),
-        element: {},
-    }));
-});
+jest.mock('../src/utils.js');
+jest.mock('../src/chat-area.js');
+global.BroadcastChannel = jest.fn(() => ({ postMessage: jest.fn(), close: jest.fn() }));
 jest.mock('../src/message-notifier.js', () => {
-    return jest.fn().mockImplementation(function() { this.register = jest.fn(); this.send = jest.fn(); return this; });
+    const original = jest.requireActual('../src/message-notifier.js');
+    return jest.fn().mockImplementation((...args) => new original.default(...args));
 });
 
 describe('MainWindowController', () => {
-    it('should add a chat area without error', () => {
+    it('should disable layout buttons correctly', () => {
+        document.body.innerHTML = `
+            <div id="chat-areas-container"></div>
+            <div class="layout-buttons">
+                <button data-layout="1"></button>
+                <button data-layout="2"></button>
+            </div>
+        `;
         const mainController = new MainWindowController();
-        mainController.utils.$ = () => ({ appendChild: jest.fn(), style: {} });
-        mainController.utils.$$ = () => [];
-        global.localStorage = { setItem: jest.fn() };
+        mainController.chatAreas = { area1: {}, area2: {} };
+        mainController.utils.$$ = document.querySelectorAll.bind(document);
+        // This mock now correctly returns an element with a style property
+        mainController.utils.$ = () => { 
+            const el = document.createElement('div');
+            el.style.gridTemplateColumns = '';
+            return el;
+        };
+        
+        mainController.updateLayout();
 
-        expect(() => {
-            mainController.onMsgCreate({ url: 'http://test.com', tabId: 'tab1' });
-        }).not.toThrow();
-        expect(ChatArea).toHaveBeenCalledTimes(1);
+        expect(document.querySelector('button[data-layout="1"]').disabled).toBe(true);
     });
 });

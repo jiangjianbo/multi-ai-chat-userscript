@@ -1,114 +1,114 @@
+
 import MessageNotifier from './message-notifier.js';
 import Utils from './utils.js';
 
 const CHANNEL_NAME = 'multi-ai-chat-channel';
 
-/**
- * 内容块控制器，管理主窗口中的单个AI会话区域
- * @constructor
- * @param {MainWindowController} mainController 主控制器
- * @param {Object} options 配置选项
- */
 function ChatArea(mainController, options) {
     MessageNotifier.call(this, CHANNEL_NAME);
 
     this.mainController = mainController;
     this.id = options.id;
-    this.url = options.url;
-    this.tabId = options.tabId;
-    this.config = options.config;
+    this.isAssigned = false;
     this.utils = new Utils();
-    const DEFAULT_AI_PROVIDERS = this.utils.getDefaultAiProviders();
+    this.aiProviders = this.utils.getDefaultAiProviders();
 
     this.init = function () {
         this.register(this);
         this.element = this.createChatAreaElement();
-        this.contentElement = this.utils.$('.chatarea-content', this.element);
-        this.initEvents();
+        this.attachEventListeners();
     };
 
     this.createChatAreaElement = function () {
-        const aiName = this.getAINameFromUrl(this.url);
-        const rtlClass = this.utils.isRTL() ? 'rtl' : '';
-        const chatArea = this.utils.createElement('div', { id: this.id, class: `chatarea ${rtlClass}`, dir: this.utils.isRTL() ? 'rtl' : 'ltr' });
-        const header = this.utils.createElement('div', { class: 'chatarea-header' }, [
-            this.utils.createElement('div', { class: 'ai-name' }, [aiName]),
-            this.utils.createElement('div', { class: 'chat-controls' }, [
-                this.utils.createElement('button', { class: 'web-search-btn' }, [this.utils.getLangText('webSearch')]),
-                this.utils.createElement('button', { class: 'share-btn' }, [this.utils.getLangText('share')]),
-                this.utils.createElement('button', { class: 'open-window-btn' }, [this.utils.getLangText('openInWindow')]),
-                this.utils.createElement('button', { class: 'close-btn' }, [this.utils.getLangText('close')])
-            ])
-        ]);
-        const content = this.utils.createElement('div', { class: 'chatarea-content' });
-        const floatingInput = this.utils.createElement('div', { class: 'floating-input' }, [
-            this.utils.createElement('div', { class: 'input-toggle' }, ['↑']),
-            this.utils.createElement('div', { class: 'hidden-input' }, [
-                this.utils.createElement('textarea', { placeholder: this.utils.getLangText('send') + '...' }),
-                this.utils.createElement('button', { class: 'send-btn' }, [this.utils.getLangText('send')])
-            ])
-        ]);
-        chatArea.appendChild(header);
-        chatArea.appendChild(content);
-        chatArea.appendChild(floatingInput);
-        return chatArea;
+        const element = document.createElement('div');
+        element.className = 'chatarea unassigned';
+        element.id = this.id;
+        const aiOptions = this.aiProviders.map((p, i) => `<option value="${i}">${p.name}</option>`).join('');
+
+        element.innerHTML = `
+            <div class="chatarea-header">
+                <select class="ai-selector"><option value="">Select AI...</option>${aiOptions}</select>
+                <div>
+                    <button class="control-share" title="Share">🔗</button>
+                    <button class="control-close" title="Close">❌</button>
+                </div>
+            </div>
+            <div class="chatarea-body">
+                <div class="unassigned-overlay">Select an AI Provider</div>
+                <div class="chatarea-content"></div>
+                <div class="chatarea-input-container">
+                    <div class="input-bar"><span>⬆️</span></div>
+                    <textarea placeholder="Assign an AI to start..." disabled></textarea>
+                </div>
+            </div>
+        `;
+        return element;
     };
 
-    this.getAINameFromUrl = function (url) {
-        for (const provider of DEFAULT_AI_PROVIDERS) {
-            if (url.includes(provider.url.replace('https://', ''))) {
-                return provider.name;
+    this.attachEventListeners = function () {
+        const inputContainer = this.element.querySelector('.chatarea-input-container');
+        const textarea = this.element.querySelector('textarea');
+        const contentArea = this.element.querySelector('.chatarea-content');
+
+        const activateInput = (isActive) => {
+            if (isActive) {
+                inputContainer.classList.add('is-active');
+                contentArea.style.paddingBottom = (inputContainer.offsetHeight + 10) + 'px';
+            } else {
+                inputContainer.classList.remove('is-active');
+                contentArea.style.paddingBottom = '15px';
+            }
+        };
+
+        inputContainer.addEventListener('mouseenter', () => !this.isAssigned || activateInput(true));
+        inputContainer.addEventListener('mouseleave', () => (document.activeElement !== textarea) && activateInput(false));
+        textarea.addEventListener('focus', () => activateInput(true));
+        textarea.addEventListener('blur', () => activateInput(false));
+        textarea.addEventListener('keydown', (e) => this.handleIndividualSend(e));
+
+        this.element.querySelector('.control-close').addEventListener('click', () => this.mainController.removeChatArea(this.id));
+        this.element.querySelector('.control-share').addEventListener('click', () => this.send('share', { tabId: this.tabId, chatIds: [] }));
+        this.element.querySelector('.ai-selector').addEventListener('change', (e) => this.assignAI(e));
+    };
+
+    this.assignAI = function(event) {
+        const selectedAiIndex = event.target.value;
+        if (!selectedAiIndex) return;
+
+        const aiName = this.aiProviders[selectedAiIndex].name;
+        this.isAssigned = true;
+        this.element.classList.remove('unassigned');
+        this.element.querySelector('.unassigned-overlay').style.display = 'none';
+        
+        const textarea = this.element.querySelector('textarea');
+        textarea.disabled = false;
+        textarea.placeholder = `Send a message to ${aiName}...`;
+
+        const selector = event.target;
+        const headerText = document.createElement('span');
+        headerText.textContent = aiName;
+        selector.parentNode.insertBefore(headerText, selector);
+        selector.style.display = 'none';
+    };
+
+    this.handleIndividualSend = function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            const message = e.target.value.trim();
+            if (message) {
+                this.addMessage({ type: 'question', content: message });
+                this.send('chat', { tabId: this.tabId, chatId: 'chat-' + Date.now(), message });
+                e.target.value = '';
             }
         }
-        return 'AI';
-    };
-
-    this.initEvents = function () {
-        this.utils.$('.close-btn', this.element).addEventListener('click', () => this.mainController.removeChatArea(this.id));
-        this.utils.$('.share-btn', this.element).addEventListener('click', () => this.send('share', { tabId: this.tabId, chatIds: [] }));
-        this.utils.$('.open-window-btn', this.element).addEventListener('click', () => {
-            const existingWindow = this.findExistingWindow();
-            if (existingWindow) { existingWindow.focus(); } else { window.open(this.url, '_blank'); }
-        });
-        this.utils.$('.web-search-btn', this.element).addEventListener('click', () => this.send('config', { tabId: this.tabId, webSearch: true }));
-        const inputToggle = this.utils.$('.input-toggle', this.element);
-        const hiddenInput = this.utils.$('.hidden-input', this.element);
-        inputToggle.addEventListener('click', () => {
-            hiddenInput.classList.toggle('active');
-            if (hiddenInput.classList.contains('active')) { this.utils.$('textarea', hiddenInput).focus(); }
-        });
-        this.utils.$('.send-btn', this.element).addEventListener('click', () => this.sendHiddenMessage());
-        this.utils.$('textarea', hiddenInput).addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendHiddenMessage(); }
-        });
-    };
-
-    this.sendHiddenMessage = function () {
-        const input = this.utils.$('textarea', this.element);
-        const message = input.value.trim();
-        if (message) {
-            const chatId = 'chat-' + Date.now();
-            this.send('chat', { tabId: this.tabId, chatId, message });
-            input.value = '';
-            this.utils.$('.hidden-input', this.element).classList.remove('active');
-        }
-    };
-
-    this.findExistingWindow = function () {
-        for (let i = 0; i < window.frames.length; i++) {
-            try {
-                if (window.frames[i].location.href.includes(this.url)) { return window.frames[i]; }
-            } catch (e) { /* cross-origin */ }
-        }
-        return null;
     };
 
     this.addMessage = function (message) {
-        const messageClass = message.type === 'question' ? 'user-message' : 'ai-message';
-        const messageElement = this.utils.createElement('div', { class: `message ${messageClass}`, dir: this.utils.isRTL() ? 'rtl' : 'ltr' });
-        messageElement.innerHTML = message.content;
-        this.contentElement.appendChild(messageElement);
-        this.contentElement.scrollTop = this.contentElement.scrollHeight;
+        const contentArea = this.element.querySelector('.chatarea-content');
+        const messageElement = this.utils.createElement('div', { class: `message ${message.type}` });
+        messageElement.textContent = message.content;
+        contentArea.appendChild(messageElement);
+        contentArea.scrollTop = contentArea.scrollHeight;
     };
 
     this.handleAnswer = function (data) {

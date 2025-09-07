@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BroadcastChannel 通信演示</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .instructions {
+            background-color: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .status {
+            text-align: center;
+            padding: 0.5rem;
+            border-radius: 4px;
+            background-color: #e3f2fd;
+            color: #0d47a1;
+        }
+    </style>
+</head>
+<body>
+    <h1>BroadcastChannel 跨标签页通信</h1>
+    
+    <div class="status">
+        状态: 已连接到通信频道
+    </div>
+    
+    <div class="instructions">
+        <strong>使用说明:</strong> 在一个标签页的输入框中输入内容，内容会自动同步到同一浏览器中打开的其他标签页的接收框中。
+    </div>
+    
+    <div class="container">
+        <div class="section">
+            <label for="inputText">输入区域 (在此输入内容)</label>
+            <textarea id="inputText" placeholder="在此输入要发送的内容..."></textarea>
+        </div>
+        
+        <div class="section">
+            <label for="outputText">接收区域 (来自其他标签页的内容)</label>
+            <textarea id="outputText" readonly placeholder="等待接收内容..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        // 创建唯一的频道名称
+        const CHANNEL_NAME = 'simple-broadcast-demo';
+        
+        // 获取DOM元素
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const statusElement = document.querySelector('.status');
+        
+        // 生成唯一标识符，用于区分不同的标签页
+        const tabId = 'tab_' + Math.random().toString(36).substring(2, 10);
+        
+        try {
+            // 创建BroadcastChannel实例
+            const channel = new BroadcastChannel(CHANNEL_NAME);
+            statusElement.textContent = `状态: 已连接到频道 (${tabId})`;
+            
+            // 监听输入事件，发送消息
+            inputText.addEventListener('input', (e) => {
+                const message = {
+                    content: e.target.value,
+                    sender: tabId,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // 发送消息到频道
+                channel.postMessage(message);
+            });
+            
+            // 监听来自频道的消息
+            channel.onmessage = (e) => {
+                // 忽略自己发送的消息
+                //if (e.data.sender !== tabId) {
+                    outputText.value = e.data.content;
+                //}
+            };
+            
+            // 处理错误
+            channel.onmessageerror = (error) => {
+                console.error('消息错误:', error);
+                statusElement.textContent = `状态: 消息错误 - ${error.message}`;
+                statusElement.style.backgroundColor = '#ffebee';
+                statusElement.style.color = '#b71c1c';
+            };
+            
+        } catch (error) {
+            console.error('初始化错误:', error);
+            statusElement.textContent = `状态: 连接失败 - ${error.message}`;
+            statusElement.style.backgroundColor = '#ffebee';
+            statusElement.style.color = '#b71c1c';
+        }
+    </script>
+</body>
+</html>
+    
