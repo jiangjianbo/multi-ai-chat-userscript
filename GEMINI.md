@@ -28,6 +28,33 @@
   - **松耦合**: 原生页面与主窗口通过标准化的消息协议 (`postMessage` / `BroadcastChannel`) 通信，彼此不知道对方的内部实现，易于维护和扩展。
   - **可测试性**: 逻辑与视图分离，关键功能（如消息处理、状态管理）被设计为可在没有真实 DOM 的情况下进行单元测试。
 
+### AI 驱动映射表
+
+默认支持的ai提供商包括如下6个：
+
+* www.kimi.com/chat/
+* https://gemini.google.com/
+* https://chatgpt.com/
+* https://chat.deepseek.com/
+* https://x.com/i/grok
+* https://www.tongyi.com/
+
+页面和驱动的对应关系为：kimi → KimiPageDriver, gemini → GeminiPageDriver以此类推。提供通用页面策略GenericPageDriver存放共性，以及未来的新供应商支持。
+
+#### 选择器详情
+
+| 选择器类型 | GenericPageDriver | KimiPageDriver (继承自Generic) | GeminiPageDriver (继承自Generic) | ChatGPTPageDriver (继承自Generic) |
+| --- | --- | --- | --- | --- |
+| `inputArea` | `input[type="text"]`, `textarea`, `.ql-editor`, `.chat-input-editor` | `#prompt-textarea` | `.ql-editor` | `#prompt-textarea` |
+| `sendButton` | `button[type="submit"]`, `.send-button`, `.send-btn`, `button[aria-label="发送"]` | `.send-button` | `button[aria-label="发送"]`, `.send-button` | `[data-testid="send-button"]` |
+| `chatHistory` | `.chat-messages`, `.messages`, `#chat-area`, `.chat-history-scroll-container` | `.chat-messages-container`, `.history-part` | `.chat-history-scroll-container`, `.conversations-container` | | 
+| `messageItem` | `.message`, `.chat-message`, `.conversation-container`, `.message-content` | `.message-item`, `li` | `.conversation-container`, `.conversation` | |
+| `userMessage` | `.user-message`, `.segment-user`, `.user-query-container` | `.user-content` | `.query-text` | |
+| `aiMessage` | `.ai-message`, `.segment-assistant`, `.model-response-container` | `.assistant-message`, `.chat-content-item-assistant` | `.model-response-container` | |
+| `responseParagraph` | `.paragraph`, `div[class*="content"]`, `div[class*="response"]` | `.chat-name` | `.conversation-title` | |
+| `newChatButton` | `.new-chat-button`, `.new-conversation`, `button[data-test-id="new-chat-button"]` | `.new-chat-btn` | `button[data-test-id="new-chat-button"]` | |
+| `sessionTitle` | `h1.title`, `h2.session-title`, `.chat-header-content h2`, `.conversation-title` | `h2.session-title` | `h1.title` | |
+
 ## 📝 开发规范
 
 ### 代码风格
@@ -88,7 +115,29 @@ function MyClass(args) {
 
 - **消息格式**: 所有跨窗口通信使用 JSON 格式。
 - **消息路由**: 消息对象中必须包含 `tabId` 或 `url` 等字段，以确保主窗口能将消息正确路由到或识别出对应的 `ChatArea`。
-- **协议定义**: 核心通讯协议（如 `create`, `chat`, `answer`）在 `prompt.md` 中有详细定义，开发时必须严格遵守。
+- **协议定义**: 
+    * create：原生窗口通知主窗口创建一个内容块，携带参数url为原生窗口的url，tabId为浏览器为原生窗口赋予的唯一名称，config为一个json，包含原生窗口中各种配置按钮的状态：登录用户名、联网模式、模型选择、长思考，以及其他ai专有的状态（如grok的X搜索开关等）
+    * chat：主窗口通知原生窗口增加一个问题，携带参数为chatId表示问题的编号，message包含用户输入的文字，原生窗口收到之后往输入内容区填写文字并模拟点击发送按钮。在接收到ai的回答之后，会产生answer消息发回给主窗口。
+    * answer：原生窗口通知主窗口有回答了，携带参数包括url、tabId、chatId，answerTime为回复日期时间，answer为回答的innerhtml内容
+    * config：主窗口通知原生窗口设置各种配置按钮的状态，携带参数为配置按钮名词和bool类型的开关值，参考create的config说明
+    * thread_create：主窗口通知原生窗口结束当前会话，并创建一个新会话。创建新会话之后会反向发送一个thread_return消息
+    * thread_return：原生窗口通知主窗口一个新会话创建完毕，参数跟create消息相同
+    * share_create：主窗口通知原生窗口创建一个对话信息的share链接，携带消息为chatId的数组。根据不同ai提供商的特性，可以执行整个会话共享、选择对话共享、如果只有一个chatId则单个对话共享等
+    * share_return：原生窗口通知主窗口
+
+### localStorage 结构
+
+* 存储 key 固定为 multi_ai_sync_config
+* 用如下json结构存储AI供应商的配置信息、布局信息和语言设置
+
+```json
+{providers: [{name,url},…], layout:3, lang:'zh'}
+```
+
+### 国际化
+
+* 默认支持多语言，包括英语、中文、法语、日语、朝鲜语、西班牙语、葡萄牙语、阿拉伯语
+* 根据浏览器当前语言切换，要注意阿拉伯语的从右向左的写作方式的支持。
 
 ## 🤖 AI 助手配置
 
