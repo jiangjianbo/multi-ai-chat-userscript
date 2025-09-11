@@ -72,8 +72,20 @@ describe('GenericPageDriver', () => {
         expect(sendBtn.click).toHaveBeenCalled();
     });
 
+    it('should send a message using a generic div input selector', async () => {
+        document.body.innerHTML = '<div class="ql-editor"></div><button type="submit"></button>';
+        const input = document.querySelector('.ql-editor');
+        const sendBtn = document.querySelector('button[type="submit"]');
+        sendBtn.click = jest.fn();
+
+        await driver.sendMessage('Hello Generic Div');
+
+        expect(input.textContent).toBe('Hello Generic Div');
+        expect(sendBtn.click).toHaveBeenCalled();
+    });
+
     it('should get answer from a generic assistant message', async () => {
-        document.body.innerHTML = '<div class="ai-message"><div class="paragraph">Generic response</div></div>';
+        document.body.innerHTML = '<div class="chat-messages"><div class="ai-message"><div class="paragraph">Generic response</div></div></div>';
         const answer = await driver.getAnswer();
         expect(answer).toBe('Generic response');
     });
@@ -94,8 +106,8 @@ describe('GenericPageDriver', () => {
     it('should get chat history from a generic chat history container', () => {
         document.body.innerHTML = `
             <div class="chat-messages">
-                <div class="chat-message"><div class="message-content">Generic Chat 1</div></div>
-                <div class="chat-message"><div class="message-content">Generic Chat 2</div></div>
+                <div class="message-content">Generic Chat 1</div>
+                <div class="message-content">Generic Chat 2</div>
             </div>
         `;
         const history = driver.getChatHistory();

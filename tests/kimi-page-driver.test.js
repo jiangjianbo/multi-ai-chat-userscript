@@ -75,7 +75,7 @@ describe('KimiPageDriver', () => {
     });
 
     it("should get answer from Kimi's assistant message", async () => {
-        document.body.innerHTML = '<div class="chat-content-item-assistant"><div class="paragraph">Kimi response</div></div>';
+        document.body.innerHTML = '<div class="chat-messages-container"><div class="chat-content-item-assistant"><div class="paragraph">Kimi response</div></div></div>';
         const answer = await driver.getAnswer();
         expect(answer).toBe('Kimi response');
     });

@@ -11,10 +11,11 @@ function KimiPageDriver() {
         ...this.selectors,
         inputArea: ['#prompt-textarea', ...this.selectors.inputArea],
         sendButton: ['.send-button', ...this.selectors.sendButton],
-        chatHistory: ['.chat-messages-container', ...this.selectors.chatHistory],
-        messageItem: ['.message-item', ...this.selectors.messageItem],
+        chatHistory: ['.chat-messages-container', '.history-part', ...this.selectors.chatHistory],
+        messageItem: ['.message-item', 'li', ...this.selectors.messageItem],
         userMessage: ['.user-content', ...this.selectors.userMessage],
-        aiMessage: ['.assistant-message', ...this.selectors.aiMessage],
+        aiMessage: ['.assistant-message', '.chat-content-item-assistant', ...this.selectors.aiMessage],
+        responseParagraph: ['.chat-name', ...this.selectors.responseParagraph],
         newChatButton: ['.new-chat-btn', ...this.selectors.newChatButton],
         sessionTitle: ['h2.session-title', ...this.selectors.sessionTitle]
     };
@@ -31,10 +32,11 @@ function GeminiPageDriver() {
         ...this.selectors,
         inputArea: ['.ql-editor', ...this.selectors.inputArea],
         sendButton: ['button[aria-label="发送"]', '.send-button', ...this.selectors.sendButton],
-        chatHistory: ['.chat-history-scroll-container', ...this.selectors.chatHistory],
-        messageItem: ['.conversation-container', ...this.selectors.messageItem],
+        chatHistory: ['.chat-history-scroll-container', '.conversations-container', ...this.selectors.chatHistory],
+        messageItem: ['.conversation-container', '.conversation', ...this.selectors.messageItem],
         userMessage: ['.query-text', ...this.selectors.userMessage],
         aiMessage: ['.model-response-container', ...this.selectors.aiMessage],
+        responseParagraph: ['.conversation-title', ...this.selectors.responseParagraph],
         newChatButton: ['button[data-test-id="new-chat-button"]', ...this.selectors.newChatButton],
         sessionTitle: ['h1.title', ...this.selectors.sessionTitle]
     };

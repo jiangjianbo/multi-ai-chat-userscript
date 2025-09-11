@@ -74,7 +74,7 @@ describe('GeminiPageDriver', () => {
     });
 
     it("should get answer from Gemini's model response", async () => {
-        document.body.innerHTML = '<div class="conversation-container"><div class="model-response-container"><div class="paragraph">Gemini response</div></div></div>';
+        document.body.innerHTML = '<div class="chat-history-scroll-container"><div class="conversation-container"><div class="model-response-container"><div class="paragraph">Gemini response</div></div></div></div>';
         const answer = await driver.getAnswer();
         expect(answer).toBe('Gemini response');
     });

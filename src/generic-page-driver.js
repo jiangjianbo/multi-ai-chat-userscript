@@ -6,11 +6,12 @@ function GenericPageDriver() {
         inputArea: ['input[type="text"]', 'textarea', '.ql-editor', '.chat-input-editor'],
         sendButton: ['button[type="submit"]', '.send-button', '.send-btn', 'button[aria-label="发送"]'],
         chatHistory: ['.chat-messages', '.messages', '#chat-area', '.chat-history-scroll-container'],
-        messageItem: ['.message', '.chat-message', '.conversation-container'],
+        messageItem: ['.message', '.chat-message', '.conversation-container', '.message-content'],
         userMessage: ['.user-message', '.segment-user', '.user-query-container'],
         aiMessage: ['.ai-message', '.segment-assistant', '.model-response-container'],
+        responseParagraph: ['.paragraph', 'div[class*="content"]', 'div[class*="response"]'],
         newChatButton: ['.new-chat-button', '.new-conversation', 'button[data-test-id="new-chat-button"]'],
-        sessionTitle: ['h2.session-title', '.chat-header-content h2', '.conversation-title']
+        sessionTitle: ['h1.title', 'h2.session-title', '.chat-header-content h2', '.conversation-title']
     };
 
     // Helper to find an element using multiple selectors
@@ -54,7 +55,8 @@ function GenericPageDriver() {
         return new Promise(resolve => {
             const input = this._querySelector(this.selectors.inputArea);
             if (input) {
-                input.value = message;
+                if(input.tagName === 'DIV') input.textContent = message;
+                else input.value = message;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 const sendBtn = this._querySelector(this.selectors.sendButton);
                 if (sendBtn) { sendBtn.click(); setTimeout(resolve, 1000); } else { resolve(); }
@@ -68,7 +70,12 @@ function GenericPageDriver() {
             if (chatHistory) {
                 const messages = this._querySelectorAll(this.selectors.aiMessage, chatHistory);
                 const lastMessage = messages[messages.length - 1];
-                resolve(lastMessage ? lastMessage.textContent.trim() : '');
+                if (lastMessage) {
+                    const paragraph = this._querySelector(this.selectors.responseParagraph, lastMessage);
+                    resolve(paragraph ? paragraph.textContent.trim() : '');
+                } else {
+                    resolve('');
+                }
             } else {
                 resolve('');
             }
