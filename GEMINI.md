@@ -5,18 +5,11 @@
 - **核心目标**: 开发一个油猴脚本，让用户在多个主流 AI 聊天页面（如 Kimi, Gemini, ChatGPT 等）一键发起“同步对比”。脚本会将多家 AI 的问答内容汇总到一个独立的主窗口中，并排展示，同时保持各页面与主窗口之间的双向实时同步。
 - **业务价值**: 显著提高信息获取和内容创作的效率。用户可以通过一次提问，快速比较不同 AI 模型的回答质量、风格和侧重点，从而为研究、编程、写作等任务找到最佳答案。
 
-### 名词定义
-
-* ai对话页面：也叫做原生页面，是浏览器中输入url访问到的ai服务提供商的对话页面
-* ai会话：在ai对话页面中进行人机对话的所有问答内容
-* 主窗口：包含多个内容块的新页面，该窗口名字为multi-ai-sync-chat-window
-* 内容块：也叫chatarea，对应一个ai会话，包含一些控制部件
-
 ## 🛠 技术栈
 - **前端**: JavaScript (ES5/ES6), HTML5, CSS3
 - **构建工具**: Webpack, Babel
 - **测试框架**: Jest
-- **关键依赖**: 无外部运行时框架，核心功能依赖原生浏览器 API。
+- **关键依赖**: 无外部运行时框架，核心功能依赖原生浏览器 API，油猴提供的专用API接口，油猴接口调用所需的特定权限声明。
 - **选型理由**:
   - **原生 JavaScript**: 最大化兼容性与性能，减少依赖，符合油猴脚本轻量化的特点。
   - **Webpack/Babel**: 使用现代化 JavaScript 特性并确保向后兼容性，同时能有效管理模块。
@@ -25,69 +18,20 @@
 
 ##  **核心架构与设计原则**
 
-- **架构模式**:
-  - **主从分离架构**:
-    - **原生页面 (从)**: 作为“从属”页面，仅注入一个“同步对比”按钮和轻量级的驱动脚本。负责监听 DOM 变化、与主窗口通信。
-    - **主窗口 (主)**: 作为“主控”中心，是一个独立的浏览器 Tab。负责管理布局、汇总展示所有 AI 的对话内容、并将用户输入分发到各个原生页面。
-  - **驱动模式 (Driver Pattern)**: 为每个支持的 AI 网站编写一个独立的 `PageDriver`（如 `KimiPageDriver`, `GeminiPageDriver`）。这些驱动继承自一个通用的 `GenericPageDriver`，封装了与特定网站 DOM 交互的细节（如定位输入框、获取回答内容）。
 - **关键设计原则**:
   - **单一职责**: 每个模块功能明确（例如 `MainWindowController` 只管主窗口，`ChatArea` 只管单个对话区域，`PageDriver` 只管原生页面交互）。
   - **松耦合**: 原生页面与主窗口通过标准化的消息协议 (`postMessage` / `BroadcastChannel`) 通信，彼此不知道对方的内部实现，易于维护和扩展。
   - **可测试性**: 逻辑与视图分离，关键功能（如消息处理、状态管理）被设计为可在没有真实 DOM 的情况下进行单元测试。
+  - **设计优先**: 所有的功能都必须要有同名的markdown格式的设计文档描述，使用`4+1`视图对设计进行描述，并且要细化API接口定义。如果技术需要拆分成更小的技术，应该在设计中说明。
+  - **测试驱动开发**: 所有技术都要先写测试用例，在测试用例定稿之后，默认测试用例不要改动，除非在明确的修改测试用例的指令
+- **技术复杂度分解**:
+  - **将复杂技术分解为单一技术的组合**: 如果一个功能是由2种以上技术组合而成，请将它拆分成两个基础技术研究。在基础技术研究成功通过单元测试之后，再把完成这个功能。例如：点击按钮之后弹出一个新的页面，这个功能可以分为两个功能，一个功能是按钮点击弹出一个空页面，另一个功能是包含预定元素的页面，最后再把两个功能组合。
+  - **研究先行**: 任何一个功能涉及的技术，先将该技术用研究的形式将功能定型，然后根据研究的成果，形成正式使用的代码或组件。
+
 
 ### 关键约束
 
-* 原生页面只注入“同步对比”按钮，其余逻辑通过 MessageNotifier（BroadcastChannel + postMessage）与主窗口通讯。
-* 主窗口为独立 tab，可 1/2/3/4/6 分栏布局；每栏对应一家 AI，栏内支持切换 AI、复制、折叠、分享、新建会话、输入对话。
-* 默认支持 8 种语言，UI 文案全部用 key 引用，i18n 表放附录。
-
-### 主干流程
-
-#### 阶段 1：脚本启动
-
-1. 延迟 3 秒 → 检测当前 URL → 匹配 AI供应商驱动（附录 B） → 注入按钮 “同步对比”
-2. 利用AI供应商驱动对原生页面的对话内容进行修饰，为每条 AI 回答追加悬浮工具栏（复制 / 折叠 / 隐藏 / 分享）。
-3. 按钮点击 → 若主窗口不存在则 window.open('multi-ai-sync-chat-window')；否则激活。
-4. 向主窗口发 create 消息：{url, tabId, config}。
-
-#### 阶段 2：主窗口渲染
-
-1. 读取 localStorage 配置（附录 C） → 渲染顶部栏（标题、语言、布局、配置、新对话） + 底部提示词栏。
-2. 根据布局数字（1/2/3/4/6）生成 div 网格；每个 div 内挂 内容块。
-3. 内容块 收到 create → 创建 iframe → 渲染标题栏与隐藏输入框。
-
-#### 阶段 3：双向同步
-
-1. 主窗口发送 chat 消息 → 原生页面填输入框并点击发送。
-2. 原生页面回答完成后发送 answer → 主窗口对应 内容块 渲染。
-3. 其余消息（config / thread / share）同理，见附录 D 协议。
-
-### AI 驱动映射表
-
-默认支持的ai提供商包括如下6个：
-
-* www.kimi.com/chat/
-* https://gemini.google.com/
-* https://chatgpt.com/
-* https://chat.deepseek.com/
-* https://x.com/i/grok
-* https://www.tongyi.com/
-
-页面和驱动的对应关系为：kimi → KimiPageDriver, gemini → GeminiPageDriver以此类推。提供通用页面策略GenericPageDriver存放共性，以及未来的新供应商支持。
-
-#### 选择器详情
-
-| 选择器类型 | GenericPageDriver | KimiPageDriver (继承自Generic) | GeminiPageDriver (继承自Generic) | ChatGPTPageDriver (继承自Generic) |
-| --- | --- | --- | --- | --- |
-| `inputArea` | `input[type="text"]`, `textarea`, `.ql-editor`, `.chat-input-editor` | `#prompt-textarea` | `.ql-editor` | `#prompt-textarea` |
-| `sendButton` | `button[type="submit"]`, `.send-button`, `.send-btn`, `button[aria-label="发送"]` | `.send-button` | `button[aria-label="发送"]`, `.send-button` | `[data-testid="send-button"]` |
-| `chatHistory` | `.chat-messages`, `.messages`, `#chat-area`, `.chat-history-scroll-container` | `.chat-messages-container`, `.history-part` | `.chat-history-scroll-container`, `.conversations-container` | | 
-| `messageItem` | `.message`, `.chat-message`, `.conversation-container`, `.message-content` | `.message-item`, `li` | `.conversation-container`, `.conversation` | |
-| `userMessage` | `.user-message`, `.segment-user`, `.user-query-container` | `.user-content` | `.query-text` | |
-| `aiMessage` | `.ai-message`, `.segment-assistant`, `.model-response-container` | `.assistant-message`, `.chat-content-item-assistant` | `.model-response-container` | |
-| `responseParagraph` | `.paragraph`, `div[class*="content"]`, `div[class*="response"]` | `.chat-name` | `.conversation-title` | |
-| `newChatButton` | `.new-chat-button`, `.new-conversation`, `button[data-test-id="new-chat-button"]` | `.new-chat-btn` | `button[data-test-id="new-chat-button"]` | |
-| `sessionTitle` | `h1.title`, `h2.session-title`, `.chat-header-content h2`, `.conversation-title` | `h2.session-title` | `h1.title` | |
+暂无
 
 ## 📝 开发规范
 
@@ -139,39 +83,8 @@ function MyClass(args) {
         // ... 方法实现
         return true;
     };
-
-    // 自动初始化
-    this.init();
 }
 ```
-
-### 通讯协议规范:
-
-- **消息格式**: 所有跨窗口通信使用 JSON 格式。
-- **消息路由**: 消息对象中必须包含 `tabId` 或 `url` 等字段，以确保主窗口能将消息正确路由到或识别出对应的 `ChatArea`。
-- **协议定义**: 
-    * create：原生窗口通知主窗口创建一个内容块，携带参数url为原生窗口的url，tabId为浏览器为原生窗口赋予的唯一名称，config为一个json，包含原生窗口中各种配置按钮的状态：登录用户名、联网模式、模型选择、长思考，以及其他ai专有的状态（如grok的X搜索开关等）
-    * chat：主窗口通知原生窗口增加一个问题，携带参数为chatId表示问题的编号，message包含用户输入的文字，原生窗口收到之后往输入内容区填写文字并模拟点击发送按钮。在接收到ai的回答之后，会产生answer消息发回给主窗口。
-    * answer：原生窗口通知主窗口有回答了，携带参数包括url、tabId、chatId，answerTime为回复日期时间，answer为回答的innerhtml内容
-    * config：主窗口通知原生窗口设置各种配置按钮的状态，携带参数为配置按钮名词和bool类型的开关值，参考create的config说明
-    * thread_create：主窗口通知原生窗口结束当前会话，并创建一个新会话。创建新会话之后会反向发送一个thread_return消息
-    * thread_return：原生窗口通知主窗口一个新会话创建完毕，参数跟create消息相同
-    * share_create：主窗口通知原生窗口创建一个对话信息的share链接，携带消息为chatId的数组。根据不同ai提供商的特性，可以执行整个会话共享、选择对话共享、如果只有一个chatId则单个对话共享等
-    * share_return：原生窗口通知主窗口
-
-### localStorage 结构
-
-* 存储 key 固定为 multi_ai_sync_config
-* 用如下json结构存储AI供应商的配置信息、布局信息和语言设置
-
-```json
-{providers: [{name,url},…], layout:3, lang:'zh'}
-```
-
-### 国际化
-
-* 默认支持多语言，包括英语、中文、法语、日语、朝鲜语、西班牙语、葡萄牙语、阿拉伯语
-* 根据浏览器当前语言切换，要注意阿拉伯语的从右向左的写作方式的支持。
 
 ## 🤖 AI 助手配置
 
@@ -183,75 +96,12 @@ function MyClass(args) {
 - **实用主义**: 提供的解决方案应是具体、完整且可直接应用的，符合项目现有的代码风格和规范。
 - **简洁明了**: 避免不必要的寒暄和冗长的解释，直奔主题。
 
-## 💡 常见任务示例
-### 示例1：添加对新 AI 网站的支持 (例如 claude.ai)
-**用户问题**: "我需要为 'claude.ai' 添加同步支持。"
-**期望回答**:
-好的。为了支持一个新的 AI 网站，我们需要创建一个新的“页面驱动 (PageDriver)”。这可以分为以下几步：
-
-1.  **创建驱动文件**: 在 `src/` 目录下创建一个新文件 `claude-page-driver.js`。
-2.  **实现驱动逻辑**: 在 `claude-page-driver.js` 中，创建一个 `ClaudePageDriver` 构造函数，并让它继承自 `GenericPageDriver`。然后，你需要实现或重写特定于 `claude.ai` 的方法，例如：
-    *   `getChatInput()`: 返回聊天输入框的 DOM 元素。
-    *   `getSendButton()`: 返回发送按钮的 DOM 元素。
-    *   `getLastResponseElement()`: 返回 AI 生成的最新回答所在的容器元素。
-    *   `getChatHistory()`: 获取并格式化历史聊天记录。
-3.  **注册新驱动**: 打开 `src/drivers.js` 文件，在驱动映射表中添加新的条目，将 `claude.ai` 的 URL 模式映射到你刚刚创建的 `ClaudePageDriver`。
-    ```javascript
-    // src/drivers.js
-    ...
-    'chat.lmsys.org':        require('./vicuna-page-driver'),
-    'www.claude.ai':         require('./claude-page-driver'), // 新增此行
-    '*':                     require('./generic-page-driver'),
-    ...
-    ```
-4.  **更新默认配置**: （可选）在 `main-window-controller.js` 中找到默认的 `providers` 列表，并将 Claude 添加进去，这样新用户在安装脚本后就能直接使用。
-
-这种基于驱动的架构将特定网站的逻辑隔离开来，使得添加新网站变得非常简单，而无需改动核心代码。
-
-### 在JS中生成HTML
-
-**用户问题**：我需要用js生成一个弹出式窗口包含特定功能的html
-
-**期望回答**：
-
-好的，为了生成一个新的html页面，我们需要包含如下的步骤：
-
-1. 为页面特定的js创建特有的文件，一般命名为 `ABC_Script.js`，其中包含了所有该窗口需要的函数和类定义，并为其生成测试用例，确保工作正确。
-
-2. 为页面创建html生成的代码片段，一般是用json结构描述html，然后调用`Utils.toHtml()`生成，示例代码：
-
-   ```javascript
-   const abc_html = Utils.toHtml({
-     head:{
-       title:"abc"
-     },
-     body:{
-       'div#a1':{
-         '@style': "color:red",
-         'span':"hello!"
-       },
-       'div':{
-         '@id': 'a2',
-         '@text': "world!"
-       },
-       'script': ABC_Script.toString()
-     }
-   });
-   ```
-
-   
-
-3. 在当前js脚本文件中创建一个专门的function用于生成窗口`function createABCWin(){...}`，把以上的代码包含进去
-
-
 
 ## 重要文件和目录
 - `src/`: 项目所有核心逻辑的源代码。
 - `src/index.js`: 脚本的入口文件，负责检测页面并加载对应的驱动。
-- `src/drivers.js`: AI 提供商网站 URL 与其对应 PageDriver 的映射关系。
-- `src/main-window-controller.js`: 主窗口的布局、事件和核心控制逻辑。
-- `src/chat-area.js`: 主窗口中单个对话区域的控制器。
-- `src/generic-page-driver.js`: 所有特定页面驱动的基类，包含通用逻辑。
+- `research/`: 目录中存放一些技术研究的源代码
+- `tests/`: 存放jest测试用例的代码
 - `userscript.meta.js`: 油猴脚本的元数据，定义了脚本名称、匹配的网址、权限等。
 - `prompt.md`: 项目的需求和设计蓝图，是所有功能开发的“真相之源”。
 
