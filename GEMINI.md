@@ -101,9 +101,10 @@ function MyClass(args) {
 - `src/`: 项目所有核心逻辑的源代码。
 - `src/index.js`: 脚本的入口文件，负责检测页面并加载对应的驱动。
 - `research/`: 目录中存放一些技术研究的源代码
+- `design/`: 目录中存放所有的设计文档，包括总体架构设计。文件命名和模块同名的markdown文件，例如`chat-area.md`
 - `tests/`: 存放jest测试用例的代码
 - `userscript.meta.js`: 油猴脚本的元数据，定义了脚本名称、匹配的网址、权限等。
-- `prompt.md`: 项目的需求和设计蓝图，是所有功能开发的“真相之源”。
+- `prompt.md`: 存放值得记录的对话历史，主要是用户侧的输入文字，便于复盘。
 
 ## 忽略文件
 - `node_modules/`
