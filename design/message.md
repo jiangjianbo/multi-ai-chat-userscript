@@ -15,8 +15,32 @@
 ### 核心功能
 
 -   `send(type, data)`: 向通信频道广播一个指定类型的消息，并附带数据。
--   `register(target)`: 注册一个对象作为消息监听器。该方法会检查 `target` 对象的所有属性，将所有符合 `onMsg*` 命名约定的方法注册为对应消息类型的处理器。
--   `unregister(target)`: 从消息监听器中移除一个对象。
+-   `register(receiverId, listener)`: 注册一个对象作为消息监听器。该方法会检查 `listener` 对象的所有属性，将所有符合 `onMsg*` 命名约定的方法注册为对应消息类型的处理器。
+-   `unregister(receiverId)`: 从消息监听器中移除一个对象。
+
+### 消息定义
+
+一个完整的消息包含如下内容：
+
+* 消息类型：这个体现在`send`函数的`type`参数
+* 消息的发送者：可选，一般会放在`send`函数的`data.senderId`参数中，如果缺失一般表示无需对话和回复的消息。
+* 消息的接收者：可选，一般会放在`send`函数的`data.receiverId`参数，如果缺失表示广播消息，会发送给所有的接收者。
+* 消息的附加数据：可选，一般会放在`send`函数的`data`参数的其他字段中，由消息的接收者解释和处理。
+
+### 消息接收者的注册逻辑
+
+消息对象创建之后，就可以接收响应各种消息了，外部消息的接收者如果要正确接收到消息，需要把自己注册到`Message`中，注册逻辑如下：
+
+1. 消息接收者调用`register(receiverId, listener)`注册消息监听器，这个消息监听器一般是接收者自己，也不排除是专门创建的接收对象。
+2. `Message`对象扫描注册的`listener`的成员，找到一个`onMsg`开头的函数，并将这些函数提取，结合`type`消息类型、`receiverId`一并保留注册
+3. `Message`对象继续扫描，直到扫描完成，则该次注册完成
+
+### 消息的接收逻辑
+
+消息对象在收到一个消息之后，按照如下逻辑寻找消息的接收者：
+
+1. 先判断消息的`type`，然后提取消息的`receiverId`匹配的所有注册信息，把对应的接收函数找到
+2. 循环调用这些接收函数，把消息的`data`数据传递给它处理
 
 ## 2. 过程视图 (Process View)
 
@@ -60,7 +84,7 @@ sequenceDiagram
  */
 function Message(channelName) {
     this.channel = new BroadcastChannel(channelName);
-    this.listeners = new Set();
+    this.listeners = new Map(); // 使用type和receiverId两级的树状结构
 
     /**
      * @description 广播消息。
@@ -71,13 +95,14 @@ function Message(channelName) {
 
     /**
      * @description 注册一个监听器对象。
-     * @param {object} target - 包含 onMsg* 方法的对象。
+     * @param {string} receiverId - 对象的接收id。
+     * @param {object} listener - 包含 onMsg* 方法的对象。
      */
-    this.register = function(target) { /* ... */ };
+    this.register = function(receiverId, listener) { /* ... */ };
 
     /**
      * @description 注销一个监听器对象。
-     * @param {object} target - 已注册的对象。
+     * @param {string|object} target - receiverId或者listener对象
      */
     this.unregister = function(target) { /* ... */ };
 }

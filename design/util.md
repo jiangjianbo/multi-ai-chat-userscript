@@ -13,7 +13,7 @@
 -   **DOM 操作**: 提供类似于 jQuery 的选择器函数，用于快速查询和操作 DOM 元素。
     -   `$(selector, parent)`: 查询并返回匹配选择器的第一个元素。
     -   `$$(selector, parent)`: 查询并返回匹配选择器的所有元素组成的 `NodeList`。
--   **HTML 生成**: 提供将特定 JSON 结构转换为 HTML 元素的工具。
+-   **HTML 生成**: 提供将特定 JSON 结构转换为 HTML 元素的工具，该函数适用于小批量的HTML代码。
     -   `toHtml(json)`: 根据项目定义的 JSON 格式递归创建 HTML 元素。这是项目 **严禁拼接 HTML 字符串** 规范的技术实现核心。
 -   **浏览器/油猴 API 封装**: 包装常用的 Web API 和 Greasemonkey API，以便于在项目其他部分统一调用和进行单元测试。
 
@@ -166,4 +166,29 @@ function ChatArea() {
 
 ## 附录
 
-无附录
+### 关于HTML代码生成的原则
+
+在小批量的代码生成中，一般建议用`toHtml`函数。这个“小批量”的意思是body内的元素，层次嵌套不超过3层。
+
+除此之外的情况下，如果要生成HTML，请直接使用字符串。尤其是如下几种情况：
+
+* 要生成整体的HTML页面的时候，可以灵活运用嵌入变量。
+* 有大量的css要嵌入
+
+示例如下：
+
+```javascript
+// 生成完整HTML页面
+const page = `
+    <html>
+        <head><title>Hello!</title></head>
+        <body>
+        	${util.toHtml(body_src)}
+        </body>
+        <script>${ABC_Script.toString()}</script>
+    </html>
+`;
+```
+
+
+
