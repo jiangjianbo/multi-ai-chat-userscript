@@ -56,7 +56,7 @@ describe('PageController', () => {
 
         // Mock window location
         delete window.location;
-        window.location = { hostname: 'test.com' };
+        window.location = { hostname: 'test.com', href: 'http://localhost/' };
     });
 
     test('init should initialize driver, UI, and listeners', () => {

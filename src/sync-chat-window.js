@@ -6,6 +6,7 @@ const I18n = require('./i18n');
 const Storage = require('./storage');
 
 const WINDOW_NAME = 'multi-ai-sync-chat-window';
+const util = new Util();
 
 /**
  * @description 主窗口的检查和创建类
@@ -18,7 +19,7 @@ function SyncChatWindow() {
      * @returns {boolean} true表示已经存在，false表示不存在
      */
     this.exist = function() {
-        return this.window && !this.window.closed;
+        return !!(this.window && !this.window.closed);
     };
 
     /**
@@ -29,7 +30,7 @@ function SyncChatWindow() {
         const doc = win.document;
         const embeddedCode = `
             // Embedded dependencies
-            const Util = (${Util.toString()})();
+            const Util = ${Util.toString()};
             const Storage = ${Storage.toString()};
             const Config = ${Config.toString()};
             const I18n = ${I18n.toString()};
@@ -39,6 +40,7 @@ function SyncChatWindow() {
 
             // App Entry Point
             document.addEventListener('DOMContentLoaded', () => {
+                const util = new Util();
                 const storage = new Storage();
                 const config = new Config({ storage });
                 const i18n = new I18n({ config });
@@ -48,7 +50,7 @@ function SyncChatWindow() {
                     message,
                     config,
                     i18n,
-                    util: Util,
+                    util: util,
                     ChatArea
                 });
                 controller.init();
@@ -56,7 +58,7 @@ function SyncChatWindow() {
             });
         `;
 
-        const html = Util.toHtml({
+        const html = util.toHtml({
             tag: 'html',
             children: [
                 { tag: 'head',

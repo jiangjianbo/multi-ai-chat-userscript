@@ -2,7 +2,9 @@
   "scripts": {
     "build": "webpack --config webpack.userscript.js",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "research:build": "webpack --config webpack.research.js",
+    "research:watch": "webpack --config webpack.research.js --watch"
   },
   "devDependencies": {
     "@babel/core": "^7.22.0",

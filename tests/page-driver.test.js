@@ -1,4 +1,4 @@
-const { GenericPageDriver, driverFactory } = require('../src/page-driver');
+const { GenericPageDriver, KimiPageDriver, driverFactory } = require('../src/page-driver');
 
 // Mock a chat page DOM
 const setupDOM = () => {
@@ -158,7 +158,7 @@ describe('PageDriver Module', () => {
     describe('driverFactory', () => {
         test('should return a specific driver for a known hostname', () => {
             const kimiDriver = driverFactory('kimi.ai');
-            expect(kimiDriver.constructor.name).toBe('KimiPageDriver');
+            expect(kimiDriver instanceof KimiPageDriver).toBe(true);
         });
 
         test('should return GenericPageDriver for an unknown hostname', () => {

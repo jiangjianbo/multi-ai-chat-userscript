@@ -23,6 +23,8 @@ const Util = require('./util');
 
         const i18n = new I18n({ config });
 
+        const util = new Util();
+
         const message = new Message('multi-ai-sync-chat-channel');
 
         // 2. Initialize the main controller for the page
@@ -30,7 +32,7 @@ const Util = require('./util');
             message: message,
             config: config,
             i18n: i18n,
-            util: Util
+            util: util
         });
 
         // 3. Start the application logic on the page

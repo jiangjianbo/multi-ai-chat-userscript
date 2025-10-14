@@ -1,26 +1,36 @@
 const { SyncChatWindow, MainWindowController } = require('../src/sync-chat-window');
 
-// --- Mocks for SyncChatWindow tests ---
-const mockUtil = { toString: () => 'function Util(){}' };
-const mockChatArea = { toString: () => 'function ChatArea(){}' };
-const mockMessage = { toString: () => 'function Message(){}' };
-const mockConfig = { toString: () => 'function Config(){}' };
-const mockI18n = { toString: () => 'function I18n(){}' };
-const mockStorage = { toString: () => 'function Storage(){}' };
+// --- Mocks ---
 
-// Replace requires in the module scope for SyncChatWindow to use mocks
-jest.mock('./util', () => mockUtil, { virtual: true });
-jest.mock('./chat-area', () => mockChatArea, { virtual: true });
-jest.mock('./message', () => mockMessage, { virtual: true });
-jest.mock('./config', () => mockConfig, { virtual: true });
-jest.mock('./i18n', () => mockI18n, { virtual: true });
-jest.mock('./storage', () => mockStorage, { virtual: true });
+// Mock for Util. We define the factory inline to avoid hoisting issues with jest.mock
+jest.mock('../src/util', () => {
+    const mockUtilInstance = {
+        toHtml: jest.fn(json => ({ outerHTML: '<html>mocked</html>' }))
+    };
+    const mockUtilConstructor = jest.fn(() => mockUtilInstance);
+    mockUtilConstructor.toString = () => 'function Util() { /* mocked */ }';
+    return mockUtilConstructor;
+});
 
+// Mocks for other dependencies
+jest.mock('../src/chat-area', () => ({ toString: () => 'function ChatArea(){}' }), { virtual: true });
+jest.mock('../src/message', () => ({ toString: () => 'function Message(){}' }), { virtual: true });
+jest.mock('../src/config', () => ({ toString: () => 'function Config(){}' }), { virtual: true });
+jest.mock('../src/i18n', () => ({ toString: () => 'function I18n(){}' }), { virtual: true });
+jest.mock('../src/storage', () => ({ toString: () => 'function Storage(){}' }), { virtual: true });
+
+// We need to get the mock constructor after mocking it
+const Util = require('../src/util');
 
 describe('SyncChatWindow', () => {
     let mockWindow;
 
     beforeEach(() => {
+        // Reset mocks before each test
+        const utilInstance = Util(); // Get the instance to reset its methods
+        utilInstance.toHtml.mockClear();
+        Util.mockClear();
+
         mockWindow = {
             document: {
                 body: { innerHTML: '' },
@@ -42,14 +52,24 @@ describe('SyncChatWindow', () => {
         expect(scw.exist()).toBe(true);
     });
 
-    test('2. createWindow() should write a full HTML structure to the doc', () => {
+    test('2. createWindow() should write a full HTML structure with correct embedded code', () => {
         const scw = new SyncChatWindow();
         scw.createWindow(mockWindow);
+
+        const utilInstance = Util();
+        // Check that the mocked toHtml was called
+        expect(utilInstance.toHtml).toHaveBeenCalledTimes(1);
+        
+        // Check that the correct HTML was written to the document
         expect(mockWindow.document.write).toHaveBeenCalledTimes(1);
         const writtenHtml = mockWindow.document.write.mock.calls[0][0];
-        expect(writtenHtml).toContain('<html');
-        expect(writtenHtml).toContain('id="app-container"');
-        expect(writtenHtml).toContain('const MainWindowController');
+        expect(writtenHtml).toBe('<html>mocked</html>');
+
+        // Check the content of the embedded script
+        const embeddedCode = utilInstance.toHtml.mock.calls[0][0].children[1].children[1].text;
+        expect(embeddedCode).toContain('const Util = function Util() { /* mocked */ }');
+        expect(embeddedCode).toContain('const util = new Util();');
+        expect(embeddedCode).toContain('util: util,');
     });
 });
 

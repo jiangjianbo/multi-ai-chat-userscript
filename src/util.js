@@ -99,4 +99,4 @@ function Util() {
     this.$$ = $$;
 }
 
-module.exports = new Util();
+module.exports = Util;

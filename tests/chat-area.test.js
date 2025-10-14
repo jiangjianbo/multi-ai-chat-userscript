@@ -1,6 +1,9 @@
 const ChatArea = require('../src/chat-area');
 const Util = require('../src/util'); // Use the real Util for rendering
 
+// JSDOM doesn't implement scrollIntoView, so we mock it.
+Element.prototype.scrollIntoView = jest.fn();
+
 // Helper to dispatch events
 function fireEvent(element, eventName) {
     const event = new MouseEvent(eventName, { bubbles: true, cancelable: true });
@@ -18,13 +21,15 @@ describe('ChatArea', () => {
         container = document.createElement('div');
         document.body.appendChild(container);
 
+        const util = new Util();
+
         // Mock the main controller
         mockMainController = {
             removeChatArea: jest.fn(),
             message: {
                 send: jest.fn(),
             },
-            util: Util, // Provide the real Util
+            util: util, // Provide an instance of Util
         };
 
         chatArea = new ChatArea(mockMainController, 'test-id', 'http://test.com', container);

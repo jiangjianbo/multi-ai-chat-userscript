@@ -1,4 +1,5 @@
-const util = require('./util');
+const Util = require('./util');
+const util = new Util();
 
 /**
  * @description 页面驱动的抽象基类。
