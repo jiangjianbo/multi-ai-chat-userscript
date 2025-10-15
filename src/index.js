@@ -1,45 +1,25 @@
-const Storage = require('./storage');
-const Config = require('./config');
-const I18n = require('./i18n');
-const Message = require('./message');
+const MainWindowController = require('./sync-chat-window');
 const PageController = require('./page-controller');
-const Util = require('./util');
 
-(function() {
-    'use strict';
+/**
+ * @description The entry point of the userscript.
+ * It determines whether the current page is the main window or a target chat page,
+ * and initializes the corresponding controller.
+ */
+function main() {
+    console.log('Multi AI Chat Userscript loaded.');
 
-    // Ensure the script runs after the page is fully loaded
-    window.addEventListener('load', () => {
-        // 1. Initialize core services (singletons for this page context)
-        const storage = new Storage('multi-ai-chat-');
-        
-        const config = new Config({
-            storage: storage,
-            defaultConfig: {
-                layout: 2,
-                // Add other default configurations here
-            }
-        });
+    // As per design/architect.md, window.name is used to identify the main window.
+    if (window.name === 'multi-ai-chat-main-window') {
+        console.log('Initializing MainWindowController...');
+        const mainWindowController = new MainWindowController();
+        mainWindowController.init();
+    } else {
+        console.log('Initializing PageController...');
+        const pageController = new PageController();
+        pageController.init();
+    }
+}
 
-        const i18n = new I18n({ config });
-
-        const util = new Util();
-
-        const message = new Message('multi-ai-sync-chat-channel');
-
-        // 2. Initialize the main controller for the page
-        const pageController = new PageController({
-            message: message,
-            config: config,
-            i18n: i18n,
-            util: util
-        });
-
-        // 3. Start the application logic on the page
-        try {
-            pageController.init();
-        } catch (e) {
-            console.error('[Multi-AI Sync Chat] Initialization failed:', e);
-        }
-    });
-})();
+// Run the main function
+main();

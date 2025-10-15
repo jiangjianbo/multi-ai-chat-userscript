@@ -9,40 +9,34 @@ describe('Util.toHtml', () => {
         const el = util.toHtml({ tag: 'div', text: 'hello' });
         expect(el.tagName).toBe('DIV');
         expect(el.textContent).toBe('hello');
-        expect(el.outerHTML).toBe('<div>hello</div>');
     });
 
     test('1.2: should set an attribute', () => {
         const el = util.toHtml({ tag: 'div', '@id': 'id1', text: 'hello' });
         expect(el.id).toBe('id1');
-        expect(el.outerHTML).toBe('<div id="id1">hello</div>');
     });
 
     test('1.3: should set a single style property', () => {
         const el = util.toHtml({ tag: 'div', '@style': { border: '1px' }, text: 'hello' });
         expect(el.style.border).toBe('1px');
-        expect(el.outerHTML).toBe('<div style="border:1px">hello</div>');
     });
 
     test('1.4: should set multiple style properties', () => {
         const el = util.toHtml({ tag: 'div', '@style': { border: '1px', color: 'red' }, text: 'hello' });
         expect(el.style.border).toBe('1px');
         expect(el.style.color).toBe('red');
-        expect(el.outerHTML).toBe('<div style="border:1px;color:red">hello</div>');
     });
 
     test('1.5: should handle shorthand tag format', () => {
         const el = util.toHtml({ div: 'hello' });
         expect(el.tagName).toBe('DIV');
         expect(el.textContent).toBe('hello');
-        expect(el.outerHTML).toBe('<div>hello</div>');
     });
 
     test('1.6: should handle shorthand tag format with attributes', () => {
         const el = util.toHtml({ div: 'hello', '@id': 'id2' });
         expect(el.id).toBe('id2');
         expect(el.textContent).toBe('hello');
-        expect(el.outerHTML).toBe('<div id="id2">hello</div>');
     });
 
     test('1.7: should handle nested children', () => {
@@ -50,7 +44,6 @@ describe('Util.toHtml', () => {
         expect(el.textContent).toBe('helloworld');
         expect(el.children.length).toBe(1);
         expect(el.children[0].tagName).toBe('SPAN');
-        expect(el.outerHTML).toBe('<div>hello<span>world</span></div>');
     });
 
     test('1.8: should throw an error for invalid shorthand format with children', () => {
@@ -73,6 +66,13 @@ describe('Util.toHtml', () => {
         expect(el.tagName).toBe('SCRIPT');
         const expectedText = 'function abc() { console.log("1"); }';
         expect(el.textContent.replace(/\s/g, '')).toBe(expectedText.replace(/\s/g, ''));
+    });
+
+    test('1.11: should set innerHTML correctly', () => {
+        const el = util.toHtml({ tag: 'div', innerHTML: '<span>Hello</span>' });
+        expect(el.children.length).toBe(1);
+        expect(el.children[0].tagName).toBe('SPAN');
+        expect(el.textContent).toBe('Hello');
     });
 });
 

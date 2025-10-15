@@ -1,4 +1,3 @@
-
 /**
  * @description 根据 JSON 对象创建 HTML 元素。
  * @param {object} json - 描述 HTML 结构的 JSON 对象。
@@ -9,12 +8,12 @@ function toHtml(json) {
         return document.createTextNode(json);
     }
 
-    let { tag, text, children, child, ...attrs } = json;
+    let { tag, text, innerHTML, children, child, ...attrs } = json;
 
     // 处理简写形式, e.g., { div: 'hello', '@id': 'my-div' }
     if (!tag) {
         const firstKey = Object.keys(json)[0];
-        if (firstKey && !['@', 'on', 'text', 'children', 'child'].some(prefix => firstKey.startsWith(prefix))) {
+        if (firstKey && !['@', 'on', 'text', 'innerHTML', 'children', 'child'].some(prefix => firstKey.startsWith(prefix))) {
             tag = firstKey;
             text = json[tag];
             delete attrs[tag];
@@ -30,7 +29,9 @@ function toHtml(json) {
 
     const element = document.createElement(tag);
 
-    if (text) {
+    if (innerHTML) {
+        element.innerHTML = innerHTML;
+    } else if (text) {
         if (tag.toLowerCase() === 'script' && typeof text === 'function') {
             element.textContent = text.toString();
         } else {
