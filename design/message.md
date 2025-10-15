@@ -125,9 +125,7 @@ function Message(channelName) {
 7.  它发现 `InjectionController` 有一个名为 `onMsgChat` 的方法，于是调用 `injectionController.onMsgChat({ content: '你好世界' })`。
 8.  `InjectionController` 随后调用其内部的 `PageDriver` 将消息发送到对应的 AI 聊天界面中。
 
-## **研究工作**
 
-本模块比较简单，无特别研究工作
 
 ## **测试用例设计**
 

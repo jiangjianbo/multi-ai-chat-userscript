@@ -2,6 +2,8 @@
 
 本文档遵循 [../GEMINI.MD](../GEMINI.MD) 和 [architect.md](./architect.md) 中的规范。
 
+在生成代码的时候，可以参考[../research/main-window.html]()中的研究成果代码。
+
 ## 1. 逻辑视图 (Logical View)
 
 ### 模块职责
@@ -171,10 +173,6 @@ function MainWindowController(args) {
 7.  用户在主窗口底部的全局输入框提问，`MainWindowController` 将 `chat` 消息广播出去，两个 `PageController` 都会收到并各自驱动自己的页面进行回答。
 
 
-
-## **研究工作**
-
-本模块比较重要，需要进行一些基础技术的研究。本系列研究生成的代码，需要在`webpack`中进行处理，将代码封装成油猴的脚本，使得开发人员可以直观感知和在浏览器中调试功能的完整性。本研究成果可以直接使用在注入的html中。
 
 ### 窗口创建
 

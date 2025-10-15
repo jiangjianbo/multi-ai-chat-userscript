@@ -196,9 +196,7 @@ function GenericPageDriver() {
 5.  当 `PageController` 收到来自主窗口的 `chat` 消息时，它会调用 `this.driver.setPrompt('...')`然后调用send。
 6.  `KimiPageDriver` 的 `setPrompt` 方法使用它自己定义的 `selectors`（例如 `input#kimi-input`）来找到正确的输入框并执行操作。
 
-## **研究工作**
 
-本模块比较简单，无特别研究工作。每个AI提供商的页面需要开发人员手工设置。
 
 ## **测试用例设计**
 

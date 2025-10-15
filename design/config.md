@@ -114,9 +114,7 @@ function Config(args) {
 5.  `MainWindowController` 根据新的配置值，重新渲染其内容区域的布局。
 6.  用户刷新主窗口页面后，`MainWindowController` 在初始化时会通过 `config.get('layout')` 获取到之前保存的 `4`，并直接以“4列”布局启动，而不是默认布局。
 
-## **研究工作**
 
-本模块比较简单，无特别研究工作
 
 ## **测试用例设计**
 

@@ -2,6 +2,8 @@
 
 本文档遵循 [../GEMINI.MD](../GEMINI.MD) 和 [architect.md](./architect.md) 中的规范。
 
+在生成代码的时候，可以参考[../research/chatarea.html]()中的研究成果代码。
+
 ## 1. 逻辑视图 (Logical View)
 
 ### 模块职责
@@ -150,9 +152,7 @@ function ChatArea(mainController, id, url, container) {
 5.  `handleAnswer` 方法内部调用 `this.addMessage(content, 'answer')`。
 6.  `addMessage` 方法创建一个新的 `div` 元素，将答案的 Markdown 文本转换为 HTML，然后将其追加到该 `ChatArea` 的对话内容区域，并自动滚动到底部。
 
-## **研究工作**
 
-本模块比较重要，需要进行一些基础技术的研究。本系列研究生成的代码，需要在`webpack`中进行处理，将代码封装成油猴的脚本，使得开发人员可以直观感知和在浏览器中调试功能的完整性。本研究成果可以直接使用在注入的html中。
 
 ### 区域创建
 
