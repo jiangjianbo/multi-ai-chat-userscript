@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Controller Injection Research</title>
+    <style>
+        :root {
+            --border-color: #e5e5e5;
+            --background-color: #f7f7f8;
+            --sidebar-bg: #202123;
+            --text-color: #333;
+            --text-light: #fff;
+            --toolbar-bg: rgba(240, 240, 240, 0.9);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background-color: var(--background-color);
+        }
+        /* Mock Page Layout */
+        .mock-sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            color: var(--text-light);
+            padding: 20px;
+        }
+        .mock-main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative; /* For injected elements */
+        }
+        .mock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: #fff;
+        }
+        .mock-chat-area {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .mock-input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background: #fff;
+        }
+        .mock-input-area input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+
+        /* --- Injected Elements --- */
+
+        /* 1. Sync Button */
+        .injected-sync-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 20px;
+        }
+        .injected-sync-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* 2. Q&A Toolbar */
+        .mock-qna-block {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .mock-qna-block:hover .injected-qna-toolbar {
+            opacity: 1;
+        }
+        .injected-qna-toolbar {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: var(--toolbar-bg);
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 3px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            display: flex;
+            gap: 5px;
+        }
+        .injected-qna-toolbar button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .injected-qna-toolbar button:hover {
+            background: #ddd;
+        }
+
+        /* 3. Index Toolbar */
+        .injected-index-toolbar {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            width: 40px;
+            background: var(--toolbar-bg);
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .injected-index-toolbar .index-button {
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .injected-index-toolbar .index-button:hover {
+            background-color: #ccc;
+        }
+        .injected-index-toolbar a {
+            text-decoration: none;
+            color: #333;
+        }
+
+    </style>
+</head>
+<body>
+
+<aside class="mock-sidebar">
+    <h3>History</h3>
+    <ul>
+        <li>Conversation 1</li>
+        <li>Conversation 2</li>
+    </ul>
+    <button>+ New Chat</button>
+</aside>
+
+<main class="mock-main-content">
+    <header class="mock-header">
+        <h2>Model XYZ</h2>
+        <!-- 1. Injected Sync Button -->
+        <button class="injected-sync-button">Start Sync</button>
+    </header>
+
+    <div class="mock-chat-area" id="chat-area">
+        <div class="mock-qna-block">
+            <p>This is the user's first question.</p>
+            <!-- 2. Injected Q&A Toolbar -->
+            <div class="injected-qna-toolbar">
+                <button title="Collapse">&#9660;</button>
+                <button title="Copy">&#128203;</button>
+            </div>
+        </div>
+        <div class="mock-qna-block" id="answer-1">
+            <p>This is the AI's first answer. It provides some details and context.</p>
+            <div class="injected-qna-toolbar">
+                <button title="Collapse">&#9660;</button>
+                <button title="Copy">&#128203;</button>
+            </div>
+        </div>
+        <div class="mock-qna-block">
+            <p>Here is a follow-up question from the user.</p>
+            <div class="injected-qna-toolbar">
+                <button title="Collapse">&#9660;</button>
+                <button title="Copy">&#128203;</button>
+            </div>
+        </div>
+        <div class="mock-qna-block" id="answer-2">
+            <p>The AI gives a second, more elaborate answer. This is to demonstrate the scrolling capability of the index toolbar. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante.</p>
+            <div class="injected-qna-toolbar">
+                <button title="Collapse">&#9660;</button>
+                <button title="Copy">&#128203;</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mock-input-area">
+        <input type="text" placeholder="Ask a follow-up...">
+    </footer>
+
+    <!-- 3. Injected Index Toolbar -->
+    <div class="injected-index-toolbar">
+        <div class="index-button" title="Expand All">E</div>
+        <div class="index-button" title="Collapse All">C</div>
+        <a href="#answer-1" class="index-button">1</a>
+        <a href="#answer-2" class="index-button">2</a>
+    </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Smooth scrolling for index links
+    document.querySelectorAll('.injected-index-toolbar a').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            const chatArea = document.getElementById('chat-area');
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                chatArea.scrollTo({
+                    top: targetElement.offsetTop - 20, // offset for padding
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+
+    // Toolbar button dummy functionality
+    document.querySelectorAll('.injected-qna-toolbar button, .injected-sync-button').forEach(button => {
+        button.addEventListener('click', () => {
+            alert(`Button '${button.title || button.textContent}' clicked.`);
+        });
+    });
+
+    console.log('Page Controller research page initialized.');
+});
+</script>
+
+</body>
+</html>

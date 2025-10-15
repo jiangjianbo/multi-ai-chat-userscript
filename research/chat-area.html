@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatArea Research (Final Prototype)</title>
+    <style>
+        :root {
+            --border-color: #ccc;
+            --background-color: #f9f9f9;
+            --index-width: 45px;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #e5e5e5;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .chat-area-container {
+            width: 100%;
+            max-width: 500px;
+            height: 80vh;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--background-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        /* Title Bar & Dropdowns */
+        .chat-area-title { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border-color); background-color: #fff; position: relative; }
+        .title-left, .title-right { display: flex; align-items: center; gap: 12px; }
+        .title-button { cursor: pointer; font-size: 18px; padding: 5px; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+        .title-button:hover { background-color: #eee; }
+        .pin-button .icon { transition: transform 0.2s ease; display: inline-block; }
+        .pin-button.pinned .icon { transform: rotate(-45deg); color: #007bff; }
+        .model-selector, .params-selector { position: relative; }
+        .model-name, .params-button { cursor: pointer; padding: 5px 8px; border-radius: 5px; font-size: 14px; }
+        .model-name { font-weight: bold; }
+        .custom-dropdown { display: none; position: absolute; top: calc(100% + 5px); right: 0; background-color: #fff; border: 1px solid var(--border-color); border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 110; padding: 10px; min-width: 200px; }
+        .custom-dropdown.model-dropdown { left: 0; right: auto; min-width: 120px; padding: 5px 0; }
+        .custom-dropdown.visible { display: block; }
+        .model-option { padding: 8px 15px; cursor: pointer; font-size: 14px; }
+        .model-option:hover { background-color: #eee; }
+        .param-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .param-item:last-child { margin-bottom: 0; }
+        .param-item label { font-size: 14px; margin-right: 10px; }
+        .toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(18px); }
+        .param-item select { width: 100%; padding: 5px; border-radius: 4px; border: 1px solid var(--border-color); }
+
+        /* Main, Index, Conversation, Input */
+        .chat-area-main { flex-grow: 1; overflow: hidden; position: relative; transition: padding-bottom 0.3s ease; }
+        .chat-area-index { position: absolute; top: 0; left: 0; height: 100%; width: var(--index-width); padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.7); backdrop-filter: blur(2px); opacity: 0.85; border-right: 1px solid var(--border-color); }
+        .index-button { cursor: pointer; width: 24px; height: 24px; border-radius: 4px; background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; }
+        .index-button:hover { background-color: #ccc; }
+        .index-item a { font-size: 14px; color: #666; text-decoration: none; }
+        .chat-area-conversation { height: 100%; padding: 20px 20px 20px calc(var(--index-width) + 10px); overflow-y: auto; box-sizing: border-box; scroll-behavior: smooth; }
+        .message-bubble { max-width: 90%; padding: 10px 15px; border-radius: 15px; margin-bottom: 15px; position: relative; transition: all 0.3s ease; }
+        .message-bubble.question { background-color: #dcf8c6; margin-left: auto; }
+        .message-bubble.answer { background-color: #fff; margin-right: auto; border: 1px solid var(--border-color); }
+        .message-bubble.answer.collapsed > .bubble-content { max-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .input-placeholder { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 80px; height: 30px; border-radius: 15px; background-color: rgba(0, 0, 0, 0.4); color: white; display: flex; justify-content: center; align-items: center; font-size: 12px; cursor: pointer; pointer-events: all; transition: all 0.3s ease; z-index: 20; }
+        .input-placeholder.hidden { opacity: 0; transform: translateX(-50%) scale(0.5); visibility: hidden; }
+        .chat-area-input { box-sizing: border-box; position: absolute; bottom: 0; left: 0; width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px; padding-left: calc(var(--index-width) + 10px); background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(5px); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 25; opacity: 0; visibility: hidden; transform: translateY(100%); transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease; }
+        .chat-area-input.visible { opacity: 1; visibility: visible; transform: translateY(0); }
+        .chat-area-input.docked { background-color: #fff; }
+        .chat-area-input textarea { flex-grow: 1; border: 1px solid var(--border-color); border-radius: 5px; padding: 8px; font-size: 14px; resize: none; }
+        .chat-area-input button { flex-shrink: 0; width: 36px; height: 36px; border: none; background-color: #007bff; color: white; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; }
+    </style>
+</head>
+<body>
+
+<div class="chat-area-container"></div>
+<div class="chat-area-container"></div>
+
+<script>
+function ChatArea(container) {
+    this.container = container;
+
+    this.init = function(instanceData) {
+        this.container.innerHTML = this.render(instanceData);
+        this.cacheDOMElements();
+        this.initEventListeners();
+    };
+
+    this.render = function(data) {
+        const answers = data.conversation.filter(msg => msg.type === 'answer');
+        
+        const indexHtml = answers.map((ans, i) => 
+            `<div class="index-item"><a href="#answer-${data.id}-${i}">${i + 1}</a></div>`
+        ).join('');
+
+        const conversationHtml = data.conversation.map(msg => {
+            let id = '';
+            if (msg.type === 'answer') {
+                const answerIndex = answers.indexOf(msg);
+                id = `id="answer-${data.id}-${answerIndex}"`;
+            }
+            return `<div class="message-bubble ${msg.type}" ${id}><div class="bubble-content">${msg.content}</div></div>`;
+        }).join('');
+
+        return `
+        <div class="chat-area-title">
+            <div class="title-left">
+                <div class="model-selector">
+                    <div class="model-name">${data.modelName} &#9662;</div>
+                    <div class="custom-dropdown model-dropdown">
+                        <div class="model-option" data-value="Gemini">Gemini</div>
+                        <div class="model-option" data-value="ChatGPT">ChatGPT</div>
+                        <div class="model-option" data-value="Kimi">Kimi</div>
+                    </div>
+                </div>
+                <div class="title-button new-session-button" title="New Session">&#10133;</div>
+            </div>
+            <div class="title-right">
+                <div class="params-selector">
+                    <div class="title-button params-button" title="Parameters">&#9881;</div>
+                    <div class="custom-dropdown params-dropdown">
+                        <div class="param-item"><label>Web Access</label><label class="toggle-switch"><input type="checkbox" ${data.params.webAccess ? 'checked' : ''}><span class="slider"></span></label></div>
+                        <div class="param-item"><label>Long Thought</label><label class="toggle-switch"><input type="checkbox" ${data.params.longThought ? 'checked' : ''}><span class="slider"></span></label></div>
+                        <hr>
+                        <div class="param-item"><label>Model Version</label><select><option>V2.2</option><option>V1.5 Pro</option><option>V1.0</option></select></div>
+                    </div>
+                </div>
+                <div class="title-button share-button" title="Share">&#128279;</div>
+                <div class="title-button pin-button" title="Pin"><span class="icon">&#128204;</span></div>
+                <div class="title-button close-button" title="Close">&#10006;</div>
+            </div>
+        </div>
+        <div class="chat-area-main">
+            <div class="chat-area-index">
+                <div class="index-button expand-all" title="Expand All">&#x2924;</div>
+                <div class="index-button collapse-all" title="Collapse All">&#x2922;</div>
+                ${indexHtml}
+            </div>
+            <div class="chat-area-conversation">${conversationHtml}</div>
+        </div>
+        <div class="input-placeholder">Input</div>
+        <div class="chat-area-input">
+            <textarea rows="1" placeholder="Type your message..."></textarea>
+            <button title="Send">&#10148;</button>
+        </div>
+        `;
+    };
+
+    this.cacheDOMElements = function() {
+        this.mainArea = this.container.querySelector('.chat-area-main');
+        this.placeholder = this.container.querySelector('.input-placeholder');
+        this.inputArea = this.container.querySelector('.chat-area-input');
+        this.textarea = this.container.querySelector('textarea');
+        this.conversationArea = this.container.querySelector('.chat-area-conversation');
+        this.answerBubbles = this.container.querySelectorAll('.message-bubble.answer');
+        this.modelSelector = this.container.querySelector('.model-selector');
+        this.modelNameDisplay = this.modelSelector.querySelector('.model-name');
+        this.modelDropdown = this.modelSelector.querySelector('.model-dropdown');
+        this.paramsSelector = this.container.querySelector('.params-selector');
+        this.paramsButton = this.paramsSelector.querySelector('.params-button');
+        this.paramsDropdown = this.paramsSelector.querySelector('.params-dropdown');
+    };
+
+    this.initEventListeners = function() {
+        this.container.querySelector('.pin-button').addEventListener('click', (e) => e.currentTarget.classList.toggle('pinned'));
+        this.container.querySelector('.close-button').addEventListener('click', () => alert('Close clicked in: ' + this.modelNameDisplay.textContent.trim()));
+        this.container.querySelector('.new-session-button').addEventListener('click', () => alert('New Session clicked in: ' + this.modelNameDisplay.textContent.trim()));
+        this.container.querySelector('.share-button').addEventListener('click', () => alert('Share clicked in: ' + this.modelNameDisplay.textContent.trim()));
+
+        this.modelNameDisplay.addEventListener('click', (e) => this.toggleDropdown(e, this.modelDropdown));
+        this.paramsButton.addEventListener('click', (e) => this.toggleDropdown(e, this.paramsDropdown));
+        this.modelDropdown.querySelectorAll('.model-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const newValue = e.currentTarget.dataset.value;
+                this.modelNameDisplay.innerHTML = `${newValue} &#9662;`;
+                alert(`Model changed to: ${newValue}`);
+            });
+        });
+
+        this.container.querySelector('.expand-all').addEventListener('click', () => this.expandAll());
+        this.container.querySelector('.collapse-all').addEventListener('click', () => this.collapseAll());
+        this.container.querySelectorAll('.index-item a').forEach(anchor => {
+            anchor.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetElement = this.container.querySelector(anchor.getAttribute('href'));
+                if (targetElement) this.conversationArea.scrollTop = targetElement.offsetTop - this.conversationArea.offsetTop - 20;
+            });
+        });
+
+        this.placeholder.addEventListener('mouseenter', () => this.showInput());
+        this.inputArea.addEventListener('mouseenter', () => this.showInput());
+        this.inputArea.addEventListener('mouseleave', () => this.undockInput());
+        this.textarea.addEventListener('focus', () => this.dockInput());
+        this.inputArea.addEventListener('focusout', (e) => this.handleFocusOut(e));
+    };
+    
+    this.toggleDropdown = function(event, dropdown) {
+        event.stopPropagation();
+        const isVisible = dropdown.classList.contains('visible');
+        document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('visible'));
+        if (!isVisible) dropdown.classList.add('visible');
+    };
+
+    this.expandAll = () => this.answerBubbles.forEach(b => b.classList.remove('collapsed'));
+    this.collapseAll = () => this.answerBubbles.forEach(b => b.classList.add('collapsed'));
+
+    this.showInput = function() {
+        clearTimeout(this.hideTimeout);
+        this.placeholder.classList.add('hidden');
+        this.inputArea.classList.add('visible');
+    };
+
+    this.dockInput = function() {
+        this.showInput();
+        this.inputArea.classList.add('docked');
+        this.mainArea.style.paddingBottom = `${this.inputArea.offsetHeight}px`;
+    };
+
+    this.undockInput = function() {
+        this.inputArea.classList.remove('docked');
+        this.mainArea.style.paddingBottom = '0px';
+        this.hideTimeout = setTimeout(() => {
+            if (!this.inputArea.contains(document.activeElement)) {
+                this.inputArea.classList.remove('visible');
+                this.placeholder.classList.remove('hidden');
+            }
+        }, 300);
+    };
+    
+    this.handleFocusOut = function(event) {
+        if (!this.inputArea.contains(event.relatedTarget)) this.undockInput();
+    };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const instancesData = [
+        {
+            id: 1,
+            modelName: 'Gemini',
+            params: { webAccess: false, longThought: true },
+            conversation: [
+                { type: 'question', content: 'Compare let, const, and var.' },
+                { type: 'answer', content: '<code>var</code> is function-scoped, <code>let</code> and <code>const</code> are block-scoped.' },
+                { type: 'question', content: 'Show a table.' },
+                { type: 'answer', content: '<table><thead><tr><th>Feature</th><th>var</th><th>let</th><th>const</th></tr></thead><tbody><tr><td>Scope</td><td>Function</td><td>Block</td><td>Block</td></tr></tbody></table>' },
+            ]
+        },
+        {
+            id: 2,
+            modelName: 'Kimi',
+            params: { webAccess: true, longThought: false },
+            conversation: [
+                { type: 'question', content: 'Tell me a short story.' },
+                { type: 'answer', content: 'The last man on Earth sat alone in a room. There was a knock on the door.' },
+            ]
+        }
+    ];
+
+    document.querySelectorAll('.chat-area-container').forEach((container, index) => {
+        new ChatArea(container).init(instancesData[index]);
+    });
+
+    document.addEventListener('click', (e) => {
+        const isDropdownClick = e.target.closest('.custom-dropdown');
+        const isToggleClick = e.target.closest('.model-name, .params-button');
+        if (!isDropdownClick && !isToggleClick) {
+            document.querySelectorAll('.custom-dropdown.visible').forEach(d => d.classList.remove('visible'));
+        }
+    });
+});
+</script>
+
+</body>
+</html>
