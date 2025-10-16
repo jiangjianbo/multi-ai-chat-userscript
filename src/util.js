@@ -1,3 +1,23 @@
+
+/**
+ * @description 在文档加载完成之后延迟运行。
+ * @param {function} fn - 回调函数
+ * @param {int} delay - 延迟的毫秒，默认5秒
+ * @returns {HTMLElement} - 创建的 HTML 元素。
+ */
+function documentReady(fn, delay = 5000){
+    // 确保页面加载完成后再执行初始化
+    if (document.readyState === 'complete') {
+        fn();
+    } else {
+        window.addEventListener('load', () => {
+            // 延迟5秒后执行初始化
+            setTimeout(fn, delay);
+        });
+    }
+	
+}
+
 /**
  * @description 根据 JSON 对象创建 HTML 元素。
  * @param {object} json - 描述 HTML 结构的 JSON 对象。

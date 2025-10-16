@@ -8,7 +8,7 @@ function Message(channelName) {
         throw new Error('channelName is required for Message module.');
     }
     this.channel = new BroadcastChannel(channelName);
-    this.listeners = new Set();
+    this.listeners = new Map(); // Map<receiverId, Map<type, Set<function>>>
 
     // 绑定 handleMessage 的 this 上下文
     this.handleMessage = this.handleMessage.bind(this);
@@ -29,20 +29,39 @@ function Message(channelName) {
 
     /**
      * @description 注册一个监听器对象。
-     * @param {object} target - 包含 onMsg* 方法的对象。
+     * @param {string} receiverId - 对象的接收id。
+     * @param {object} listener - 包含 onMsg* 方法的对象。
      */
-    this.register = function(target) {
-        if (target) {
-            this.listeners.add(target);
+    this.register = function(receiverId, listener) {
+        if (!receiverId || !listener) {
+            console.warn('Message.register: receiverId and listener are required.');
+            return;
+        }
+
+        if (!this.listeners.has(receiverId)) {
+            this.listeners.set(receiverId, new Map()); // Map<type, Set<function>>
+        }
+        const receiverListeners = this.listeners.get(receiverId);
+
+        for (const methodName in listener) {
+            if (typeof listener[methodName] === 'function' && methodName.startsWith('onMsg')) {
+                const type = methodName.substring(5).charAt(0).toLowerCase() + methodName.substring(6);
+                if (!receiverListeners.has(type)) {
+                    receiverListeners.set(type, new Set());
+                }
+                receiverListeners.get(type).add(listener[methodName].bind(listener)); // Bind to listener instance
+            }
         }
     };
 
     /**
      * @description 注销一个监听器对象。
-     * @param {object} target - 已注册的对象。
+     * @param {string} receiverId - 对象的接收id。
      */
-    this.unregister = function(target) {
-        this.listeners.delete(target);
+    this.unregister = function(receiverId) {
+        if (receiverId) {
+            this.listeners.delete(receiverId);
+        }
     };
 
     /**
@@ -63,19 +82,37 @@ Message.prototype.handleMessage = function(event) {
     const { type, data } = event.data;
     if (!type) return;
 
-    // 将消息类型转换为 onMsg* 格式的方法名
-    // e.g., 'create' -> 'onMsgCreate'
-    const methodName = 'onMsg' + type.charAt(0).toUpperCase() + type.slice(1);
+    const targetReceiverId = data ? data.receiverId : undefined;
 
-    this.listeners.forEach(listener => {
-        if (typeof listener[methodName] === 'function') {
-            try {
-                listener[methodName](data);
-            } catch (e) {
-                console.error(`Error in message handler for ${type}:`, e);
+    // If a specific receiverId is targeted
+    if (targetReceiverId) {
+        const receiverListeners = this.listeners.get(targetReceiverId);
+        if (receiverListeners) {
+            const typeListeners = receiverListeners.get(type);
+            if (typeListeners) {
+                typeListeners.forEach(listenerFunction => {
+                    try {
+                        listenerFunction(data);
+                    } catch (e) {
+                        console.error(`Error in message handler for type '${type}' and receiverId '${targetReceiverId}':`, e);
+                    }
+                });
             }
         }
-    });
+    } else { // Broadcast message to all relevant listeners
+        this.listeners.forEach(receiverListeners => {
+            const typeListeners = receiverListeners.get(type);
+            if (typeListeners) {
+                typeListeners.forEach(listenerFunction => {
+                    try {
+                        listenerFunction(data);
+                    } catch (e) {
+                        console.error(`Error in broadcast message handler for type '${type}':`, e);
+                    }
+                });
+            }
+        });
+    }
 };
 
 module.exports = Message;

@@ -2,6 +2,8 @@ const ChatArea = require('./chat-area');
 const Util = require('./util');
 const utils = new Util();
 
+
+
 /**
  * @description Manages the main chat window, including layout and child ChatArea instances.
  */
@@ -14,8 +16,10 @@ function MainWindowController() {
      * @description Initializes the main window, renders its structure, and sets up global listeners.
      */
     this.init = function() {
-        const mainWindowJson = this.render();
-        this.element = utils.toHtml(mainWindowJson);
+        const mainWindowHtml = this.render(); // Now returns HTML string
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = mainWindowHtml;
+        this.element = tempDiv.firstElementChild; // Get the actual element
         document.body.appendChild(this.element);
 
         this.cacheDOMElements();
@@ -28,32 +32,32 @@ function MainWindowController() {
      */
     this.render = function() {
         // Based on research/main-window.html
-        return {
-            tag: 'div', '@class': 'main-window', child: [
-                { tag: 'header', '@class': 'main-title-bar', child: [
-                    { tag: 'div', '@class': 'title-section left', child: [
-                        { tag: 'div', '@class': 'product-logo', text: '&#129302;' },
-                        { tag: 'div', '@class': 'product-name', text: 'Multi AI Chat' },
-                    ]},
-                    { tag: 'div', '@class': 'title-section center layout-switcher', child: [
-                        { tag: 'button', '@class': 'layout-button active', '@data-layout': '1', text: '1' },
-                        { tag: 'button', '@class': 'layout-button', '@data-layout': '2', text: '2' },
-                        { tag: 'button', '@class': 'layout-button', '@data-layout': '4', text: '4' },
-                    ]},
-                    { tag: 'div', '@class': 'title-section right', child: [
-                        { tag: 'button', '@class': 'title-action-button', innerHTML: '&#10006;' }
-                    ]}
-                ]},
-                { tag: 'main', '@class': 'content-area', '@data-layout': '1' },
-                { tag: 'footer', '@class': 'prompt-area', child: [
-                    { tag: 'button', '@class': 'prompt-action-button', innerHTML: '&#9881;' },
-                    { tag: 'div', '@class': 'prompt-input-wrapper', child: [
-                        { tag: 'textarea', '@id': 'prompt-textarea', '@rows': '1', '@placeholder': 'Ask all AIs...' }
-                    ]},
-                    { tag: 'button', '@class': 'prompt-action-button', innerHTML: '&#10148;' }
-                ]}
-            ]
-        };
+        return `
+            <div class="main-window">
+                <header class="main-title-bar">
+                    <div class="title-section left">
+                        <div class="product-logo">&#129302;</div>
+                        <div class="product-name">Multi AI Chat</div>
+                    </div>
+                    <div class="title-section center layout-switcher">
+                        <button class="layout-button active" data-layout="1">1</button>
+                        <button class="layout-button" data-layout="2">2</button>
+                        <button class="layout-button" data-layout="4">4</button>
+                    </div>
+                    <div class="title-section right">
+                        <button class="title-action-button">&#10006;</button>
+                    </div>
+                </header>
+                <main class="content-area" data-layout="1"></main>
+                <footer class="prompt-area">
+                    <button class="prompt-action-button">&#9881;</button>
+                    <div class="prompt-input-wrapper">
+                        <textarea id="prompt-textarea" rows="1" placeholder="Ask all AIs..."></textarea>
+                    </div>
+                    <button class="prompt-action-button">&#10148;</button>
+                </footer>
+            </div>
+        `;
     };
 
     this.cacheDOMElements = function() {

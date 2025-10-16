@@ -77,7 +77,7 @@ describe('Message Module', () => {
         message2 = new Message(CHANNEL_NAME);
 
         const subscriber = { onMsgTest: jest.fn() };
-        message2.register(subscriber);
+        message2.register('receiver1', subscriber);
 
         for (let i = 0; i < 10; i++) {
             message1.send('test', { count: i });
@@ -94,8 +94,8 @@ describe('Message Module', () => {
 
         const subscriber2 = { onMsgData: jest.fn() };
         const subscriber3 = { onMsgData: jest.fn() };
-        message2.register(subscriber2);
-        message3.register(subscriber3);
+        message2.register('receiver2', subscriber2);
+        message3.register('receiver3', subscriber3);
 
         message1.send('data', { payload: 'hello' });
         expect(subscriber2.onMsgData).toHaveBeenCalledTimes(1);
@@ -118,7 +118,7 @@ describe('Message Module', () => {
             onMsgInfo: jest.fn(),
             onMsgWarning: jest.fn(),
         };
-        message2.register(subscriber);
+        message2.register('receiver4', subscriber);
 
         message1.send('info', { detail: 'Startup complete' });
         message1.send('warning', { code: 502, text: 'Gateway offline' });
@@ -135,14 +135,97 @@ describe('Message Module', () => {
         message2 = new Message(CHANNEL_NAME);
 
         const subscriber = { onMsgTest: jest.fn() };
-        message2.register(subscriber);
+        message2.register('receiver5', subscriber);
 
         message1.send('test', { step: 1 });
         expect(subscriber.onMsgTest).toHaveBeenCalledTimes(1);
 
-        message2.unregister(subscriber);
+        message2.unregister('receiver5');
 
         message1.send('test', { step: 2 });
         expect(subscriber.onMsgTest).toHaveBeenCalledTimes(1); // Should not be called again
+    });
+
+    test('5. Targeted message should only be received by the intended receiver', () => {
+        message1 = new Message(CHANNEL_NAME);
+        message2 = new Message(CHANNEL_NAME); // For receiverA
+        message3 = new Message(CHANNEL_NAME); // For receiverB
+
+        const subscriberA = { onMsgTarget: jest.fn() };
+        const subscriberB = { onMsgTarget: jest.fn() };
+
+        message2.register('receiverA', subscriberA);
+        message3.register('receiverB', subscriberB);
+
+        // Send a message specifically to receiverA
+        message1.send('target', { receiverId: 'receiverA', content: 'Hello Receiver A' });
+
+        expect(subscriberA.onMsgTarget).toHaveBeenCalledTimes(1);
+        expect(subscriberA.onMsgTarget).toHaveBeenCalledWith({ receiverId: 'receiverA', content: 'Hello Receiver A' });
+        expect(subscriberB.onMsgTarget).not.toHaveBeenCalled();
+
+        // Send a message specifically to receiverB
+        message1.send('target', { receiverId: 'receiverB', content: 'Hello Receiver B' });
+
+        expect(subscriberA.onMsgTarget).toHaveBeenCalledTimes(1); // Should still be 1
+        expect(subscriberB.onMsgTarget).toHaveBeenCalledTimes(1);
+        expect(subscriberB.onMsgTarget).toHaveBeenCalledWith({ receiverId: 'receiverB', content: 'Hello Receiver B' });
+    });
+
+    test('6. Broadcast message should be received by all registered receivers', () => {
+        message1 = new Message(CHANNEL_NAME);
+        message2 = new Message(CHANNEL_NAME); // For receiverA
+        message3 = new Message(CHANNEL_NAME); // For receiverB
+
+        const subscriberA = { onMsgBroadcast: jest.fn() };
+        const subscriberB = { onMsgBroadcast: jest.fn() };
+
+        message2.register('receiverA', subscriberA);
+        message3.register('receiverB', subscriberB);
+
+        // Send a broadcast message (no receiverId)
+        message1.send('broadcast', { content: 'Hello Everyone' });
+
+        expect(subscriberA.onMsgBroadcast).toHaveBeenCalledTimes(1);
+        expect(subscriberA.onMsgBroadcast).toHaveBeenCalledWith({ content: 'Hello Everyone' });
+        expect(subscriberB.onMsgBroadcast).toHaveBeenCalledTimes(1);
+        expect(subscriberB.onMsgBroadcast).toHaveBeenCalledWith({ content: 'Hello Everyone' });
+    });
+
+    test('7. Listener should only receive messages for its registered type', () => {
+        message1 = new Message(CHANNEL_NAME);
+        message2 = new Message(CHANNEL_NAME);
+
+        const subscriber = {
+            onMsgTypeA: jest.fn(),
+            onMsgTypeB: jest.fn(),
+        };
+
+        message2.register('receiverType', subscriber);
+
+        message1.send('typeA', { content: 'Message for Type A' });
+        message1.send('typeB', { content: 'Message for Type B' });
+        message1.send('typeC', { content: 'Message for Type C' }); // Should not be received
+
+        expect(subscriber.onMsgTypeA).toHaveBeenCalledTimes(1);
+        expect(subscriber.onMsgTypeA).toHaveBeenCalledWith({ content: 'Message for Type A' });
+        expect(subscriber.onMsgTypeB).toHaveBeenCalledTimes(1);
+        expect(subscriber.onMsgTypeB).toHaveBeenCalledWith({ content: 'Message for Type B' });
+    });
+
+    test('8. Unregistering a receiverId should stop all its listeners from receiving messages', () => {
+        message1 = new Message(CHANNEL_NAME);
+        message2 = new Message(CHANNEL_NAME);
+
+        const subscriber = { onMsgTest: jest.fn() };
+        message2.register('receiverUnregister', subscriber);
+
+        message1.send('test', { content: 'Before unregister' });
+        expect(subscriber.onMsgTest).toHaveBeenCalledTimes(1);
+
+        message2.unregister('receiverUnregister');
+
+        message1.send('test', { content: 'After unregister' });
+        expect(subscriber.onMsgTest).toHaveBeenCalledTimes(1); // Should not increase
     });
 });
