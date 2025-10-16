@@ -8,7 +8,7 @@
 function documentReady(fn, delay = 5000){
     // 确保页面加载完成后再执行初始化
     if (document.readyState === 'complete') {
-        fn();
+        setTimeout(fn, delay);
     } else {
         window.addEventListener('load', () => {
             // 延迟5秒后执行初始化
@@ -115,6 +115,7 @@ function $$(selector, parent = document) {
 
 // 根据项目规范，使用 function 定义构造函数来模拟类，并导出
 function Util() {
+    this.documentReady = documentReady;
     this.toHtml = toHtml;
     this.$ = $;
     this.$$ = $$;

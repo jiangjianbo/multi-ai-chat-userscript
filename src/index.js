@@ -1,5 +1,6 @@
 const MainWindowController = require('./sync-chat-window');
 const PageController = require('./page-controller');
+const Util = require('./util');
 
 /**
  * @description The entry point of the userscript.
@@ -7,6 +8,7 @@ const PageController = require('./page-controller');
  * and initializes the corresponding controller.
  */
 function main() {
+    const util = new Util();
     console.log('Multi AI Chat Userscript loaded.');
 
     // As per design/architect.md, window.name is used to identify the main window.
@@ -15,9 +17,11 @@ function main() {
         const mainWindowController = new MainWindowController();
         mainWindowController.init();
     } else {
-        console.log('Initializing PageController...');
-        const pageController = new PageController();
-        pageController.init();
+        util.documentReady(() => {
+            console.log('Initializing PageController after delay...');
+            const pageController = new PageController();
+            pageController.init();
+        });
     }
 }
 
