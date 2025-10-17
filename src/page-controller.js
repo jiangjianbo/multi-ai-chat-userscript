@@ -3,17 +3,16 @@ const { SyncChatWindow } = require('./sync-chat-window');
 
 /**
  * @description 在原生AI页面运行的核心控制器。
- * @param {object} args - 构造函数参数。
- * @param {Message} args.message
- * @param {Config} args.config
- * @param {I18n} args.i18n
- * @param {Util} args.util
+ * @param {Message} message
+ * @param {Config} config
+ * @param {I18n} i18n
+ * @param {Util} util
  */
-function PageController(args) {
-    this.message = args.message;
-    this.config = args.config;
-    this.i18n = args.i18n;
-    this.util = args.util;
+function PageController(message, config, i18n, util) {
+    this.message = message;
+    this.config = config;
+    this.i18n = i18n;
+    this.util = util;
 
     this.driver = null;
     this.syncChatWindow = null;

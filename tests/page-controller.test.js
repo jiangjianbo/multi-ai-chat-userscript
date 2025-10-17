@@ -47,12 +47,12 @@ describe('PageController', () => {
             }),
         };
 
-        pageController = new PageController({
-            message: mockMessage,
-            config: {},
-            i18n: {},
-            util: mockUtil,
-        });
+        pageController = new PageController(
+            mockMessage,
+            {},
+            {},
+            mockUtil
+        );
 
         // Mock window location
         delete window.location;

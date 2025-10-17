@@ -33,7 +33,7 @@ describe('Config', () => {
 
     test('should load default config when no user config exists', () => {
         mockStorage.data = {}; // 确保 storage 为空
-        const config = new Config({ storage: mockStorage, defaultConfig });
+        const config = new Config(mockStorage, defaultConfig);
         expect(config.get('theme')).toBe('dark');
         expect(config.get('layout')).toBe(2);
     });
@@ -42,7 +42,7 @@ describe('Config', () => {
         mockStorage.data = {
             'user-config': { theme: 'light', newKey: 'newValue' }
         };
-        const config = new Config({ storage: mockStorage, defaultConfig });
+        const config = new Config(mockStorage, defaultConfig);
 
         expect(config.get('theme')).toBe('light'); // 用户设置覆盖默认
         expect(config.get('layout')).toBe(2); // 保留未被覆盖的默认值
@@ -51,19 +51,19 @@ describe('Config', () => {
 
     test('1. should return null for a non-existent key', () => {
         mockStorage.data = {};
-        const config = new Config({ storage: mockStorage, defaultConfig });
+        const config = new Config(mockStorage, defaultConfig);
         expect(config.get('a.b')).toBeNull();
     });
 
     test('2. should return provided default value for a non-existent key', () => {
         mockStorage.data = {};
-        const config = new Config({ storage: mockStorage, defaultConfig });
+        const config = new Config(mockStorage, defaultConfig);
         expect(config.get('a.b', 1)).toBe(1);
     });
 
     test('3. set should update the value and persist it', () => {
         mockStorage.data = {};
-        const config = new Config({ storage: mockStorage, defaultConfig });
+        const config = new Config(mockStorage, defaultConfig);
 
         // 初始时，使用提供的默认值
         expect(config.get('a.b', 1)).toBe(1);
@@ -85,7 +85,7 @@ describe('Config', () => {
         mockStorage.data = {
             'user-config': { theme: 'light' }
         };
-        const config = new Config({ storage: mockStorage, defaultConfig });
+        const config = new Config(mockStorage, defaultConfig);
         const allConfig = config.getAll();
 
         expect(allConfig).toEqual({ theme: 'light', layout: 2 });
@@ -99,7 +99,7 @@ describe('Config', () => {
         mockStorage.data = {
             'user-config': { theme: 'light' }
         };
-        const config = new Config({ storage: mockStorage, defaultConfig });
+        const config = new Config(mockStorage, defaultConfig);
         expect(config.get('theme')).toBe('light');
 
         config.restoreDefaults();

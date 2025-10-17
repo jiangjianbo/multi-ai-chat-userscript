@@ -2,37 +2,16 @@ const Config = require('./config');
 
 /**
  * @description 管理国际化文本资源。
- * @param {{config: Config}} args - 构造函数参数。
+ * @param {Config} config - Config 实例.
+ * @param {object} resources - 语言资源.
  */
-function I18n(args) {
-    if (!args || !args.config) {
+function I18n(config, resources) {
+    if (!config) {
         throw new Error('Config instance must be provided to I18n.');
     }
-    this.config = args.config;
+    this.config = config;
+    this.resources = resources || {};
     this.currentLang = 'en'; // 默认语言
-
-    this.resources = {
-        'en': {
-            'app.title': 'Multi-AI Sync Chat',
-            'button.send': 'Send',
-            'default.a.b': 'test', // For testing
-        },
-        'zh': {
-            'app.title': '多AI同步聊天',
-            'button.send': '发送',
-            'default.a.b': '测试', // For testing
-        },
-        'zh-CN': {
-            'default.a.b': '测试cn', // For testing
-        },
-        'zh-TW': {
-            'default.a.b': '测试tw', // For testing
-        },
-        'ar': {
-            'app.title': 'دردشة متزامنة متعددة الذكاء الاصطناعي',
-            'button.send': 'إرسال'
-        }
-    };
 
     /**
      * @description 初始化，确定当前语言。

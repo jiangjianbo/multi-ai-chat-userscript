@@ -2,15 +2,16 @@ const Storage = require('./storage');
 
 /**
  * @description 管理应用的配置参数。
- * @param {{storage: Storage, defaultConfig: object}} args - 构造函数参数。
+ * @param {Storage} storage - Storage 实例.
+ * @param {object} [defaultConfig={}] - 默认配置.
  */
-function Config(args) {
-    if (!args || !args.storage) {
+function Config(storage, defaultConfig = {}) {
+    if (!storage) {
         throw new Error('Storage instance must be provided to Config.');
     }
-    this.storage = args.storage;
+    this.storage = storage;
 
-    const a_defaultConfig = args.defaultConfig || {};
+    const a_defaultConfig = defaultConfig;
     let runtimeConfig = {};
 
     const CONFIG_STORAGE_KEY = 'user-config';

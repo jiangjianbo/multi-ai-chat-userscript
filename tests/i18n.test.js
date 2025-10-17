@@ -14,6 +14,33 @@ const mockConfig = {
     })
 };
 
+const mockResources = {
+    'en': {
+        'app.title': 'Multi-AI Sync Chat',
+        'button.send': 'Send',
+        'default.a.b': 'test', // For testing
+    },
+    'zh': {
+        'app.title': '多AI同步聊天',
+        'button.send': '发送',
+        'default.a.b': '测试', // For testing
+    },
+    'zh-CN': {
+        'default.a.b': '测试cn', // For testing
+    },
+    'zh-TW': {
+        'default.a.b': '测试tw', // For testing
+    },
+    'ar': {
+        'app.title': 'دردشة متزامنة متعددة الذكاء الاصطناعي',
+        'button.send': 'إرسال'
+    }
+};
+
+// Deep copy helper to ensure test isolation
+const getMockResources = () => JSON.parse(JSON.stringify(mockResources));
+
+
 // Mock navigator.language
 let browserLanguage = 'en';
 Object.defineProperty(navigator, 'language', {
@@ -32,20 +59,20 @@ describe('I18n', () => {
 
     test('1. should use browser language if no config is set', () => {
         browserLanguage = 'en';
-        const i18n = new I18n({ config: mockConfig });
+        const i18n = new I18n(mockConfig, getMockResources());
         expect(i18n.getCurrentLang()).toBe('en');
     });
 
     test('2. should use config language over browser language', () => {
         browserLanguage = 'en';
         mockConfig.data['current-lang'] = 'zh-CN';
-        const i18n = new I18n({ config: mockConfig });
+        const i18n = new I18n(mockConfig, getMockResources());
         expect(i18n.getCurrentLang()).toBe('zh-CN');
     });
 
     test('3. should return key if text is not found in any language', () => {
         mockConfig.data['current-lang'] = 'zh-CN';
-        const i18n = new I18n({ config: mockConfig });
+        const i18n = new I18n(mockConfig, getMockResources());
         // 'a.b' does not exist in any resource file
         expect(i18n.getText('a.b')).toBe('a.b');
     });
@@ -54,7 +81,7 @@ describe('I18n', () => {
         const key = 'default.a.b';
 
         test('4. should fall back to default English text', () => {
-            const i18n = new I18n({ config: mockConfig });
+            const i18n = new I18n(mockConfig, getMockResources());
 
             i18n.setCurrentLang('en');
             expect(i18n.getText(key)).toBe('test');
@@ -67,7 +94,7 @@ describe('I18n', () => {
         });
 
         test('5. should use base language if specific region is not found', () => {
-            const i18n = new I18n({ config: mockConfig });
+            const i18n = new I18n(mockConfig, getMockResources());
 
             i18n.setCurrentLang('en');
             expect(i18n.getText(key)).toBe('test');
@@ -86,9 +113,10 @@ describe('I18n', () => {
         });
 
         test('6. should handle complex fallback correctly', () => {
-            const i18n = new I18n({ config: mockConfig });
+            const resources = getMockResources();
+            const i18n = new I18n(mockConfig, resources);
             // In this setup, 'zh' is not defined for the key, only 'zh-CN' and 'zh-TW'
-            i18n.resources.zh[key] = undefined;
+            resources.zh[key] = undefined;
 
             i18n.setCurrentLang('zh-CN');
             expect(i18n.getText(key)).toBe('测试cn');
@@ -102,14 +130,11 @@ describe('I18n', () => {
 
             i18n.setCurrentLang('zh-HK');
             expect(i18n.getText(key)).toBe('test');
-            
-            // restore for other tests
-            i18n.resources.zh[key] = '测试';
         });
     });
 
     test('setCurrentLang should update currentLang and persist to config', () => {
-        const i18n = new I18n({ config: mockConfig });
+        const i18n = new I18n(mockConfig, getMockResources());
         i18n.setCurrentLang('ar');
         expect(i18n.getCurrentLang()).toBe('ar');
         expect(mockConfig.set).toHaveBeenCalledWith('current-lang', 'ar');

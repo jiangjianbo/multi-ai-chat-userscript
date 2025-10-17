@@ -1,6 +1,10 @@
 const MainWindowController = require('./sync-chat-window');
 const PageController = require('./page-controller');
 const Util = require('./util');
+const Message = require('./message');
+const Config = require('./config');
+const I18n = require('./i18n');
+const Storage = require('./storage');
 
 /**
  * @description The entry point of the userscript.
@@ -19,7 +23,26 @@ function main() {
     } else {
         util.documentReady(() => {
             console.log('Initializing PageController after delay...');
-            const pageController = new PageController();
+            const storage = new Storage();
+            const defaultConfig = { channelName: 'multi-ai-chat' };
+            const config = new Config(storage, defaultConfig);
+            const resources = {
+                'en': {
+                    'app.title': 'Multi-AI Sync Chat',
+                    'button.send': 'Send',
+                },
+                'zh': {
+                    'app.title': '多AI同步聊天',
+                    'button.send': '发送',
+                },
+                'ar': {
+                    'app.title': 'دردشة متزامنة متعددة الذكاء الاصطناعي',
+                    'button.send': 'إرسال'
+                }
+            };
+            const i18n = new I18n(config, resources);
+            const message = new Message(config.get('channelName'));
+            const pageController = new PageController(message, config, i18n, util);
             pageController.init();
         });
     }
