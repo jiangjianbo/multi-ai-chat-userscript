@@ -114,7 +114,7 @@ function ChatArea(container) {
         <div class="chat-area-title">
             <div class="title-left">
                 <div class="model-selector">
-                    <div class="model-name">${data.modelName} &#9662;</div>
+                    <div class="model-name">${data.providerName} &#9662;</div>
                     <div class="custom-dropdown model-dropdown">
                         <div class="model-option" data-value="Gemini">Gemini</div>
                         <div class="model-option" data-value="ChatGPT">ChatGPT</div>
@@ -162,7 +162,7 @@ function ChatArea(container) {
         this.conversationArea = this.container.querySelector('.chat-area-conversation');
         this.answerBubbles = this.container.querySelectorAll('.message-bubble.answer');
         this.modelSelector = this.container.querySelector('.model-selector');
-        this.modelNameDisplay = this.modelSelector.querySelector('.model-name');
+        this.providerNameDisplay = this.modelSelector.querySelector('.model-name');
         this.modelDropdown = this.modelSelector.querySelector('.model-dropdown');
         this.paramsSelector = this.container.querySelector('.params-selector');
         this.paramsButton = this.paramsSelector.querySelector('.params-button');
@@ -171,16 +171,16 @@ function ChatArea(container) {
 
     this.initEventListeners = function() {
         this.container.querySelector('.pin-button').addEventListener('click', (e) => e.currentTarget.classList.toggle('pinned'));
-        this.container.querySelector('.close-button').addEventListener('click', () => alert('Close clicked in: ' + this.modelNameDisplay.textContent.trim()));
-        this.container.querySelector('.new-session-button').addEventListener('click', () => alert('New Session clicked in: ' + this.modelNameDisplay.textContent.trim()));
-        this.container.querySelector('.share-button').addEventListener('click', () => alert('Share clicked in: ' + this.modelNameDisplay.textContent.trim()));
+        this.container.querySelector('.close-button').addEventListener('click', () => alert('Close clicked in: ' + this.providerNameDisplay.textContent.trim()));
+        this.container.querySelector('.new-session-button').addEventListener('click', () => alert('New Session clicked in: ' + this.providerNameDisplay.textContent.trim()));
+        this.container.querySelector('.share-button').addEventListener('click', () => alert('Share clicked in: ' + this.providerNameDisplay.textContent.trim()));
 
-        this.modelNameDisplay.addEventListener('click', (e) => this.toggleDropdown(e, this.modelDropdown));
+        this.providerNameDisplay.addEventListener('click', (e) => this.toggleDropdown(e, this.modelDropdown));
         this.paramsButton.addEventListener('click', (e) => this.toggleDropdown(e, this.paramsDropdown));
         this.modelDropdown.querySelectorAll('.model-option').forEach(option => {
             option.addEventListener('click', (e) => {
                 const newValue = e.currentTarget.dataset.value;
-                this.modelNameDisplay.innerHTML = `${newValue} &#9662;`;
+                this.providerNameDisplay.innerHTML = `${newValue} &#9662;`;
                 alert(`Model changed to: ${newValue}`);
             });
         });
@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const instancesData = [
         {
             id: 1,
-            modelName: 'Gemini',
+            providerName: 'Gemini',
             params: { webAccess: false, longThought: true },
             conversation: [
                 { type: 'question', content: 'Compare let, const, and var.' },
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         {
             id: 2,
-            modelName: 'Kimi',
+            providerName: 'Kimi',
             params: { webAccess: true, longThought: false },
             conversation: [
                 { type: 'question', content: 'Tell me a short story.' },

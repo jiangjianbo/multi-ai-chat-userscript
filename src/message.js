@@ -10,6 +10,47 @@ function Message(channelName) {
     this.channel = new BroadcastChannel(channelName);
     this.listeners = new Map(); // Map<receiverId, Map<type, Set<function>>>
 
+    /**
+     * @description 处理来自 BroadcastChannel 的消息。
+     * @param {MessageEvent} event - 消息事件。
+     */
+    this.handleMessage = function(event) {
+        const { type, data } = event.data;
+        if (!type) return;
+
+        const targetReceiverId = data ? data.receiverId : undefined;
+
+        // If a specific receiverId is targeted
+        if (targetReceiverId) {
+            const receiverListeners = this.listeners.get(targetReceiverId);
+            if (receiverListeners) {
+                const typeListeners = receiverListeners.get(type);
+                if (typeListeners) {
+                    typeListeners.forEach(listenerFunction => {
+                        try {
+                            listenerFunction(data);
+                        } catch (e) {
+                            console.error(`Error in message handler for type '${type}' and receiverId '${targetReceiverId}':`, e);
+                        }
+                    });
+                }
+            }
+        } else { // Broadcast message to all relevant listeners
+            this.listeners.forEach(receiverListeners => {
+                const typeListeners = receiverListeners.get(type);
+                if (typeListeners) {
+                    typeListeners.forEach(listenerFunction => {
+                        try {
+                            listenerFunction(data);
+                        } catch (e) {
+                            console.error(`Error in broadcast message handler for type '${type}':`, e);
+                        }
+                    });
+                }
+            });
+        }
+    };
+
     // 绑定 handleMessage 的 this 上下文
     this.handleMessage = this.handleMessage.bind(this);
     this.channel.addEventListener('message', this.handleMessage);
@@ -73,46 +114,5 @@ function Message(channelName) {
         this.listeners.clear();
     };
 }
-
-/**
- * @description 处理来自 BroadcastChannel 的消息。
- * @param {MessageEvent} event - 消息事件。
- */
-Message.prototype.handleMessage = function(event) {
-    const { type, data } = event.data;
-    if (!type) return;
-
-    const targetReceiverId = data ? data.receiverId : undefined;
-
-    // If a specific receiverId is targeted
-    if (targetReceiverId) {
-        const receiverListeners = this.listeners.get(targetReceiverId);
-        if (receiverListeners) {
-            const typeListeners = receiverListeners.get(type);
-            if (typeListeners) {
-                typeListeners.forEach(listenerFunction => {
-                    try {
-                        listenerFunction(data);
-                    } catch (e) {
-                        console.error(`Error in message handler for type '${type}' and receiverId '${targetReceiverId}':`, e);
-                    }
-                });
-            }
-        }
-    } else { // Broadcast message to all relevant listeners
-        this.listeners.forEach(receiverListeners => {
-            const typeListeners = receiverListeners.get(type);
-            if (typeListeners) {
-                typeListeners.forEach(listenerFunction => {
-                    try {
-                        listenerFunction(data);
-                    } catch (e) {
-                        console.error(`Error in broadcast message handler for type '${type}':`, e);
-                    }
-                });
-            }
-        });
-    }
-};
 
 module.exports = Message;

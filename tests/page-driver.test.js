@@ -29,7 +29,7 @@ const setupDOM = () => {
 // A concrete driver for our mock DOM
 function TestPageDriver() {
     GenericPageDriver.call(this);
-    this.selectors = {
+    this.selectors = Object.assign({}, this.selectors, {
         chatTitle: '#chat-title',
         historyItems: '#history-list a',
         conversationArea: '#conversation',
@@ -40,29 +40,28 @@ function TestPageDriver() {
         modelSelector: '#model-selector',
         longThinkSwitch: '#long-think-switch',
         answerCollapsedClass: 'collapsed',
+    });
+
+    // Override methods
+    this.getOptions = function() {
+        const model = document.querySelector(this.selectors.modelSelector);
+        const longThink = document.querySelector(this.selectors.longThinkSwitch);
+        return {
+            'current-model': model ? model.value : null,
+            'long-think': longThink ? longThink.checked : null,
+        };
+    };
+
+    this.setOption = function(key, value) {
+        if (key === 'current-model') {
+            const model = document.querySelector(this.selectors.modelSelector);
+            if (model) model.value = value;
+        } else if (key === 'long-think') {
+            const longThink = document.querySelector(this.selectors.longThinkSwitch);
+            if (longThink) longThink.checked = value;
+        }
     };
 }
-TestPageDriver.prototype = Object.create(GenericPageDriver.prototype);
-
-// Override methods that need more specific logic for the test
-TestPageDriver.prototype.getOptions = function() {
-    const model = document.querySelector(this.selectors.modelSelector);
-    const longThink = document.querySelector(this.selectors.longThinkSwitch);
-    return {
-        'current-model': model ? model.value : null,
-        'long-think': longThink ? longThink.checked : null,
-    };
-};
-
-TestPageDriver.prototype.setOption = function(key, value) {
-    if (key === 'current-model') {
-        const model = document.querySelector(this.selectors.modelSelector);
-        if (model) model.value = value;
-    } else if (key === 'long-think') {
-        const longThink = document.querySelector(this.selectors.longThinkSwitch);
-        if (longThink) longThink.checked = value;
-    }
-};
 
 
 describe('PageDriver Module', () => {

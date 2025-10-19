@@ -7,7 +7,7 @@ const mockPageController = {
 };
 
 // Mock the modules to return the mock instances
-jest.mock('../src/sync-chat-window', () => jest.fn().mockImplementation(() => mockMainWindow));
+jest.mock('../src/main-window-controller', () => jest.fn().mockImplementation(() => mockMainWindow));
 jest.mock('../src/page-controller', () => jest.fn().mockImplementation(() => mockPageController));
 jest.mock('../src/storage');
 jest.mock('../src/config', () => {
@@ -25,24 +25,24 @@ describe('Application Entry Point (index.js)', () => {
         // Reset modules to re-run index.js and clear all mock call history
         jest.resetModules();
         jest.clearAllMocks();
+        document.body.innerHTML = ''; // Clear DOM
     });
 
-    test('should initialize MainWindowController if window.name is correct', () => {
-        const MainWindowController = require('../src/sync-chat-window');
+    test('should do nothing if window.name is the main window name', () => {
+        const MainWindowController = require('../src/main-window-controller');
         const PageController = require('../src/page-controller');
 
         Object.defineProperty(window, 'name', { value: 'multi-ai-chat-main-window', writable: true });
 
         require('../src/index.js');
 
-        expect(MainWindowController).toHaveBeenCalledTimes(1);
-        expect(mockMainWindow.init).toHaveBeenCalledTimes(1);
+        expect(MainWindowController).not.toHaveBeenCalled();
         expect(PageController).not.toHaveBeenCalled();
     });
 
     test('should initialize PageController if window.name is not correct', () => {
         jest.useFakeTimers();
-        const MainWindowController = require('../src/sync-chat-window');
+        const MainWindowController = require('../src/main-window-controller');
         const PageController = require('../src/page-controller');
 
         Object.defineProperty(window, 'name', { value: 'some-other-window', writable: true });
@@ -58,7 +58,7 @@ describe('Application Entry Point (index.js)', () => {
 
     test('should initialize PageController if window.name is empty', () => {
         jest.useFakeTimers();
-        const MainWindowController = require('../src/sync-chat-window');
+        const MainWindowController = require('../src/main-window-controller');
         const PageController = require('../src/page-controller');
 
         Object.defineProperty(window, 'name', { value: '', writable: true });

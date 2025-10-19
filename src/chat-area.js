@@ -1,3 +1,4 @@
+const { getProviders, getProviderUrl } = require('./page-driver');
 const Util = require('./util');
 const utils = new Util();
 
@@ -8,24 +9,43 @@ function ChatArea(mainController, id, url, container) {
     this.container = container;
     this.element = null;
     this.hideTimeout = null;
+    this.pinned = false;
 
+    /**
+     * 初始化结构
+     * @param {object} instanceData 初始化数据，结构为{id, providerName, params:{webAccess,longThought, models}, conversation:[{type, content}], pinned}
+     */
     this.init = function(instanceData) {
         const chatAreaHtml = this.render(instanceData);
         this.container.innerHTML = chatAreaHtml;
         this.element = this.container.querySelector('.chat-area-instance');
+        this.pinned = instanceData.pinned || false;
 
         this.cacheDOMElements();
         this.initEventListeners();
+        this.updatePinState();
     };
 
+    /**
+     * 渲染问答内容
+     * @param {object} data 初始化渲染问答内容，结构为{id, providerName, params:{webAccess,longThought, models}, conversation:{type, content}[], pinned}
+     * @returns 
+     */
     this.render = function(data) {
-        const answers = data.conversation.filter(msg => msg.type === 'answer');
+        const providers = getProviders().map((m, i) => 
+            `<div class="model-option" data-value="${m}">${m}</div>`
+        ).join('');
+        const versions = (data.params.models || []).map((m, i) => 
+            `<option>${m}</option>`
+        ).join('');
+
+        const answers = (data.conversation||[]).filter(msg => msg.type === 'answer');
         
         const indexHtml = answers.map((ans, i) => 
             `<div class="index-item"><a href="#answer-${data.id}-${i}">${i + 1}</a></div>`
         ).join('');
 
-        const conversationHtml = data.conversation.map(msg => {
+        const conversationHtml = (data.conversation||[]).map(msg => {
             let id = '';
             if (msg.type === 'answer') {
                 const answerIndex = answers.indexOf(msg);
@@ -39,10 +59,9 @@ function ChatArea(mainController, id, url, container) {
             <div class="chat-area-title">
                 <div class="title-left">
                     <div class="model-selector">
-                        <div class="model-name">${data.modelName} &#9662;</div>
+                        <div class="model-name">${data.providerName} &#9662;</div>
                         <div class="custom-dropdown model-dropdown">
-                            <div class="model-option" data-value="Gemini">Gemini</div>
-                            <div class="model-option" data-value="ChatGPT">ChatGPT</div>
+                            ${providers}
                         </div>
                     </div>
                     <div class="title-button new-session-button" title="New Session">&#10133;</div>
@@ -52,8 +71,11 @@ function ChatArea(mainController, id, url, container) {
                         <div class="title-button params-button" title="Parameters">&#9881;</div>
                         <div class="custom-dropdown params-dropdown">
                             <div class="param-item"><label>Web Access</label><label class="toggle-switch"><input type="checkbox" ${data.params.webAccess ? 'checked' : ''}><span class="slider"></span></label></div>
+                            <div class="param-item"><label>Long Thought</label><label class="toggle-switch"><input type="checkbox" ${data.params.longThought ? 'checked' : ''}><span class="slider"></span></label></div>
                             <hr>
-                            <div class="param-item"><label>Model Version</label><select><option>V2.2</option><option>V1.5 Pro</option></select></div>
+                            <div class="param-item"><label>Model Version</label>
+                                <select>${versions}</select>
+                            </div>
                         </div>
                     </div>
                     <div class="title-button share-button" title="Share">&#128279;</div>
@@ -86,7 +108,7 @@ function ChatArea(mainController, id, url, container) {
         this.conversationArea = this.element.querySelector('.chat-area-conversation');
         this.answerBubbles = this.element.querySelectorAll('.message-bubble.answer');
         this.modelSelector = this.element.querySelector('.model-selector');
-        this.modelNameDisplay = this.modelSelector.querySelector('.model-name');
+        this.providerNameDisplay = this.modelSelector.querySelector('.model-name');
         this.modelDropdown = this.modelSelector.querySelector('.model-dropdown');
         this.paramsSelector = this.element.querySelector('.params-selector');
         this.paramsButton = this.paramsSelector.querySelector('.params-button');
@@ -94,15 +116,16 @@ function ChatArea(mainController, id, url, container) {
     };
 
     this.initEventListeners = function() {
-        this.element.querySelector('.pin-button').addEventListener('click', (e) => e.currentTarget.classList.toggle('pinned'));
-        this.element.querySelector('.close-button').addEventListener('click', () => this.destroy());
+        this.pinButton = this.element.querySelector('.pin-button');
+        this.pinButton.addEventListener('click', () => this.setPin(!this.isPinned()));
+        this.element.querySelector('.close-button').addEventListener('click', () => this.mainController.removeChatArea(this.id));
         this.element.querySelector('.new-session-button').addEventListener('click', () => alert('New Session clicked'));
         this.element.querySelector('.share-button').addEventListener('click', () => alert('Share clicked'));
-        this.modelNameDisplay.addEventListener('click', (e) => this.toggleDropdown(e, this.modelDropdown));
+        this.providerNameDisplay.addEventListener('click', (e) => this.toggleDropdown(e, this.modelDropdown));
         this.paramsButton.addEventListener('click', (e) => this.toggleDropdown(e, this.paramsDropdown));
         this.modelDropdown.querySelectorAll('.model-option').forEach(option => {
             option.addEventListener('click', (e) => {
-                this.modelNameDisplay.innerHTML = `${e.currentTarget.dataset.value} &#9662;`;
+                this.providerNameDisplay.innerHTML = `${e.currentTarget.dataset.value} &#9662;`;
             });
         });
         this.element.querySelector('.expand-all').addEventListener('click', () => this.expandAll());
@@ -114,11 +137,33 @@ function ChatArea(mainController, id, url, container) {
         this.inputArea.addEventListener('focusout', (e) => this.handleFocusOut(e));
     };
 
+    this.isPinned = function() {
+        return this.pinned;
+    };
+
+    this.setPin = function(isPinned) {
+        this.pinned = isPinned;
+        this.updatePinState();
+        // Notify main controller to update layout
+        if (this.mainController && this.mainController.updateLayout) {
+            this.mainController.updateLayout();
+        }
+    };
+
+    this.updatePinState = function() {
+        if (this.pinButton) {
+            this.pinButton.classList.toggle('pinned', this.pinned);
+        }
+    };
+
     this.toggleDropdown = function(event, dropdown) {
         event.stopPropagation();
-        const isVisible = dropdown.classList.contains('visible');
-        document.dispatchEvent(new CustomEvent('close-all-dropdowns'));
-        if (!isVisible) dropdown.classList.add('visible');
+        dropdown.classList.toggle('visible');
+    };
+
+    this.closeDropdowns = function() {
+        this.modelDropdown.classList.remove('visible');
+        this.paramsDropdown.classList.remove('visible');
     };
     
     this.expandAll = () => this.answerBubbles.forEach(b => b.classList.remove('collapsed'));
@@ -172,8 +217,7 @@ function ChatArea(mainController, id, url, container) {
     };
 
     this.destroy = function() {
-        this.mainController.removeChatArea(this.id);
-        this.element.remove();
+        // Internal cleanup can go here. DOM removal is handled by the controller.
     };
 }
 

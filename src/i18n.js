@@ -3,14 +3,14 @@ const Config = require('./config');
 /**
  * @description 管理国际化文本资源。
  * @param {Config} config - Config 实例.
- * @param {object} resources - 语言资源.
+ * @param {object} langs - 语言资源.
  */
-function I18n(config, resources) {
+function I18n(config, langs) {
     if (!config) {
         throw new Error('Config instance must be provided to I18n.');
     }
     this.config = config;
-    this.resources = resources || {};
+    this.resources = langs || {};
     this.currentLang = 'en'; // 默认语言
 
     /**
@@ -73,6 +73,14 @@ function I18n(config, resources) {
      */
     this.getBrowserLang = function() {
         return navigator.language || navigator.userLanguage || null;
+    };
+
+    /**
+     * @description Gets the list of all supported languages.
+     * @returns {string[]} - An array of language codes.
+     */
+    this.getAllLangs = function() {
+        return Object.keys(this.resources);
     };
 
     // 初始化

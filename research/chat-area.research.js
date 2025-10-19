@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const instancesData = [
         {
             id: 1,
-            modelName: 'Gemini',
+            providerName: 'Gemini',
             params: { webAccess: false, longThought: true },
             conversation: [
                 { type: 'question', content: 'Compare let, const, and var.' },
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         {
             id: 2,
-            modelName: 'Kimi',
+            providerName: 'Kimi',
             params: { webAccess: true, longThought: false },
             conversation: [
                 { type: 'question', content: 'Tell me a short story.' },

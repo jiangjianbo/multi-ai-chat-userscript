@@ -4,6 +4,8 @@
 
 在生成代码的时候，可以参考[../research/main-window.html]()中的研究成果代码。
 
+本文讲述了2个类，这些类在实现时候不要放在同一个js文件中，要拆开独立的js文件。
+
 ## 1. 逻辑视图 (Logical View)
 
 ### 模块职责
@@ -107,7 +109,27 @@ function SyncChatWindow(){
      * @param {HTMLElement} doc - 所创建窗口的document对象
      * @returns 
      */
-    this.createWindow = function(doc) { /* ... */ };
+    this.createWindow = function(doc) {
+        /* 
+            此处创建窗口内容参考 research/main-window.html 文件的内容。
+            把该文件中的样式和body中的html和script内容原样复制，加入到主窗口中去。
+            对于需要更多的功代码和接口，使用如下的模板字符串直接嵌入MainWindowController及其依赖的源码：
+            newHtml = `
+                <div id=...></div>
+                <script>
+                    ...
+                    ${require('./chat-area').toString()}
+                    ${require('./main-window-controller').toString()}
+                    ...
+                    此处加入初始化MainWindowController的代码
+                </script>
+            `; 
+            然后将newHtml添加到doc中。
+            但是需要注意main-window.html中：
+            1. 语言下拉框lang-dropdown内容需要从i18n中getAllLangs()获取
+            2. content-area中的子元素会嵌入ChatArea子对象，需要调用它的isPin来判定是否固定
+        */ 
+    };
   
      /**
      * @description 检查并创建窗口。    
@@ -118,17 +140,24 @@ function SyncChatWindow(){
 
 /**
  * @description 主窗口的核心控制器。
- * @param {object} args - 构造函数参数。
  */
-function MainWindowController(args) {
-    this.message = args.message;
-    this.config = args.config;
+function MainWindowController( /* 依赖的基础组件 */) {
+    this.message = ...;
+    this.config = ...;
     this.chatAreas = new Map();
 
     /**
-     * @description 初始化，渲染布局，注册消息监听。
+     * @description 初始化，注册消息监听。
      */
-    this.init = function() { /* ... */ };
+    this.init = function() {
+        /*
+        这里要注意，初始化的时候，页面已经由SyncChatWindow创建完毕。
+        这里要做的是把多语言下拉框lang-dropdown、content-area等关键界面元素找到，并对其进行初始化。
+        
+        
+        
+        */ 
+    };
 
     /**
      * @description 处理来自原生页面的创建内容块的消息。
@@ -174,9 +203,7 @@ function MainWindowController(args) {
 
 
 
-### 窗口创建
-
-最终脚本名称为`main-window`。
+### 场景：窗口创建
 
 油猴脚本监听宿主页面加载完成，并等待5秒之后，开始自动根据交互设计逻辑，生成主窗口页面代码，并替换宿主页面内容。其中的ChatArea区域可以用方框代替，但是相关的样式要包含。
 

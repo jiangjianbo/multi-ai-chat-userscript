@@ -1,4 +1,4 @@
-const MainWindowController = require('./sync-chat-window');
+
 const PageController = require('./page-controller');
 const Util = require('./util');
 const Message = require('./message');
@@ -17,29 +17,14 @@ function main() {
 
     // As per design/architect.md, window.name is used to identify the main window.
     if (window.name === 'multi-ai-chat-main-window') {
-        console.log('Initializing MainWindowController...');
-        const mainWindowController = new MainWindowController();
-        mainWindowController.init();
+        console.log('Skip MainWindow');
     } else {
         util.documentReady(() => {
             console.log('Initializing PageController after delay...');
             const storage = new Storage();
             const defaultConfig = { channelName: 'multi-ai-chat' };
             const config = new Config(storage, defaultConfig);
-            const resources = {
-                'en': {
-                    'app.title': 'Multi-AI Sync Chat',
-                    'button.send': 'Send',
-                },
-                'zh': {
-                    'app.title': '多AI同步聊天',
-                    'button.send': '发送',
-                },
-                'ar': {
-                    'app.title': 'دردشة متزامنة متعددة الذكاء الاصطناعي',
-                    'button.send': 'إرسال'
-                }
-            };
+            const resources = require('./lang');
             const i18n = new I18n(config, resources);
             const message = new Message(config.get('channelName'));
             const pageController = new PageController(message, config, i18n, util);

@@ -139,4 +139,11 @@ describe('I18n', () => {
         expect(i18n.getCurrentLang()).toBe('ar');
         expect(mockConfig.set).toHaveBeenCalledWith('current-lang', 'ar');
     });
+
+    test('getAllLangs should return all available language codes', () => {
+        const i18n = new I18n(mockConfig, getMockResources());
+        const expectedLangs = ['en', 'zh', 'zh-CN', 'zh-TW', 'ar'];
+        expect(i18n.getAllLangs()).toEqual(expect.arrayContaining(expectedLangs));
+        expect(i18n.getAllLangs().length).toBe(expectedLangs.length);
+    });
 });

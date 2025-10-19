@@ -1,5 +1,5 @@
 const { driverFactory } = require('./page-driver');
-const { SyncChatWindow } = require('./sync-chat-window');
+const SyncChatWindow = require('./sync-chat-window');
 
 /**
  * @description 在原生AI页面运行的核心控制器。

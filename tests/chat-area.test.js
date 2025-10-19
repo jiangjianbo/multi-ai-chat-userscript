@@ -9,7 +9,7 @@ const mockMainController = {
 // Mock data for a chat area instance
 const instanceData = {
     id: 'test-id-1',
-    modelName: 'TestModel',
+    providerName: 'TestModel',
     params: { webAccess: true, longThought: false },
     conversation: [
         { type: 'question', content: 'Hello?' },
@@ -21,8 +21,14 @@ describe('ChatArea Module', () => {
     let container, chatArea;
 
     beforeEach(() => {
-        // Set up a DOM environment for each test
-        document.body.innerHTML = '<div id="test-container"></div>';
+        // Set up a DOM environment for each test that mimics the real structure
+        document.body.innerHTML = `
+            <div id="main-content-area">
+                <div class="chat-area-wrapper">
+                    <div id="test-container"></div>
+                </div>
+            </div>
+        `;
         container = document.getElementById('test-container');
         
         // Clear mocks

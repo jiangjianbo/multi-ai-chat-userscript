@@ -118,6 +118,12 @@ function ChatArea(mainController, id, url, container) {
     this.init = function() { /* ... */ };
 
     /**
+     * @description 判断当前内容块是否被pin住。
+     * @returns {boolean}
+     */
+    this.isPinned = function() { /* ... */ };
+
+    /**
      * @description 处理来自控制器的答案更新。
      * @param {object} data - 答案数据。
      */

@@ -1,23 +1,28 @@
 const PageController = require('../src/page-controller');
 const { driverFactory } = require('../src/page-driver');
-const { SyncChatWindow } = require('../src/sync-chat-window');
+const SyncChatWindow = require('../src/sync-chat-window');
 
 // --- Mocks ---
 jest.mock('../src/page-driver', () => ({
     driverFactory: jest.fn(),
 }));
 
-jest.mock('../src/sync-chat-window', () => ({
-    SyncChatWindow: jest.fn(),
-}));
+jest.mock('../src/sync-chat-window', () => {
+    return jest.fn().mockImplementation(() => {
+        return {
+            checkAndCreateWindow: jest.fn(),
+        };
+    });
+});
 
 describe('PageController', () => {
     let pageController;
-    let mockMessage, mockUtil, mockDriver, mockSyncChatWindow;
+    let mockMessage, mockUtil, mockDriver;
 
     beforeEach(() => {
         // Reset DOM
         document.body.innerHTML = '';
+        SyncChatWindow.mockClear();
 
         // Mock Driver
         mockDriver = {
@@ -31,18 +36,12 @@ describe('PageController', () => {
         };
         driverFactory.mockReturnValue(mockDriver);
 
-        // Mock SyncChatWindow
-        mockSyncChatWindow = {
-            checkAndCreateWindow: jest.fn(),
-        };
-        SyncChatWindow.mockImplementation(() => mockSyncChatWindow);
-
         // Other Mocks
         mockMessage = { register: jest.fn(), send: jest.fn() };
         mockUtil = {
             toHtml: jest.fn(json => {
                 const el = document.createElement(json.tag);
-                el.id = json['@id'];
+                if (json['@id']) el.id = json['@id'];
                 return el;
             }),
         };
@@ -50,7 +49,7 @@ describe('PageController', () => {
         pageController = new PageController(
             mockMessage,
             {},
-            {},
+            { t: key => key },
             mockUtil
         );
 
@@ -73,7 +72,7 @@ describe('PageController', () => {
         const syncButton = document.getElementById('multi-ai-sync-btn');
         syncButton.click();
 
-        expect(mockSyncChatWindow.checkAndCreateWindow).toHaveBeenCalled();
+        expect(pageController.syncChatWindow.checkAndCreateWindow).toHaveBeenCalled();
         
         // Fast-forward timers to resolve the setTimeout
         jest.runAllTimers();
