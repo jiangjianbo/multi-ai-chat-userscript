@@ -1,4 +1,6 @@
-const { getProviders, getProviderUrl } = require('./page-driver');
+const DriverFactory = require('./driver-factory');
+const driverFactory = new DriverFactory();
+const { getProviders, getProviderUrl } = driverFactory;
 const Util = require('./util');
 const utils = new Util();
 

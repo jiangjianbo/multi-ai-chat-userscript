@@ -1,5 +1,6 @@
 const ChatArea = require('./chat-area');
 const Util = require('./util');
+const { getProviderUrl } = new (require('./driver-factory'))();
 
 /**
  * @description Core controller for the main window.
@@ -257,6 +258,14 @@ function MainWindowController(receiverId, message, config, i18n) {
 
         const chatArea = new ChatArea(this, data.id, data.url, container);
         chatArea.init(data);
+
+        chatArea.setEventHandler('onEvtNewSession', this._handleNewSession.bind(this));
+        chatArea.setEventHandler('onEvtShare', this._handleShare.bind(this));
+        chatArea.setEventHandler('onEvtParamChanged', this._handleParamChanged.bind(this));
+        chatArea.setEventHandler('onEvtProviderChanged', this._handleProviderChanged.bind(this));
+        chatArea.setEventHandler('onEvtPromptSend', this._handlePromptSend.bind(this));
+        chatArea.setEventHandler('onEvtExport', this._handleExport.bind(this));
+
         this.chatAreas.set(data.id, chatArea);
         this.updateDefaultLayout();
         this.updateNewChatButtonState();
@@ -291,8 +300,31 @@ function MainWindowController(receiverId, message, config, i18n) {
             this.chatAreas.delete(id);
             this.updateDefaultLayout();
             this.updateNewChatButtonState();
-            console.log(`Removed ChatArea: ${id}`);
-        }
+    this._handleNewSession = function(chatArea, providerName) {
+        this.message.send(chatArea.id, 'new_session', { providerName });
+    };
+
+    this._handleShare = function(chatArea, url) {
+        navigator.clipboard.writeText(url);
+        this.message.send(chatArea.id, 'focus', {});
+    };
+
+    this._handleParamChanged = function(chatArea, key, newValue, oldValue) {
+        this.message.send(chatArea.id, 'param_changed', { key, newValue, oldValue });
+    };
+
+    this._handleProviderChanged = function(chatArea, newProvider, oldProvider) {
+        const newUrl = getProviderUrl(newProvider);
+        this.message.send(chatArea.id, 'change_provider', { url: newUrl });
+        chatArea.url = newUrl;
+    };
+
+    this._handlePromptSend = function(chatArea, text) {
+        this.message.send(chatArea.id, 'prompt', { text });
+    };
+
+    this._handleExport = function(chatArea) {
+        this.message.send(chatArea.id, 'export', {});
     };
 }
 

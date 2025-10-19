@@ -182,58 +182,9 @@ function ChatGPTPageDriver() {
 
 // --- 驱动工厂 ---
 
-const urlMap = {
-    'kimi.ai': {name:'Kimi', url:'https://www.kimi.com'},
-    'www.kimi.com': {name:'Kimi', url:'https://www.kimi.com'},
-    'gemini.google.com': {name: 'Gemini', url:'https://gemini.google.com'},
-    'chat.openai.com': {name:'ChatGPT', url:'https://chat.openai.com'},
-};
-
-const driverMap = {
-    'Kimi': KimiPageDriver,
-    'Gemini': GeminiPageDriver,
-    'ChatGPT': ChatGPTPageDriver,
-};
-
-/**
- * @description 返回模型提供商名称
- * @returns {string[]}
- */
-function getProviders() {
-    return Object.keys(driverMap);
-}
-
-/**
- * @description 返回模型提供商的网址
- * @returns {string}
- */
-function getProviderUrl(providerName) {
-    return Object.values(urlMap).find(v => v.name === providerName)?.url || '';
-}
-
-/**
- * @description 根据主机名获取对应的页面驱动实例。
- * @param {string} hostname - window.location.hostname
- * @returns {GenericPageDriver}
- */
-function driverFactory(hostname) {
-    const nameUrl = urlMap[hostname];
-    if (nameUrl) {
-        const Driver = driverMap[nameUrl.name];
-        if (Driver) {
-            return new Driver();
-        }
-    }
-    console.warn(`No specific driver found for ${hostname}. Using GenericPageDriver.`);
-    return new GenericPageDriver();
-}
-
 module.exports = {
     GenericPageDriver,
     KimiPageDriver,
     GeminiPageDriver,
-    ChatGPTPageDriver,
-    driverFactory,
-    getProviders,
-    getProviderUrl
+    ChatGPTPageDriver
 };
