@@ -1,6 +1,6 @@
 const ChatArea = require('./chat-area');
 const Util = require('./util');
-const { getProviderUrl } = new (require('./driver-factory'))();
+const DriverFactory = require('./driver-factory');
 
 /**
  * @description Core controller for the main window.
@@ -16,6 +16,7 @@ function MainWindowController(receiverId, message, config, i18n) {
     this.i18n = i18n;
     this.util = new Util();
     this.chatAreas = new Map();
+    this.driverFactory = new DriverFactory();
     this.element = null;
     this.chatAreaContainer = null;
     this.layoutSwitcher = null;
@@ -300,6 +301,10 @@ function MainWindowController(receiverId, message, config, i18n) {
             this.chatAreas.delete(id);
             this.updateDefaultLayout();
             this.updateNewChatButtonState();
+            console.log(`Removed ChatArea: ${id}`);
+        }
+    };
+
     this._handleNewSession = function(chatArea, providerName) {
         this.message.send(chatArea.id, 'new_session', { providerName });
     };
@@ -314,7 +319,7 @@ function MainWindowController(receiverId, message, config, i18n) {
     };
 
     this._handleProviderChanged = function(chatArea, newProvider, oldProvider) {
-        const newUrl = getProviderUrl(newProvider);
+        const newUrl = this.driverFactory.getProviderUrl(newProvider);
         this.message.send(chatArea.id, 'change_provider', { url: newUrl });
         chatArea.url = newUrl;
     };
