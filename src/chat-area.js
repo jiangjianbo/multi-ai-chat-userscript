@@ -10,6 +10,29 @@ function ChatArea(mainController, id, url, container) {
     this.element = null;
     this.hideTimeout = null;
     this.pinned = false;
+    this.eventHandlers = {
+        onEvtClose: (chatArea) => {},
+        onEvtNewSession: (chatArea, providerName) => { },
+        onEvtShare: (chatArea, url) => { },
+        onEvtParamChanged: (chatArea, key, newValue, oldValue) => { },
+        onEvtProviderChanged: (chatArea, newProvider, oldProvider) => { },
+        onEvtPromptSend: (chatArea, text) => { },
+        onEvtExport: () => {}
+    };
+
+    this.setEventHandler = function(eventName, handler) {
+        let name = "";
+        let ev = eventName.toLowerCase();
+        if (ev == "onEvtClose".toLowerCase() || ev == "Close".toLowerCase()) name = "onEvtClose";
+        if (ev == "onEvtNewSession".toLowerCase() || ev == "NewSession".toLowerCase()) name = "onEvtNewSession";
+        if (ev == "onEvtShare".toLowerCase() || ev == "Share".toLowerCase()) name = "onEvtShare";
+        if (ev == "onEvtParamChanged".toLowerCase() || ev == "ParamChanged".toLowerCase()) name = "onEvtParamChanged";
+        if (ev == "onEvtProviderChanged".toLowerCase() || ev == "ProviderChanged".toLowerCase()) name = "onEvtProviderChanged";
+        if (ev == "onEvtPromptSend".toLowerCase() || ev == "PromptSend".toLowerCase()) name = "onEvtPromptSend";
+        if (ev == "onEvtExport".toLowerCase() || ev == "Export".toLowerCase()) name = "onEvtExport";
+        
+        if (name.length > 0) this.eventHandlers[name] = handler;
+    };
 
     /**
      * 初始化结构
@@ -19,6 +42,9 @@ function ChatArea(mainController, id, url, container) {
         const chatAreaHtml = this.render(instanceData);
         this.container.innerHTML = chatAreaHtml;
         this.element = this.container.querySelector('.chat-area-instance');
+        if (!this.url) {
+            this.element.classList.add('forced-selection');
+        }
         this.pinned = instanceData.pinned || false;
 
         this.cacheDOMElements();
@@ -54,8 +80,11 @@ function ChatArea(mainController, id, url, container) {
             return `<div class="message-bubble ${msg.type}" ${id}><div class="bubble-content">${msg.content}</div></div>`;
         }).join('');
 
+        const overlayHtml = this.url ? '' : '<div class="forced-selection-overlay"></div>';
+
         return `
         <div class="chat-area-instance">
+            ${overlayHtml}
             <div class="chat-area-title">
                 <div class="title-left">
                     <div class="model-selector">
@@ -66,14 +95,19 @@ function ChatArea(mainController, id, url, container) {
                     </div>
                     <div class="title-button new-session-button" title="New Session">&#10133;</div>
                 </div>
+                <div class="title-center">
+                    <div class="title-button expand-all" title="Expand All">&#x2924;</div>
+                    <div class="title-button collapse-all" title="Collapse All">&#x2922;</div>
+                    <div class="title-button export-button" title="Export Content">&#128228;</div>
+                </div>
                 <div class="title-right">
                     <div class="params-selector">
                         <div class="title-button params-button" title="Parameters">&#9881;</div>
                         <div class="custom-dropdown params-dropdown">
-                            <div class="param-item"><label>Web Access</label><label class="toggle-switch"><input type="checkbox" ${data.params.webAccess ? 'checked' : ''}><span class="slider"></span></label></div>
-                            <div class="param-item"><label>Long Thought</label><label class="toggle-switch"><input type="checkbox" ${data.params.longThought ? 'checked' : ''}><span class="slider"></span></label></div>
+                            <div class="param-item" data-param-name="webAccess"><label>Web Access</label><label class="toggle-switch"><input type="checkbox" id="web-access-${data.id}" ${data.params.webAccess ? 'checked' : ''}><span class="slider"></span></label></div>
+                            <div class="param-item" data-param-name="longThought"><label>Long Thought</label><label class="toggle-switch"><input type="checkbox" id="long-thought-${data.id}" ${data.params.longThought ? 'checked' : ''}><span class="slider"></span></label></div>
                             <hr>
-                            <div class="param-item"><label>Model Version</label>
+                            <div class="param-item" data-param-name="modelVersion"><label>Model Version</label>
                                 <select>${versions}</select>
                             </div>
                         </div>
@@ -85,8 +119,6 @@ function ChatArea(mainController, id, url, container) {
             </div>
             <div class="chat-area-main">
                 <div class="chat-area-index">
-                    <div class="index-button expand-all" title="Expand All">&#x2924;</div>
-                    <div class="index-button collapse-all" title="Collapse All">&#x2922;</div>
                     ${indexHtml}
                 </div>
                 <div class="chat-area-conversation">${conversationHtml}</div>
@@ -118,23 +150,81 @@ function ChatArea(mainController, id, url, container) {
     this.initEventListeners = function() {
         this.pinButton = this.element.querySelector('.pin-button');
         this.pinButton.addEventListener('click', () => this.setPin(!this.isPinned()));
-        this.element.querySelector('.close-button').addEventListener('click', () => this.mainController.removeChatArea(this.id));
-        this.element.querySelector('.new-session-button').addEventListener('click', () => alert('New Session clicked'));
-        this.element.querySelector('.share-button').addEventListener('click', () => alert('Share clicked'));
+        this.element.querySelector('.close-button').addEventListener('click', () => {
+            this.eventHandlers.onEvtClose(this);
+            this.mainController.removeChatArea(this.id);
+        });
+        this.element.querySelector('.new-session-button').addEventListener('click', () => {
+            this.eventHandlers.onEvtNewSession(this, this.getProvider());
+        });
+        this.element.querySelector('.share-button').addEventListener('click', () => {
+            this.eventHandlers.onEvtShare(this, this.getUrl());
+        });
         this.providerNameDisplay.addEventListener('click', (e) => this.toggleDropdown(e, this.modelDropdown));
         this.paramsButton.addEventListener('click', (e) => this.toggleDropdown(e, this.paramsDropdown));
+
+        let selectOldValue;
+        const selectElement = this.paramsDropdown.querySelector('select');
+        selectElement.addEventListener('focus', (e) => {
+            selectOldValue = e.target.value;
+        });
+
+        this.paramsDropdown.addEventListener('change', (e) => {
+            const target = e.target;
+            let name, oldValue, newValue;
+            const paramItem = target.closest('.param-item');
+            if (!paramItem) return;
+
+            name = paramItem.dataset.paramName;
+
+            if (target.type === 'checkbox') {
+                newValue = target.checked;
+                oldValue = !newValue;
+            } else if (target.tagName === 'SELECT') {
+                newValue = target.value;
+                oldValue = selectOldValue;
+            }
+
+            if (name) {
+                this.eventHandlers.onEvtParamChanged(this, name, newValue, oldValue);
+            }
+        });
         this.modelDropdown.querySelectorAll('.model-option').forEach(option => {
             option.addEventListener('click', (e) => {
-                this.providerNameDisplay.innerHTML = `${e.currentTarget.dataset.value} &#9662;`;
+                const oldProvider = this.getProvider();
+                const newProvider = e.currentTarget.dataset.value;
+                this.providerNameDisplay.innerHTML = `${newProvider} &#9662;`;
+                this.eventHandlers.onEvtProviderChanged(this, newProvider, oldProvider);
+                this.modelDropdown.classList.remove('visible');
+
+                if (this.element.classList.contains('forced-selection')) {
+                    this.element.classList.remove('forced-selection');
+                    const overlay = this.element.querySelector('.forced-selection-overlay');
+                    if (overlay) {
+                        overlay.remove();
+                    }
+                    this.url = getProviderUrl(newProvider);
+                }
             });
         });
         this.element.querySelector('.expand-all').addEventListener('click', () => this.expandAll());
         this.element.querySelector('.collapse-all').addEventListener('click', () => this.collapseAll());
+        this.element.querySelector('.export-button').addEventListener('click', () => {
+            this.eventHandlers.onEvtExport(this);
+        });
         this.placeholder.addEventListener('mouseenter', () => this.showInput());
         this.inputArea.addEventListener('mouseenter', () => this.showInput());
         this.inputArea.addEventListener('mouseleave', () => this.undockInput());
         this.textarea.addEventListener('focus', () => this.dockInput());
         this.inputArea.addEventListener('focusout', (e) => this.handleFocusOut(e));
+
+        this.inputArea.querySelector('button').addEventListener('click', () => {
+            const prompt = this.textarea.value.trim();
+            if (prompt) {
+                this.eventHandlers.onEvtPromptSend(this, prompt);
+                this.textarea.value = '';
+            }
+        });
     };
 
     this.isPinned = function() {
@@ -218,6 +308,34 @@ function ChatArea(mainController, id, url, container) {
 
     this.destroy = function() {
         // Internal cleanup can go here. DOM removal is handled by the controller.
+    };
+
+    this.getProvider = function() {
+        return this.providerNameDisplay.textContent.replace('▼', '').trim();
+    };
+
+    this.getWebAccess = function() {
+        return this.element.querySelector(`#web-access-${this.id}`).checked;
+    };
+
+    this.getLongThought = function() {
+        return this.element.querySelector(`#long-thought-${this.id}`).checked;
+    };
+
+    this.getModelVersion = function() {
+        return this.paramsDropdown.querySelector('select').value;
+    };
+
+    this.getUrl = function() {
+        return this.url;
+    };
+
+    this.setWebAccess = function(value) {
+        this.element.querySelector(`#web-access-${this.id}`).checked = value;
+    };
+
+    this.setLongThought = function(value) {
+        this.element.querySelector(`#long-thought-${this.id}`).checked = value;
     };
 }
 

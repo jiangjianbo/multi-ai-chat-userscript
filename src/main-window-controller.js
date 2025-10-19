@@ -18,6 +18,21 @@ function MainWindowController(receiverId, message, config, i18n) {
     this.element = null;
     this.chatAreaContainer = null;
     this.layoutSwitcher = null;
+    this.eventHandlers = {
+        onEvtAllWebAccessChanged: (newValue) => {
+            this.chatAreas.forEach(area => area.setWebAccess(newValue));
+        },
+        onEvtAllLongThoughtChanged: (newValue) => {
+            this.chatAreas.forEach(area => area.setLongThought(newValue));
+        },
+        onEvtAllPrompt: (prompt) => {
+            this.message.broadcast('chat', { prompt });
+        }
+    };
+
+    this.setEventHandler = function(eventName, handler) {
+        this.eventHandlers[eventName] = handler;
+    };
 
     /**
      * @description Initializes the controller, renders the layout, and registers listeners.
@@ -26,10 +41,8 @@ function MainWindowController(receiverId, message, config, i18n) {
         this.cacheDOMElements();
         this.initEventListeners();
         this.initMessageListeners();
-        if (!this.chatAreaContainer.dataset.layout) {
-            this.setLayout('2');
-        } else 
-            this.updateLayout(); // Initial layout update
+        this.updateLayout(); // Initial layout update
+        this.updateNewChatButtonState();
 
         // Update internationalized text
         this.element.querySelector('.product-name').textContent = this.i18n.getText('app.title');
@@ -52,6 +65,7 @@ function MainWindowController(receiverId, message, config, i18n) {
         this.langDropdown = document.getElementById('lang-dropdown');
         this.settingsButton = document.getElementById('settings-button');
         this.settingsMenu = document.getElementById('settings-menu');
+        this.newChatButton = document.getElementById('new-chat-button');
     };
 
     /**
@@ -69,7 +83,7 @@ function MainWindowController(receiverId, message, config, i18n) {
         this.globalSendButton.addEventListener('click', () => {
             const prompt = this.promptTextarea.value;
             if (prompt.trim()) {
-                this.message.broadcast('chat', { prompt });
+                this.eventHandlers.onEvtAllPrompt(prompt);
                 this.promptTextarea.value = '';
                 this.promptWrapper.dataset.replicatedValue = ''; // Reset auto-grow
             }
@@ -101,6 +115,14 @@ function MainWindowController(receiverId, message, config, i18n) {
         });
         this.settingsMenu.addEventListener('click', (e) => e.stopPropagation());
 
+        this.settingsMenu.querySelector('#web-access').addEventListener('change', (e) => {
+            this.eventHandlers.onEvtAllWebAccessChanged(e.target.checked);
+        });
+
+        this.settingsMenu.querySelector('#long-thought').addEventListener('change', (e) => {
+            this.eventHandlers.onEvtAllLongThoughtChanged(e.target.checked);
+        });
+
         this.closeAllDropdowns = function() {
             this.chatAreas.forEach(area => area.closeDropdowns());
         }
@@ -119,6 +141,12 @@ function MainWindowController(receiverId, message, config, i18n) {
         this.promptTextarea.addEventListener('input', () => {
             this.promptWrapper.dataset.replicatedValue = this.promptTextarea.value;
         });
+
+        this.newChatButton.addEventListener('click', () => {
+                    const newId = `chat-area-${Date.now()}`;
+                    const webAccess = this.settingsMenu.querySelector('#web-access').checked;
+                    const longThought = this.settingsMenu.querySelector('#long-thought').checked;
+                    this.addChatArea({ id: newId, url: null, providerName: 'New Chat', params: { webAccess, longThought } });        });
 
         // Populate Language Dropdown
         const langs = this.i18n.getAllLangs();
@@ -146,7 +174,14 @@ function MainWindowController(receiverId, message, config, i18n) {
             const newActive = this.layoutSwitcher.querySelector(`[data-layout="${layout}"]`);
             if (newActive) newActive.classList.add('active');
             this.updateLayout();
+            this.updateNewChatButtonState();
         }
+    };
+
+    this.updateNewChatButtonState = function() {
+        const layout = parseInt(this.chatAreaContainer.dataset.layout, 10);
+        const numAreas = this.chatAreas.size;
+        this.newChatButton.disabled = numAreas >= layout;
     };
 
     this.updateLayout = function() {
@@ -207,7 +242,7 @@ function MainWindowController(receiverId, message, config, i18n) {
 
     /**
      * @description Adds a new ChatArea instance.
-     * @param {object} data - 初始化数据，结构为{id, providerName, pinned, params:{webAccess,longThought, models}, conversation:[{type, content}]}.
+     * @param {object} data - 初始化数据，结构为{id, providerName, url, pinned, params:{webAccess,longThought, models}, conversation:[{type, content}]}.
      */
     this.addChatArea = function(data) {
         if (this.chatAreas.has(data.id)) {
@@ -223,7 +258,22 @@ function MainWindowController(receiverId, message, config, i18n) {
         const chatArea = new ChatArea(this, data.id, data.url, container);
         chatArea.init(data);
         this.chatAreas.set(data.id, chatArea);
+        this.updateDefaultLayout();
+        this.updateNewChatButtonState();
         console.log(`Added ChatArea: ${data.id}`);
+    };
+
+    this.updateDefaultLayout = function() {
+        const numAreas = this.chatAreas.size;
+        let layout = '1';
+        if (numAreas > 4) {
+            layout = '6';
+        } else if (numAreas > 2) {
+            layout = '4';
+        } else if (numAreas > 1) {
+            layout = '2';
+        }
+        this.setLayout(layout);
     };
 
     /**
@@ -239,6 +289,8 @@ function MainWindowController(receiverId, message, config, i18n) {
                 wrapper.remove(); // Controller removes the wrapper it created
             }
             this.chatAreas.delete(id);
+            this.updateDefaultLayout();
+            this.updateNewChatButtonState();
             console.log(`Removed ChatArea: ${id}`);
         }
     };

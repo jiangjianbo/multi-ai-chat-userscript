@@ -150,7 +150,8 @@ function SyncChatWindow() {
             position: relative;
         }
         .chat-area-title { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border-color); background-color: #fff; position: relative; }
-        .title-left, .title-right { display: flex; align-items: center; gap: 12px; }
+        .title-left, .title-right, .title-center { display: flex; align-items: center; gap: 12px; }
+        .title-center { flex-grow: 1; justify-content: center; }
         .title-button { cursor: pointer; font-size: 18px; padding: 5px; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
         .title-button:hover { background-color: #eee; }
         .pin-button .icon { transition: transform 0.2s ease; display: inline-block; }
@@ -186,6 +187,22 @@ function SyncChatWindow() {
         .chat-area-input.docked { background-color: #fff; }
         .chat-area-input textarea { flex-grow: 1; border: 1px solid var(--border-color); border-radius: 5px; padding: 8px; font-size: 14px; resize: none; }
         .chat-area-input button { flex-shrink: 0; width: 36px; height: 36px; border: none; background-color: #007bff; color: white; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; }
+
+        .forced-selection-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+
+        .chat-area-instance.forced-selection .model-selector,
+        .chat-area-instance.forced-selection .close-button {
+            z-index: 101;
+            position: relative;
+        }
         `;
         const styleSheet = doc.createElement("style");
         styleSheet.type = "text/css";
@@ -216,6 +233,7 @@ function SyncChatWindow() {
                                 <!-- Populated by MainWindowController -->
                             </div>
                         </div>
+                        <button class="title-action-button" id="new-chat-button" title="New Chat">&#10133;</button>
                     </div>
                     <div class="title-section center" id="layout-switcher">
                         <button class="layout-button active" data-layout="1">1</button>
