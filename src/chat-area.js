@@ -1,6 +1,5 @@
 const DriverFactory = require('./driver-factory');
 const driverFactory = new DriverFactory();
-const { getProviders, getProviderUrl } = driverFactory;
 const Util = require('./util');
 const utils = new Util();
 
@@ -60,7 +59,7 @@ function ChatArea(mainController, id, url, container) {
      * @returns 
      */
     this.render = function(data) {
-        const providers = getProviders().map((m, i) => 
+        const providers = driverFactory.getProviders().map((m, i) => 
             `<div class="model-option" data-value="${m}">${m}</div>`
         ).join('');
         const versions = (data.params.models || []).map((m, i) => 
@@ -205,7 +204,7 @@ function ChatArea(mainController, id, url, container) {
                     if (overlay) {
                         overlay.remove();
                     }
-                    this.url = getProviderUrl(newProvider);
+                    this.url = driverFactory.getProviderUrl(newProvider);
                 }
             });
         });

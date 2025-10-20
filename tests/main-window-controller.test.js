@@ -14,6 +14,8 @@ jest.mock('../src/chat-area', () => {
         handleAnswer: jest.fn(),
         destroy: jest.fn(), // Simple mock
         isPinned: jest.fn(() => false),
+        setEventHandler: jest.fn(),
+        closeDropdowns: jest.fn(),
     }));
 });
 
@@ -68,8 +70,12 @@ describe('MainWindowController', () => {
                     </header>
                     <main class="content-area" id="content-area" data-layout="1"></main>
                     <footer class="prompt-area">
+                        <button id="new-chat-button">New Chat</button>
                         <button class="prompt-action-button" id="settings-button">&#9881;</button>
-                        <div class="settings-menu" id="settings-menu"></div>
+                        <div class="settings-menu" id="settings-menu">
+                            <div class="param-item"><label>Web Access</label><label class="toggle-switch"><input type="checkbox" id="web-access"></label></div>
+                            <div class="param-item"><label>Long Thought</label><label class="toggle-switch"><input type="checkbox" id="long-thought"></label></div>
+                        </div>
                         <div class="prompt-input-wrapper" id="prompt-wrapper">
                             <textarea id="prompt-textarea" rows="1"></textarea>
                         </div>
