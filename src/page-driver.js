@@ -17,7 +17,12 @@ function GenericPageDriver() {
         conversationArea: '#conversation',
         chatTitle: 'h1',
         historyItems: '.history-item',
-        answerCollapsedClass: 'collapsed'
+        answerCollapsedClass: 'collapsed',
+        newSessionButton: 'button.new-session',
+        webAccessOption: 'input#web-access',
+        longThoughtOption: 'input#long-thought',
+        modelVersionList: 'select.model-version',
+        currentModelVersion: 'span.current-model'
     }; // 应由具体驱动覆盖
     this.onAnswer = (index, element) => {};
     this.onChatTitle = (title) => {};
@@ -25,32 +30,149 @@ function GenericPageDriver() {
 
     this.observer = null;
 
-    // --- DOM 读取方法 ---
+    // --- DOM Element Accessors ---
+
+    this.elementPromptInput = function() {
+        return util.$(this.selectors.promptInput);
+    };
+
+    this.elementSendButton = function() {
+        return util.$(this.selectors.sendButton);
+    };
+
+    this.elementConversationArea = function() {
+        return util.$(this.selectors.conversationArea);
+    };
+
+    this.elementHistoryArea = function() {
+        return util.$(this.selectors.historyArea);
+    };
+
+    this.elementQuestions = function() {
+        return util.$$(this.selectors.questions);
+    };
+
+    this.elementAnswers = function() {
+        return util.$$(this.selectors.answers);
+    };
+
+    this.elementHistoryItems = function() {
+        return util.$$(this.selectors.historyItems);
+    };
+
+    this.elementQuestion = function(index) {
+        return this.elementQuestions()[index] || null;
+    };
+
+    this.elementAnswer = function(index) {
+        return this.elementAnswers()[index] || null;
+    };
+
+    this.elementChatTitle = function() {
+        return util.$(this.selectors.chatTitle);
+    };
+
+    this.elementHistoryItem = function(index) {
+        return this.elementHistoryItems()[index] || null;
+    };
+
+    this.elementNewSessionButton = function() {
+        return util.$(this.selectors.newSessionButton);
+    };
+
+    this.elementWebAccessOption = function() {
+        return util.$(this.selectors.webAccessOption);
+    };
+
+    this.elementLongThoughtOption = function() {
+        return util.$(this.selectors.longThoughtOption);
+    };
+
+    this.elementModelVersionList = function() {
+        return util.$(this.selectors.modelVersionList);
+    };
+
+    this.elementCurrentModelVersion = function() {
+        return util.$(this.selectors.currentModelVersion);
+    };
+
+    // --- DOM Data Getters ---
+
+    this.getPromptInput = function() {
+        return this.elementPromptInput();
+    };
+
+    this.getSendButton = function() {
+        return this.elementSendButton();
+    };
+
+    this.getConversationArea = function() {
+        return this.elementConversationArea();
+    };
+
+    this.getHistoryArea = function() {
+        return this.elementHistoryArea();
+    };
+
+    this.getQuestions = function() {
+        return this.elementQuestions();
+    };
+
+    this.getAnswers = function() {
+        return this.elementAnswers();
+    };
+
+    this.getHistoryItems = function() {
+        return this.elementHistoryItems();
+    };
+
+    this.getNewSessionButton = function() {
+        return this.elementNewSessionButton();
+    };
+
+    this.getWebAccessOption = function() {
+        return this.elementWebAccessOption();
+    };
+
+    this.getLongThoughtOption = function() {
+        return this.elementLongThoughtOption();
+    };
+
+    this.getModelVersionList = function() {
+        return this.elementModelVersionList();
+    };
+
+    this.getCurrentModelVersion = function() {
+        return this.elementCurrentModelVersion();
+    };
 
     this.getConversationCount = function() {
-        return util.$$(this.selectors.questions).length;
+        return this.elementQuestions().length;
     };
 
     this.getQuestion = function(index) {
-        return util.$$(this.selectors.questions)[index] || null;
+        // This method returns the element, which is inconsistent, but per user request to keep functionality.
+        const el = this.elementQuestion(index);
+        return el;
     };
 
     this.getAnswer = function(index) {
-        const answers = util.$$(this.selectors.answers);
-        return answers[index] || null;
+        // This method returns the element, which is inconsistent, but per user request to keep functionality.
+        const el = this.elementAnswer(index);
+        return el;
     };
 
     this.getChatTitle = function() {
-        const el = util.$(this.selectors.chatTitle);
+        const el = this.elementChatTitle();
         return el ? el.textContent.trim() : '';
     };
 
     this.getHistoryCount = function() {
-        return util.$$(this.selectors.historyItems).length;
+        return this.elementHistoryItems().length;
     };
 
     this.getHistory = function(index) {
-        const el = util.$$(this.selectors.historyItems)[index];
+        const el = this.elementHistoryItem(index);
         if (!el) return null;
         return {
             title: el.textContent.trim(),
@@ -154,8 +276,13 @@ function KimiPageDriver() {
         questions: 'div.chat-content-item.chat-content-item-user',
         answers: 'div.chat-content-item.chat-content-item-assistant',
         conversationArea: '#app div.main div.layout-content-main div.chat-content-container',
-        chatTitle: '.chat-#app div.main div.layout-header header.chat-header-content h2',
-        historyItems: '.sidebar div.history-part ul li'
+        chatTitle: '#app div.main div.layout-header header.chat-header-content h2',
+        historyItems: '.sidebar div.history-part ul li',
+        newSessionButton: '#app aside div.sidebar-nav a.new-chat-btn',
+        webAccessOption: 'body div.toolkit-popover > div.toolkit-container div.toolkit-item:nth-child(1) > div.search-switch > label > input',
+        longThoughtOption: 'body div.toolkit-popover > div.toolkit-container div.toolkit-item:nth-child(2) > div.search-switch > label > input',
+        modelVersionList: 'body div.models-popover div.models-container div.model-item div.model-name > span.name',
+        currentModelVersion: '#app div.main div.chat-action > div.chat-editor > div.chat-editor-action div.current-model span.name'
     };
     this.selectors = Object.assign({}, this.selectors, kimiSelectors);
 }
