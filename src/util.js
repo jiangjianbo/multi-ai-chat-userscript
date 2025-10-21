@@ -101,6 +101,9 @@ function Util() {
      * @returns {HTMLElement|null}
      */
     this.$ = function(selector, parent = document) {
+        if (selector == null || selector === '') {
+            return null;
+        }
         return parent.querySelector(selector);
     }
 
@@ -111,6 +114,9 @@ function Util() {
      * @returns {NodeListOf<HTMLElement>}
      */
     this.$$ = function(selector, parent = document) {
+        if (selector == null || selector === '') {
+            return [];
+        }
         return parent.querySelectorAll(selector);
     }
     
@@ -124,9 +130,83 @@ function Util() {
         await new Promise(resolve => setTimeout(resolve, 200));
         const result = callback();
         clickElement.click();
-        return result;
-    };
+            return result;
     }
+
+    /**
+     * @description 获取HTML元素的内容或值，根据元素类型返回正确的数据类型。
+     * @param {HTMLElement} element - 要获取内容的HTML元素。
+     * @returns {*} - 元素的内容或值，类型根据元素类型而定（例如，checkbox返回boolean，input返回string）。
+     */
+    this.getText = function(element) {
+        if (!element) {
+            return undefined;
+        }
+
+        const tagName = element.tagName.toLowerCase();
+        const type = element.type ? element.type.toLowerCase() : '';
+
+        if (tagName === 'input') {
+            if (type === 'checkbox' || type === 'radio') {
+                return element.checked;
+            }
+            return element.value;
+        } else if (tagName === 'textarea' || tagName === 'select') {
+            return element.value;
+        } else {
+            // For other elements like div, span, p, etc.
+            return element.textContent;
+        }
+    }
+
+    /**
+     * @description 设置HTML元素的内容或值，根据元素类型接受正确的数据类型。
+     * @param {HTMLElement} element - 要设置内容的HTML元素。
+     * @param {*} value - 要设置的值，类型根据元素类型而定（例如，checkbox接受boolean，input接受string）。
+     */
+    this.setText = function(element, value) {
+        if (!element) {
+            return;
+        }
+
+        const tagName = element.tagName.toLowerCase();
+        const type = element.type ? element.type.toLowerCase() : '';
+
+        if (tagName === 'input') {
+            if (type === 'checkbox' || type === 'radio') {
+                element.checked = !!value; // Ensure boolean
+            } else {
+                element.value = String(value); // Ensure string
+            }
+        } else if (tagName === 'textarea' || tagName === 'select') {
+            element.value = String(value); // Ensure string
+        } else {
+            // For other elements like div, span, p, etc.
+            element.textContent = String(value); // Ensure string
+        }
+    }
+
+    /**
+     * @description 获取HTML元素的布尔值状态，主要用于checkbox或具有布尔语义的元素。
+     * @param {HTMLElement} element - 要获取布尔值的HTML元素。
+     * @returns {boolean|undefined} - 元素的布尔值状态，如果元素没有明确的布尔状态则返回undefined。
+     */
+    this.getBoolean = function(element) {
+        if (!element) {
+            return undefined;
+        }
+
+        const tagName = element.tagName.toLowerCase();
+        const type = element.type ? element.type.toLowerCase() : '';
+
+        if (tagName === 'input' && (type === 'checkbox' || type === 'radio')) {
+            return element.checked;
+        }
+        // For other elements, if they have a 'data-checked' or similar attribute,
+        // or if their text content can be parsed as boolean,
+        // this can be extended. For now, focus on standard boolean inputs.
+        return undefined;
+    }  
 }
 
 module.exports = Util;

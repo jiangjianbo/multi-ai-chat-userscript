@@ -4,7 +4,7 @@ function DriverFactory() {
     this.urlMap = {
         'kimi.ai': {name:'Kimi', url:'https://www.kimi.com'},
         'www.kimi.com': {name:'Kimi', url:'https://www.kimi.com'},
-        'gemini.google.com': {name: 'Gemini', url:'https://gemini.google.com'},
+        'gemini.google.com': {name: 'Gemini', url:'https://gemini.google.com/app'},
         'chat.openai.com': {name:'ChatGPT', url:'https://chat.openai.com'},
     };
 

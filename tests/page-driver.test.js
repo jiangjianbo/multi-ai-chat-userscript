@@ -85,8 +85,12 @@ describe('PageDriver Module', () => {
 
         test('5. should get questions and answers', () => {
             expect(driver.getConversationCount()).toBe(2);
-            expect(driver.getQuestion(0).textContent).toBe('Question 1');
-            expect(driver.getAnswer(1).textContent).toBe('Answer 2');
+
+            expect(driver.elementQuestion(0).textContent).toBe('Question 1');
+            expect(driver.elementAnswer(1).textContent).toBe('Answer 2');
+
+            expect(driver.getQuestion(0)).toBe('Question 1');
+            expect(driver.getAnswer(1)).toBe('Answer 2');
         });
 
         test('4. should get options', () => {

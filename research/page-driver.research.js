@@ -57,6 +57,7 @@ const Util = require('../src/util');
 
         if (driver) {
             console.log(`[Research] Driver created for ${window.location.hostname}:`, driver);
+            driver.init();
 
             // Highlight various elements
             highlightElements(driver.elementChatTitle(), 'Chat Title');
