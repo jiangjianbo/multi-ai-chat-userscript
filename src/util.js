@@ -113,6 +113,20 @@ function Util() {
     this.$$ = function(selector, parent = document) {
         return parent.querySelectorAll(selector);
     }
+    
+    /**
+     * @description 模拟点击元素，然后在两次点击之间调用某个函数回调
+     * @param {function} callback - a function to get the content
+     * @returns {Promise<any>} - the content
+     */
+    this.clickAndGet = async function(clickElement, callback) {
+        clickElement.click();
+        await new Promise(resolve => setTimeout(resolve, 200));
+        const result = callback();
+        clickElement.click();
+        return result;
+    };
+    }
 }
 
 module.exports = Util;

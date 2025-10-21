@@ -30,6 +30,13 @@ function GenericPageDriver() {
 
     this.observer = null;
 
+    /**
+     * @description Asynchronously initializes the driver. Should be called after instantiation.
+     */
+    this.init = async function() {
+        // Base implementation is empty. Should be overridden by specific drivers if needed.
+    };
+
     // --- DOM Element Accessors ---
 
     this.elementPromptInput = function() {
@@ -282,9 +289,68 @@ function KimiPageDriver() {
         webAccessOption: 'body div.toolkit-popover > div.toolkit-container div.toolkit-item:nth-child(1) > div.search-switch > label > input',
         longThoughtOption: 'body div.toolkit-popover > div.toolkit-container div.toolkit-item:nth-child(2) > div.search-switch > label > input',
         modelVersionList: 'body div.models-popover div.models-container div.model-item div.model-name > span.name',
-        currentModelVersion: '#app div.main div.chat-action > div.chat-editor > div.chat-editor-action div.current-model span.name'
+        currentModelVersion: '#app div.main div.chat-action > div.chat-editor > div.chat-editor-action div.current-model span.name',
+        
+        modelVersionButton: 'div.current-model',
+        optionButton: 'div.toolkit-trigger-btn'
     };
     this.selectors = Object.assign({}, this.selectors, kimiSelectors);
+    
+    this.optionButton = util.$(this.selectors.optionButton);
+    this.modelVersionButton = util.$(this.selectors.modelVersionButton);
+
+    this.cachedWebAccess = null;
+    this.cachedLongThought = null;
+    this.cachedVersions = null;
+
+    /**
+     * @description Initializes the Kimi driver by performing async operations to cache elements.
+     */
+    this.init = async function() {
+        // Initial caching for WebAccess and LongThought options
+        if (this.optionButton) {
+            await util.clickAndGet(this.optionButton, () => {
+                this.cachedWebAccess = util.$(this.selectors.webAccessOption);
+                this.cachedLongThought = util.$(this.selectors.longThoughtOption);
+            });
+
+            // Add event listener to refresh cache on subsequent clicks
+            this.optionButton.addEventListener('click', async () => {
+                // A short delay to allow the popover to open
+                await new Promise(resolve => setTimeout(resolve, 200));
+                this.cachedWebAccess = util.$(this.selectors.webAccessOption);
+                this.cachedLongThought = util.$(this.selectors.longThoughtOption);
+            });
+        }
+
+        // Initial caching for Model Versions
+        if (this.modelVersionButton) {
+            await util.clickAndGet(this.modelVersionButton, () => {
+                this.cachedVersions = Array.from(util.$(this.selectors.modelVersionList), node => node.textContent);
+            });
+        }
+    };
+
+    this.getWebAccessOption = function() {
+        if (this.cachedWebAccess === null) {
+            console.warn('KimiPageDriver not initialized. Call init() before using getters.');
+        }
+        return this.cachedWebAccess;
+    };
+
+    this.getLongThoughtOption = function() {
+        if (this.cachedLongThought === null) {
+            console.warn('KimiPageDriver not initialized. Call init() before using getters.');
+        }
+        return this.cachedLongThought;
+    };
+
+    this.getModelVersionList = function() {
+        if (this.cachedVersions === null) {
+            console.warn('KimiPageDriver not initialized. Call init() before using getters.');
+        }
+        return this.cachedVersions;
+    };    
 }
 //KimiPageDriver.prototype = Object.create(GenericPageDriver.prototype);
 
