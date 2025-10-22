@@ -1,4 +1,5 @@
-const { driverFactory } = require('./page-driver');
+const DriverFactory = require('./driver-factory');
+const { GenericPageDriver } = require('./page-driver');
 const SyncChatWindow = require('./sync-chat-window');
 
 /**
@@ -9,6 +10,8 @@ const SyncChatWindow = require('./sync-chat-window');
  * @param {Util} util
  */
 function PageController(message, config, i18n, util) {
+    const driverFactory = new DriverFactory();
+
     this.message = message;
     this.config = config;
     this.i18n = i18n;
@@ -24,7 +27,7 @@ function PageController(message, config, i18n, util) {
      */
     this.init = function() {
         const hostname = window.location.hostname;
-        this.driver = driverFactory(hostname);
+        this.driver = driverFactory.createDriver(hostname);
         this.syncChatWindow = new SyncChatWindow();
 
         this.injectUI();

@@ -1,9 +1,10 @@
 const DriverFactory = require('./driver-factory');
-const driverFactory = new DriverFactory();
 const Util = require('./util');
-const utils = new Util();
 
 function ChatArea(mainController, id, url, container) {
+    const driverFactory = new DriverFactory();
+    const utils = new Util();
+    
     this.mainController = mainController;
     this.id = id;
     this.url = url;

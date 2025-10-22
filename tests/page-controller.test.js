@@ -1,11 +1,14 @@
 const PageController = require('../src/page-controller');
-const { driverFactory } = require('../src/page-driver');
-const SyncChatWindow = require('../src/sync-chat-window');
+const DriverFactory = require('../src/driver-factory');
 
 // --- Mocks ---
-jest.mock('../src/page-driver', () => ({
-    driverFactory: jest.fn(),
-}));
+jest.mock('../src/driver-factory', () => {
+    return jest.fn().mockImplementation(() => {
+        return {
+            createDriver: jest.fn(),
+        };
+    });
+});
 
 jest.mock('../src/sync-chat-window', () => {
     return jest.fn().mockImplementation(() => {
@@ -15,6 +18,8 @@ jest.mock('../src/sync-chat-window', () => {
     });
 });
 
+const SyncChatWindow = require('../src/sync-chat-window');
+
 describe('PageController', () => {
     let pageController;
     let mockMessage, mockUtil, mockDriver;
@@ -23,6 +28,7 @@ describe('PageController', () => {
         // Reset DOM
         document.body.innerHTML = '';
         SyncChatWindow.mockClear();
+        DriverFactory.mockClear(); // Clear mock calls for DriverFactory itself
 
         // Mock Driver
         mockDriver = {
@@ -34,7 +40,6 @@ describe('PageController', () => {
             onChatTitle: null,
             onOption: null,
         };
-        driverFactory.mockReturnValue(mockDriver);
 
         // Other Mocks
         mockMessage = { register: jest.fn(), send: jest.fn() };
@@ -53,6 +58,11 @@ describe('PageController', () => {
             mockUtil
         );
 
+        // After pageController is created, the mocked DriverFactory instance has been created.
+        // We need to get a reference to the createDriver method of that instance.
+        // DriverFactory.mock.results[0].value is the instance returned by new DriverFactory()
+        DriverFactory.mock.results[0].value.createDriver.mockReturnValue(mockDriver);
+
         // Mock window location
         delete window.location;
         window.location = { hostname: 'test.com', href: 'http://localhost/' };
@@ -60,7 +70,7 @@ describe('PageController', () => {
 
     test('init should initialize driver, UI, and listeners', () => {
         pageController.init();
-        expect(driverFactory).toHaveBeenCalledWith('test.com');
+        expect(DriverFactory.mock.results[0].value.createDriver).toHaveBeenCalledWith('test.com');
         expect(document.getElementById('multi-ai-sync-btn')).not.toBeNull();
         expect(mockMessage.register).toHaveBeenCalledWith(pageController);
         expect(mockDriver.startMonitoring).toHaveBeenCalled();
