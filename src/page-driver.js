@@ -27,8 +27,14 @@ function GenericPageDriver() {
     this.onAnswer = (index, element) => {};
     this.onChatTitle = (title) => {};
     this.onOption = (key, value) => {};
+    this.onQuestion = (index, element) => {};
+    this.onModelVersionChange = (version) => {};
+    this.onNewSession = () => {};
 
     this.observer = null;
+    this.currentModelVersionObserver = null;
+    this.optionObservers = [];
+    this.newSessionButtonListener = null;
 
     /**
      * @description 异步初始化方法，可用于预加载或缓存元素。
@@ -355,36 +361,126 @@ function GenericPageDriver() {
         }
     };
 
+    this.setModelVersion = function(version) {
+        console.warn(`setModelVersion() is not implemented in the generic driver. Attempted to set version: ${version}`);
+    };
+
+    this.newSession = function() {
+        console.warn('newSession() is not implemented in the generic driver.');
+    };
+
     // --- 事件监控 ---
 
     this.startMonitoring = function() {
+        let lastQuestionCount = this.getConversationCount();
+        let lastAnswerCount = this.elementAnswers().length;
+        let lastChatTitle = this.getChatTitle();
+        let lastModelVersion = this.getCurrentModelVersion();
+        let lastWebAccessOption = this.getWebAccessOption();
+        let lastLongThoughtOption = this.getLongThoughtOption();
+
         this.observer = new MutationObserver((mutations) => {
             mutations.forEach(mutation => {
-                if (mutation.type === 'childList') {
-                    // 检查是否有新答案节点添加
-                    mutation.addedNodes.forEach(node => {
-                        if (node.nodeType === 1 && node.matches(this.selectors.answers)) {
-                            const allAnswers = Array.from(util.$$(this.selectors.answers));
-                            const newAnswerIndex = allAnswers.indexOf(node);
-                            this.onAnswer(newAnswerIndex, node);
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    // Monitor for new questions
+                    const currentQuestionCount = this.getConversationCount();
+                    if (currentQuestionCount > lastQuestionCount) {
+                        const newQuestionIndex = currentQuestionCount - 1;
+                        const newQuestionElement = this.elementQuestion(newQuestionIndex);
+                        if (newQuestionElement) {
+                            this.onQuestion(newQuestionIndex, newQuestionElement);
                         }
-                    });
+                        lastQuestionCount = currentQuestionCount;
+                    }
+
+                    // Monitor for new answers
+                    const currentAnswerCount = this.elementAnswers().length;
+                    if (currentAnswerCount > lastAnswerCount) {
+                        mutation.addedNodes.forEach(node => {
+                            if (node.nodeType === 1 && node.matches(this.selectors.answers)) {
+                                const allAnswers = Array.from(util.$$(this.selectors.answers));
+                                const newAnswerIndex = allAnswers.indexOf(node);
+                                this.onAnswer(newAnswerIndex, node);
+                            }
+                        });
+                        lastAnswerCount = currentAnswerCount;
+                    }
                 }
-                // 可以在此添加对标题、选项等其他变化的监控
+
+                // Monitor for chat title changes
+                const currentChatTitle = this.getChatTitle();
+                if (currentChatTitle !== lastChatTitle) {
+                    this.onChatTitle(currentChatTitle);
+                    lastChatTitle = currentChatTitle;
+                }
             });
         });
 
         const conversationArea = util.$(this.selectors.conversationArea);
         if (conversationArea) {
-            this.observer.observe(conversationArea, { childList: true, subtree: true });
+            this.observer.observe(conversationArea, { childList: true, subtree: true, attributes: true, characterData: true });
         } else {
             console.error('Conversation area not found for monitoring.');
+        }
+
+        // Monitor for model version changes
+        const currentModelVersionElement = this.elementCurrentModelVersion();
+        if (currentModelVersionElement) {
+            this.currentModelVersionObserver = new MutationObserver(() => {
+                const newModelVersion = this.getCurrentModelVersion();
+                if (newModelVersion !== lastModelVersion) {
+                    this.onModelVersionChange(newModelVersion);
+                    lastModelVersion = newModelVersion;
+                }
+            });
+            this.currentModelVersionObserver.observe(currentModelVersionElement, { childList: true, subtree: true, characterData: true });
+        }
+
+        // Monitor for option changes (web access, long thought)
+        const webAccessElement = this.elementWebAccessOption();
+        if (webAccessElement) {
+            const webAccessObserver = new MutationObserver(() => {
+                const newWebAccessOption = this.getWebAccessOption();
+                if (newWebAccessOption !== lastWebAccessOption) {
+                    this.onOption('webAccess', newWebAccessOption);
+                    lastWebAccessOption = newWebAccessOption;
+                }
+            });
+            webAccessObserver.observe(webAccessElement, { attributes: true, attributeFilter: ['checked'] });
+            this.optionObservers.push(webAccessObserver);
+        }
+
+        const longThoughtElement = this.elementLongThoughtOption();
+        if (longThoughtElement) {
+            const longThoughtObserver = new MutationObserver(() => {
+                const newLongThoughtOption = this.getLongThoughtOption();
+                if (newLongThoughtOption !== lastLongThoughtOption) {
+                    this.onOption('longThought', newLongThoughtOption);
+                    lastLongThoughtOption = newLongThoughtOption;
+                }
+            });
+            longThoughtObserver.observe(longThoughtElement, { attributes: true, attributeFilter: ['checked'] });
+            this.optionObservers.push(longThoughtObserver);
+        }
+
+        // Monitor for new session button clicks
+        const newSessionButton = this.elementNewSessionButton();
+        if (newSessionButton) {
+            this.newSessionButtonListener = () => this.onNewSession();
+            newSessionButton.addEventListener('click', this.newSessionButtonListener);
         }
     };
 
     this.stopMonitoring = function() {
         if (this.observer) {
             this.observer.disconnect();
+        }
+        if (this.currentModelVersionObserver) {
+            this.currentModelVersionObserver.disconnect();
+        }
+        this.optionObservers.forEach(observer => observer.disconnect());
+        if (this.newSessionButtonListener && this.elementNewSessionButton()) {
+            this.elementNewSessionButton().removeEventListener('click', this.newSessionButtonListener);
         }
     };
 }

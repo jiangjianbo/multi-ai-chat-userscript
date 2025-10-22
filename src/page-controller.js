@@ -39,6 +39,9 @@ function PageController(message, config, i18n, util) {
         this.driver.onAnswer = this.handleDriverAnswer.bind(this);
         this.driver.onChatTitle = this.handleDriverChatTitle.bind(this);
         this.driver.onOption = this.handleDriverOption.bind(this);
+        this.driver.onQuestion = this.handleDriverQuestion.bind(this);
+        this.driver.onModelVersionChange = this.handleDriverModelVersionChange.bind(this);
+        this.driver.onNewSession = this.handleDriverNewSession.bind(this);
 
         // 开始监控页面变化
         this.driver.startMonitoring();
@@ -88,7 +91,50 @@ function PageController(message, config, i18n, util) {
      * @description 处理来自主窗口的创建新会话的指令。
      */
     this.onMsgThread = function(data) {
-        // TODO: Implement logic to create a new chat thread
+        // 如果消息包含id，则只响应特定页面的请求
+        if (data.id && data.id !== this.pageId) {
+            return;
+        }
+        this.driver.newSession();
+    };
+
+    /**
+     * @description 处理来自主窗口的设置选项的指令。
+     */
+    this.onMsgSetOption = function(data) {
+        // 如果消息包含id，则只响应特定页面的请求
+        if (data.id && data.id !== this.pageId) {
+            return;
+        }
+        if (data.key && data.value !== undefined) {
+            this.driver.setOption(data.key, data.value);
+        }
+    };
+
+    /**
+     * @description 处理来自主窗口的设置模型版本的指令。
+     */
+    this.onMsgSetModelVersion = function(data) {
+        // 如果消息包含id，则只响应特定页面的请求
+        if (data.id && data.id !== this.pageId) {
+            return;
+        }
+        if (data.version) {
+            this.driver.setModelVersion(data.version);
+        }
+    };
+
+    /**
+     * @description 处理来自主窗口的设置答案状态的指令。
+     */
+    this.onMsgSetAnswerStatus = function(data) {
+        // 如果消息包含id，则只响应特定页面的请求
+        if (data.id && data.id !== this.pageId) {
+            return;
+        }
+        if (data.index !== undefined && data.collapsed !== undefined) {
+            this.driver.setAnswerStatus(data.index, data.collapsed);
+        }
     };
 
     // --- Driver Event Handlers ---
@@ -113,6 +159,27 @@ function PageController(message, config, i18n, util) {
             id: this.pageId,
             key: key,
             value: value
+        });
+    };
+
+    this.handleDriverQuestion = function(index, element) {
+        this.message.send('question', {
+            id: this.pageId,
+            index: index,
+            content: element.innerHTML // or .textContent
+        });
+    };
+
+    this.handleDriverModelVersionChange = function(version) {
+        this.message.send('modelVersionChange', {
+            id: this.pageId,
+            version: version
+        });
+    };
+
+    this.handleDriverNewSession = function() {
+        this.message.send('newSession', {
+            id: this.pageId
         });
     };
 }

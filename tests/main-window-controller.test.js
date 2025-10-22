@@ -16,6 +16,11 @@ jest.mock('../src/chat-area', () => {
         isPinned: jest.fn(() => false),
         setEventHandler: jest.fn(),
         closeDropdowns: jest.fn(),
+        updateTitle: jest.fn(),
+        updateOption: jest.fn(),
+        addQuestion: jest.fn(),
+        updateModelVersion: jest.fn(),
+        newSession: jest.fn(),
     }));
 });
 
@@ -184,5 +189,71 @@ describe('MainWindowController', () => {
         const data = { id: 'chat-to-remove' };
         controller.onMsgDestroy(data);
         expect(spy).toHaveBeenCalledWith(data.id);
+    });
+
+    test('onMsgTitleChange should call updateTitle on the correct ChatArea', () => {
+        const chatData = { id: 'chat-1' };
+        controller.addChatArea(chatData);
+        const instance = controller.chatAreas.get('chat-1');
+
+        controller.onMsgTitleChange({ id: 'chat-1', title: 'New Title' });
+        expect(instance.updateTitle).toHaveBeenCalledWith('New Title');
+    });
+
+    test('onMsgTitleChange should not call updateTitle if chatArea not found', () => {
+        controller.onMsgTitleChange({ id: 'non-existent', title: 'New Title' });
+        // No error should be thrown, and no call should be made to a non-existent chatArea
+    });
+
+    test('onMsgOptionChange should call updateOption on the correct ChatArea', () => {
+        const chatData = { id: 'chat-1' };
+        controller.addChatArea(chatData);
+        const instance = controller.chatAreas.get('chat-1');
+
+        controller.onMsgOptionChange({ id: 'chat-1', key: 'webAccess', value: true });
+        expect(instance.updateOption).toHaveBeenCalledWith('webAccess', true);
+    });
+
+    test('onMsgOptionChange should not call updateOption if chatArea not found', () => {
+        controller.onMsgOptionChange({ id: 'non-existent', key: 'webAccess', value: true });
+    });
+
+    test('onMsgQuestion should call addQuestion on the correct ChatArea', () => {
+        const chatData = { id: 'chat-1' };
+        controller.addChatArea(chatData);
+        const instance = controller.chatAreas.get('chat-1');
+
+        controller.onMsgQuestion({ id: 'chat-1', content: 'What is AI?' });
+        expect(instance.addQuestion).toHaveBeenCalledWith('What is AI?');
+    });
+
+    test('onMsgQuestion should not call addQuestion if chatArea not found', () => {
+        controller.onMsgQuestion({ id: 'non-existent', content: 'What is AI?' });
+    });
+
+    test('onMsgModelVersionChange should call updateModelVersion on the correct ChatArea', () => {
+        const chatData = { id: 'chat-1' };
+        controller.addChatArea(chatData);
+        const instance = controller.chatAreas.get('chat-1');
+
+        controller.onMsgModelVersionChange({ id: 'chat-1', version: 'GPT-4' });
+        expect(instance.updateModelVersion).toHaveBeenCalledWith('GPT-4');
+    });
+
+    test('onMsgModelVersionChange should not call updateModelVersion if chatArea not found', () => {
+        controller.onMsgModelVersionChange({ id: 'non-existent', version: 'GPT-4' });
+    });
+
+    test('onMsgNewSession should call newSession on the correct ChatArea', () => {
+        const chatData = { id: 'chat-1' };
+        controller.addChatArea(chatData);
+        const instance = controller.chatAreas.get('chat-1');
+
+        controller.onMsgNewSession({ id: 'chat-1' });
+        expect(instance.newSession).toHaveBeenCalled();
+    });
+
+    test('onMsgNewSession should not call newSession if chatArea not found', () => {
+        controller.onMsgNewSession({ id: 'non-existent' });
     });
 });

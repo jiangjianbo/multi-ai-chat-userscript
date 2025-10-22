@@ -243,6 +243,61 @@ function MainWindowController(receiverId, message, config, i18n) {
     };
 
     /**
+     * @description Handles the 'titleChange' message to update a chat area's title.
+     * @param {object} data - Message data ({ id, title }).
+     */
+    this.onMsgTitleChange = function(data) {
+        const chatArea = this.chatAreas.get(data.id);
+        if (chatArea) {
+            chatArea.updateTitle(data.title);
+        }
+    };
+
+    /**
+     * @description Handles the 'optionChange' message to update a chat area's option.
+     * @param {object} data - Message data ({ id, key, value }).
+     */
+    this.onMsgOptionChange = function(data) {
+        const chatArea = this.chatAreas.get(data.id);
+        if (chatArea) {
+            chatArea.updateOption(data.key, data.value);
+        }
+    };
+
+    /**
+     * @description Handles the 'question' message to add a new question to a chat area.
+     * @param {object} data - Message data ({ id, index, content }).
+     */
+    this.onMsgQuestion = function(data) {
+        const chatArea = this.chatAreas.get(data.id);
+        if (chatArea) {
+            chatArea.addQuestion(data.content);
+        }
+    };
+
+    /**
+     * @description Handles the 'modelVersionChange' message to update a chat area's model version.
+     * @param {object} data - Message data ({ id, version }).
+     */
+    this.onMsgModelVersionChange = function(data) {
+        const chatArea = this.chatAreas.get(data.id);
+        if (chatArea) {
+            chatArea.updateModelVersion(data.version);
+        }
+    };
+
+    /**
+     * @description Handles the 'newSession' message to reset a chat area for a new session.
+     * @param {object} data - Message data ({ id }).
+     */
+    this.onMsgNewSession = function(data) {
+        const chatArea = this.chatAreas.get(data.id);
+        if (chatArea) {
+            chatArea.newSession();
+        }
+    };
+
+    /**
      * @description Adds a new ChatArea instance.
      * @param {object} data - 初始化数据，结构为{id, providerName, url, pinned, params:{webAccess,longThought, models}, conversation:[{type, content}]}.
      */

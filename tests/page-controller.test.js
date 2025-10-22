@@ -39,6 +39,13 @@ describe('PageController', () => {
             onAnswer: null, // Callbacks will be assigned by the controller
             onChatTitle: null,
             onOption: null,
+            onQuestion: null,
+            onModelVersionChange: null,
+            onNewSession: null,
+            setOption: jest.fn(),
+            setModelVersion: jest.fn(),
+            newSession: jest.fn(),
+            setAnswerStatus: jest.fn(),
         };
 
         // Other Mocks
@@ -121,5 +128,90 @@ describe('PageController', () => {
             index: 1,
             content: 'This is an answer.',
         });
+    });
+
+    test('Driver onQuestion callback should send a "question" message', () => {
+        pageController.init();
+        expect(mockDriver.onQuestion).toBeInstanceOf(Function);
+
+        const mockQuestionElement = { innerHTML: 'This is a question.' };
+        mockDriver.onQuestion(0, mockQuestionElement);
+
+        expect(mockMessage.send).toHaveBeenCalledWith('question', {
+            id: pageController.pageId,
+            index: 0,
+            content: 'This is a question.',
+        });
+    });
+
+    test('Driver onModelVersionChange callback should send a "modelVersionChange" message', () => {
+        pageController.init();
+        expect(mockDriver.onModelVersionChange).toBeInstanceOf(Function);
+
+        mockDriver.onModelVersionChange('GPT-4');
+
+        expect(mockMessage.send).toHaveBeenCalledWith('modelVersionChange', {
+            id: pageController.pageId,
+            version: 'GPT-4',
+        });
+    });
+
+    test('Driver onNewSession callback should send a "newSession" message', () => {
+        pageController.init();
+        expect(mockDriver.onNewSession).toBeInstanceOf(Function);
+
+        mockDriver.onNewSession();
+
+        expect(mockMessage.send).toHaveBeenCalledWith('newSession', {
+            id: pageController.pageId,
+        });
+    });
+
+    test('onMsgSetOption should call driver.setOption', () => {
+        pageController.init();
+        pageController.onMsgSetOption({ id: pageController.pageId, key: 'webAccess', value: true });
+        expect(mockDriver.setOption).toHaveBeenCalledWith('webAccess', true);
+    });
+
+    test('onMsgSetOption should ignore messages for other pages if id is present', () => {
+        pageController.init();
+        pageController.onMsgSetOption({ id: 'other-page-id', key: 'webAccess', value: true });
+        expect(mockDriver.setOption).not.toHaveBeenCalled();
+    });
+
+    test('onMsgSetModelVersion should call driver.setModelVersion', () => {
+        pageController.init();
+        pageController.onMsgSetModelVersion({ id: pageController.pageId, version: 'GPT-4' });
+        expect(mockDriver.setModelVersion).toHaveBeenCalledWith('GPT-4');
+    });
+
+    test('onMsgSetModelVersion should ignore messages for other pages if id is present', () => {
+        pageController.init();
+        pageController.onMsgSetModelVersion({ id: 'other-page-id', version: 'GPT-4' });
+        expect(mockDriver.setModelVersion).not.toHaveBeenCalled();
+    });
+
+    test('onMsgSetAnswerStatus should call driver.setAnswerStatus', () => {
+        pageController.init();
+        pageController.onMsgSetAnswerStatus({ id: pageController.pageId, index: 0, collapsed: true });
+        expect(mockDriver.setAnswerStatus).toHaveBeenCalledWith(0, true);
+    });
+
+    test('onMsgSetAnswerStatus should ignore messages for other pages if id is present', () => {
+        pageController.init();
+        pageController.onMsgSetAnswerStatus({ id: 'other-page-id', index: 0, collapsed: true });
+        expect(mockDriver.setAnswerStatus).not.toHaveBeenCalled();
+    });
+
+    test('onMsgThread should call driver.newSession', () => {
+        pageController.init();
+        pageController.onMsgThread({ id: pageController.pageId });
+        expect(mockDriver.newSession).toHaveBeenCalled();
+    });
+
+    test('onMsgThread should ignore messages for other pages if id is present', () => {
+        pageController.init();
+        pageController.onMsgThread({ id: 'other-page-id' });
+        expect(mockDriver.newSession).not.toHaveBeenCalled();
     });
 });

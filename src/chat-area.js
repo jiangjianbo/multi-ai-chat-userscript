@@ -339,6 +339,36 @@ function ChatArea(mainController, id, url, container) {
     this.setLongThought = function(value) {
         this.element.querySelector(`#long-thought-${this.id}`).checked = value;
     };
+
+    this.updateTitle = function(title) {
+        // Assuming there's an element to display the title, e.g., this.element.querySelector('.chat-title-display')
+        // For now, we'll just log it.
+        console.log(`ChatArea ${this.id}: Title updated to ${title}`);
+    };
+
+    this.updateOption = function(key, value) {
+        // This will depend on how options are displayed in ChatArea.
+        // For now, we'll just log it.
+        console.log(`ChatArea ${this.id}: Option ${key} updated to ${value}`);
+    };
+
+    this.addQuestion = function(content) {
+        this.addMessage(content, 'question');
+    };
+
+    this.updateModelVersion = function(version) {
+        // Assuming there's an element to display the model version.
+        // For now, we'll just log it.
+        console.log(`ChatArea ${this.id}: Model version updated to ${version}`);
+    };
+
+    this.newSession = function() {
+        // Clear conversation, reset state for a new session.
+        this.conversationArea.innerHTML = '';
+        this.element.querySelector('.chat-area-index').innerHTML = '';
+        this.answerBubbles = this.element.querySelectorAll('.message-bubble.answer');
+        console.log(`ChatArea ${this.id}: Started new session.`);
+    };
 }
 
 module.exports = ChatArea;
