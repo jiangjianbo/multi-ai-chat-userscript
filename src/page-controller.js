@@ -28,12 +28,14 @@ function PageController(message, config, i18n, util) {
     this.init = function() {
         const hostname = window.location.hostname;
         this.driver = driverFactory.createDriver(hostname);
+        this.driver.init();
+        
         this.syncChatWindow = new SyncChatWindow();
 
         this.injectUI();
 
         // 注册消息监听器
-        this.message.register(this);
+        this.message.register(this.pageId, this);
 
         // 设置驱动的回调
         this.driver.onAnswer = this.handleDriverAnswer.bind(this);

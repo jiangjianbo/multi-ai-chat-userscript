@@ -522,16 +522,16 @@ function KimiPageDriver() {
         // Initial caching for WebAccess and LongThought options
         if (this.optionButton) {
             await util.clickAndGet(this.optionButton, () => {
-                this.cachedWebAccess = util.$(this.selectors.webAccessOption);
-                this.cachedLongThought = util.$(this.selectors.longThoughtOption);
+                this.cachedWebAccess = util.getBoolean(util.$(this.selectors.webAccessOption));
+                this.cachedLongThought = util.getBoolean(util.$(this.selectors.longThoughtOption));
             });
 
             // Add event listener to refresh cache on subsequent clicks
             this.optionButton.addEventListener('click', async () => {
                 // A short delay to allow the popover to open
                 await new Promise(resolve => setTimeout(resolve, 200));
-                this.cachedWebAccess = util.$(this.selectors.webAccessOption);
-                this.cachedLongThought = util.$(this.selectors.longThoughtOption);
+                this.cachedWebAccess = util.getBoolean(util.$(this.selectors.webAccessOption));
+                this.cachedLongThought = util.getBoolean(util.$(this.selectors.longThoughtOption));
             });
         }
 
