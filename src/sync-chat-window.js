@@ -281,21 +281,26 @@ function SyncChatWindow() {
         const initScript = ignoreScriptForTesting ? '' : `
             <script>
                 ${require('./util').toString()}
-                ${require('./i18n').toString()}
-                ${require('./config').toString()}
                 ${require('./storage').toString()}
+                ${require('./config').toString()}
+                ${require('./i18n').toString()}
                 ${require('./message').toString()}
+                
+                ${require('./page-driver').toString()}
+                ${require('./driver-factory').toString()}
                 ${require('./chat-area').toString()}
+                
                 ${require('./main-window-controller').toString()}
                 const lang = ${JSON.stringify(require('./lang'))};
 
+				const util = new Util(); /* PageDriver要用到 */
                 const storage = new Storage();
                 const defaultConfig = { channelName: 'multi-ai-chat' };
                 const config = new Config(storage, defaultConfig);
                 const i18n = new I18n(config, lang);
                 const message = new Message(config.get('channelName'));
                 
-                const mainWindowController = new MainWindowController(message, config, i18n);
+                const mainWindowController = new MainWindowController(this.MULTI_AI_CHAT_MAIN_WINDOW, message, config, i18n);
                 mainWindowController.init();
 
                 console.log("Main window script loaded.");
