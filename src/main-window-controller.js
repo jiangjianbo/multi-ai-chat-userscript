@@ -37,21 +37,43 @@ function MainWindowController(receiverId, message, config, i18n) {
     };
 
     /**
+     * @description Switches the application language and updates all UI elements with `data-lang-key`.
+     * @param {string} newLang - The new language code (e.g., 'en', 'zh').
+     */
+    this.switchLanguage = function(newLang, rootElement, forceUpdate = false) {
+        if (!forceUpdate && this.i18n.getCurrentLang() === newLang) {
+            return;
+        }
+        this.i18n.setCurrentLang(newLang);
+
+        const targetElement = rootElement || this.element;
+        const elements = targetElement.querySelectorAll('[data-lang-key]');
+        elements.forEach(el => {
+            const langKey = el.dataset.langKey;
+            const translatedText = this.i18n.getText(langKey);
+
+            if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+                el.placeholder = translatedText;
+            } else if (el.hasAttribute('title')) {
+                el.title = translatedText;
+            } else {
+                el.textContent = translatedText;
+            }
+        });
+        // Close the language dropdown after switching
+        this.langDropdown.style.display = 'none';
+    };
+
+    /**
      * @description Initializes the controller, renders the layout, and registers listeners.
      */
     this.init = function() {
         this.cacheDOMElements();
         this.initEventListeners();
         this.initMessageListeners();
-        this.updateLayout(); // Initial layout update
-        this.updateNewChatButtonState();
-
-        // Update internationalized text
-        this.element.querySelector('.product-name').textContent = this.i18n.getText('app.title');
-        this.globalSendButton.innerHTML = '&#10148;';
-        this.globalSendButton.title = this.i18n.getText('button.send.title');
-        this.promptTextarea.placeholder = this.i18n.getText('prompt.placeholder');
-    };
+                        this.updateLayout(); // Initial layout update
+                        this.updateNewChatButtonState();
+                        this.switchLanguage(this.i18n.getCurrentLang(), this.element, true);    };
 
     /**
      * @description Caches frequently accessed DOM elements.
@@ -103,10 +125,7 @@ function MainWindowController(receiverId, message, config, i18n) {
         });
         this.langDropdown.addEventListener('click', (e) => {
             if (e.target.matches('[data-lang]')) {
-                this.i18n.setCurrentLang(e.target.dataset.lang);
-                // Could add a full UI refresh logic here if needed
-                alert(`Language changed to: ${e.target.dataset.lang}`);
-                this.langDropdown.style.display = 'none';
+                this.switchLanguage(e.target.dataset.lang, this.element, false);
             }
         });
 
@@ -314,6 +333,7 @@ function MainWindowController(receiverId, message, config, i18n) {
 
         const chatArea = new ChatArea(this, data.id, data.url, container);
         chatArea.init(data);
+        this.switchLanguage(this.i18n.getCurrentLang(), chatArea.element, true);
 
         chatArea.setEventHandler('onEvtNewSession', this._handleNewSession.bind(this));
         chatArea.setEventHandler('onEvtShare', this._handleShare.bind(this));

@@ -95,28 +95,28 @@ function ChatArea(mainController, id, url, container) {
                             ${providers}
                         </div>
                     </div>
-                    <div class="title-button new-session-button" title="New Session">&#10133;</div>
+                    <div class="title-button new-session-button" title="New Session" data-lang-key="newSessionButtonTitle">&#10133;</div>
                 </div>
                 <div class="title-center">
-                    <div class="title-button expand-all" title="Expand All">&#x2924;</div>
-                    <div class="title-button collapse-all" title="Collapse All">&#x2922;</div>
-                    <div class="title-button export-button" title="Export Content">&#128228;</div>
+                    <div class="title-button expand-all" title="Expand All" data-lang-key="expandAllButtonTitle">&#x2924;</div>
+                    <div class="title-button collapse-all" title="Collapse All" data-lang-key="collapseAllButtonTitle">&#x2922;</div>
+                    <div class="title-button export-button" title="Export Content" data-lang-key="exportContentButtonTitle">&#128228;</div>
                 </div>
                 <div class="title-right">
                     <div class="params-selector">
-                        <div class="title-button params-button" title="Parameters">&#9881;</div>
+                        <div class="title-button params-button" title="Parameters" data-lang-key="parametersButtonTitle">&#9881;</div>
                         <div class="custom-dropdown params-dropdown">
-                            <div class="param-item" data-param-name="webAccess"><label>Web Access</label><label class="toggle-switch"><input type="checkbox" id="web-access-${data.id}" ${data.params.webAccess ? 'checked' : ''}><span class="slider"></span></label></div>
-                            <div class="param-item" data-param-name="longThought"><label>Long Thought</label><label class="toggle-switch"><input type="checkbox" id="long-thought-${data.id}" ${data.params.longThought ? 'checked' : ''}><span class="slider"></span></label></div>
+                            <div class="param-item" data-param-name="webAccess"><label data-lang-key="webAccessLabel">Web Access</label><label class="toggle-switch"><input type="checkbox" id="web-access-${data.id}" ${data.params.webAccess ? 'checked' : ''}><span class="slider"></span></label></div>
+                            <div class="param-item" data-param-name="longThought"><label data-lang-key="longThoughtLabel">Long Thought</label><label class="toggle-switch"><input type="checkbox" id="long-thought-${data.id}" ${data.params.longThought ? 'checked' : ''}><span class="slider"></span></label></div>
                             <hr>
-                            <div class="param-item" data-param-name="modelVersion"><label>Model Version</label>
+                            <div class="param-item" data-param-name="modelVersion"><label data-lang-key="modelVersionLabel">Model Version</label>
                                 <select>${versions}</select>
                             </div>
                         </div>
                     </div>
-                    <div class="title-button share-button" title="Share">&#128279;</div>
-                    <div class="title-button pin-button" title="Pin"><span class="icon">&#128204;</span></div>
-                    <div class="title-button close-button" title="Close">&#10006;</div>
+                    <div class="title-button share-button" title="Share" data-lang-key="shareButtonTitle">&#128279;</div>
+                    <div class="title-button pin-button" title="Pin" data-lang-key="pinButtonTitle"><span class="icon">&#128204;</span></div>
+                    <div class="title-button close-button" title="Close" data-lang-key="closeButtonTitle">&#10006;</div>
                 </div>
             </div>
             <div class="chat-area-main">
@@ -125,10 +125,10 @@ function ChatArea(mainController, id, url, container) {
                 </div>
                 <div class="chat-area-conversation">${conversationHtml}</div>
             </div>
-            <div class="input-placeholder">Input</div>
+            <div class="input-placeholder" data-lang-key="inputPlaceholder">Input</div>
             <div class="chat-area-input">
-                <textarea rows="1" placeholder="Type your message..."></textarea>
-                <button title="Send">&#10148;</button>
+                <textarea rows="1" placeholder="Type your message..." data-lang-key="typeMessagePlaceholder"></textarea>
+                <button title="Send" data-lang-key="sendButtonTitle">&#10148;</button>
             </div>
         </div>
         `;

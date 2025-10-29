@@ -3,19 +3,82 @@ const resources = {
         'app.title': 'Multi-AI Sync Chat',
         'button.send': 'Send',
         'button.send.title': 'Send',
-        'prompt.placeholder': 'Ask all AIs...'
+        'prompt.placeholder': 'Ask all AIs...',
+        // New keys for sync-chat-window.html
+        'productName': 'Multi AI Chat',
+        'newChatButtonTitle': 'New Chat',
+        'settingsButtonTitle': 'Settings',
+        'webAccessLabel': 'Web Access',
+        'longThoughtLabel': 'Long Thought',
+        'promptTextareaPlaceholder': 'Ask all AIs...',
+        'globalSendButtonTitle': 'Send',
+        // New keys for chat-area.js
+        'newSessionButtonTitle': 'New Session',
+        'expandAllButtonTitle': 'Expand All',
+        'collapseAllButtonTitle': 'Collapse All',
+        'exportContentButtonTitle': 'Export Content',
+        'parametersButtonTitle': 'Parameters',
+        'modelVersionLabel': 'Model Version',
+        'shareButtonTitle': 'Share',
+        'pinButtonTitle': 'Pin',
+        'closeButtonTitle': 'Close',
+        'inputPlaceholder': 'Input',
+        'typeMessagePlaceholder': 'Type your message...',
+        'sendButtonTitle': 'Send'
     },
     'zh': {
         'app.title': '多AI同步聊天',
         'button.send': '发送',
         'button.send.title': '发送',
-        'prompt.placeholder': '向所有AI提问...'
+        'prompt.placeholder': '向所有AI提问...',
+        // New keys for sync-chat-window.html
+        'productName': '多AI同步聊天',
+        'newChatButtonTitle': '新建聊天',
+        'settingsButtonTitle': '设置',
+        'webAccessLabel': '网页访问',
+        'longThoughtLabel': '长时思考',
+        'promptTextareaPlaceholder': '向所有AI提问...',
+        'globalSendButtonTitle': '发送',
+        // New keys for chat-area.js
+        'newSessionButtonTitle': '新会话',
+        'expandAllButtonTitle': '展开全部',
+        'collapseAllButtonTitle': '折叠全部',
+        'exportContentButtonTitle': '导出内容',
+        'parametersButtonTitle': '参数',
+        'modelVersionLabel': '模型版本',
+        'shareButtonTitle': '分享',
+        'pinButtonTitle': '固定',
+        'closeButtonTitle': '关闭',
+        'inputPlaceholder': '输入',
+        'typeMessagePlaceholder': '输入你的消息...',
+        'sendButtonTitle': '发送'
     },
     'ar': {
         'app.title': 'دردشة متزامنة متعددة الذكاء الاصطناعي',
         'button.send': 'إرسال',
         'button.send.title': 'إرسال',
-        'prompt.placeholder': 'اسأل كل الذكاء الاصطناعي...'
+        'prompt.placeholder': 'اسأل كل الذكاء الاصطناعي...',
+        // New keys for sync-chat-window.html
+        'productName': 'دردشة متزامنة متعددة الذكاء الاصطناعي',
+        'newChatButtonTitle': 'محادثة جديدة',
+        'settingsButtonTitle': 'الإعدادات',
+        'webAccessLabel': 'الوصول إلى الويب',
+        'longThoughtLabel': 'تفكير طويل',
+        'promptTextareaPlaceholder': 'اسأل كل الذكاء الاصطناعي...',
+        'globalSendButtonTitle': 'إرسال',
+        // New keys for chat-area.js
+        'newSessionButtonTitle': 'جلسة جديدة',
+        'expandAllButtonTitle': 'توسيع الكل',
+        'collapseAllButtonTitle': 'طي الكل',
+        'exportContentButtonTitle': 'تصدير المحتوى',
+        'parametersButtonTitle': 'المعلمات',
+        'modelVersionLabel': 'إصدار النموذج',
+        'shareButtonTitle': 'مشاركة',
+        'pinButtonTitle': 'تثبيت',
+        'closeButtonTitle': 'إغلاق',
+        'inputPlaceholder': 'إدخال',
+        'typeMessagePlaceholder': 'اكتب رسالتك...',
+        'sendButtonTitle': 'إرسال'
     }
 };
 
