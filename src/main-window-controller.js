@@ -28,7 +28,7 @@ function MainWindowController(receiverId, message, config, i18n) {
             this.chatAreas.forEach(area => area.setLongThought(newValue));
         },
         onEvtAllPrompt: (prompt) => {
-            this.message.broadcast('chat', { prompt });
+            this.message.send('chat', { prompt });
         }
     };
 
