@@ -71,9 +71,10 @@ function MainWindowController(receiverId, message, config, i18n) {
         this.cacheDOMElements();
         this.initEventListeners();
         this.initMessageListeners();
-                        this.updateLayout(); // Initial layout update
-                        this.updateNewChatButtonState();
-                        this.switchLanguage(this.i18n.getCurrentLang(), this.element, true);    };
+        this.updateLayout(); // Initial layout update
+        this.updateNewChatButtonState();
+        this.switchLanguage(this.i18n.getCurrentLang(), this.element, true);    
+    };
 
     /**
      * @description Caches frequently accessed DOM elements.

@@ -1,11 +1,28 @@
 const PageController = require('../src/page-controller');
 const DriverFactory = require('../src/driver-factory');
+const SyncChatWindow = require('../src/sync-chat-window');
 
 // --- Mocks ---
 jest.mock('../src/driver-factory', () => {
     return jest.fn().mockImplementation(() => {
         return {
-            createDriver: jest.fn(),
+            createDriver: jest.fn().mockImplementation(() => ({
+                getChatTitle: jest.fn(() => 'Mock Title'),
+                setPrompt: jest.fn(),
+                send: jest.fn(),
+                startMonitoring: jest.fn(),
+                onAnswer: null, // Callbacks will be assigned by the controller
+                onChatTitle: null,
+                onOption: null,
+                onQuestion: null,
+                onModelVersionChange: null,
+                onNewSession: null,
+                setOption: jest.fn(),
+                setModelVersion: jest.fn(),
+                newSession: jest.fn(),
+                setAnswerStatus: jest.fn(),
+                init: jest.fn(),
+            })),
         };
     });
 });
@@ -18,7 +35,7 @@ jest.mock('../src/sync-chat-window', () => {
     });
 });
 
-const SyncChatWindow = require('../src/sync-chat-window');
+
 
 describe('PageController', () => {
     let pageController;
@@ -46,6 +63,7 @@ describe('PageController', () => {
             setModelVersion: jest.fn(),
             newSession: jest.fn(),
             setAnswerStatus: jest.fn(),
+            init: jest.fn(),
         };
 
         // Other Mocks
@@ -79,7 +97,7 @@ describe('PageController', () => {
         pageController.init();
         expect(DriverFactory.mock.results[0].value.createDriver).toHaveBeenCalledWith('test.com');
         expect(document.getElementById('multi-ai-sync-btn')).not.toBeNull();
-        expect(mockMessage.register).toHaveBeenCalledWith(pageController);
+        expect(mockMessage.register).toHaveBeenCalledWith(pageController.pageId, pageController);
         expect(mockDriver.startMonitoring).toHaveBeenCalled();
     });
 

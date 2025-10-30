@@ -49,14 +49,14 @@ describe('SyncChatWindow', () => {
             createElement: jest.fn(() => ({})),
         };
         // Mock require, because it's used inside createWindow
-        jest.mock('../src/util', () => 'function Util(){}', { virtual: true });
-        jest.mock('../src/i18n', () => 'function I18n(){}', { virtual: true });
-        jest.mock('../src/config', () => 'function Config(){}', { virtual: true });
-        jest.mock('../src/storage', () => 'function Storage(){}', { virtual: true });
-        jest.mock('../src/message', () => 'function Message(){}', { virtual: true });
-        jest.mock('../src/chat-area', () => 'function ChatArea(){}', { virtual: true });
-        jest.mock('../src/main-window-controller', () => 'function MainWindowController(){}', { virtual: true });
-        jest.mock('../src/lang', () => '{}', { virtual: true });
+        jest.mock('../util', () => 'function Util(){}', { virtual: true });
+        jest.mock('../i18n', () => 'function I18n(){}', { virtual: true });
+        jest.mock('../config', () => 'function Config(){}', { virtual: true });
+        jest.mock('../storage', () => 'function Storage(){}', { virtual: true });
+        jest.mock('../message', () => 'function Message(){}', { virtual: true });
+        jest.mock('../chat-area', () => 'function ChatArea(){}', { virtual: true });
+        jest.mock('../main-window-controller', () => 'function MainWindowController(){}', { virtual: true });
+        jest.mock('../lang', () => '{}', { virtual: true });
 
         syncChatWindow.createWindow(doc);
         expect(doc.title).toBe('Multi-AI Sync Chat');

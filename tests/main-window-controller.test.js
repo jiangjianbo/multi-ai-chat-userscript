@@ -27,7 +27,7 @@ jest.mock('../src/chat-area', () => {
 jest.mock('../src/message', () => {
     return jest.fn().mockImplementation(() => ({
         register: jest.fn(),
-        broadcast: jest.fn(),
+        send: jest.fn(),
     }));
 });
 
@@ -40,6 +40,9 @@ jest.mock('../src/config', () => {
 jest.mock('../src/i18n', () => {
     return jest.fn().mockImplementation(() => ({
         getText: jest.fn(key => key), // Just return the key
+        getCurrentLang: jest.fn(() => 'en'),
+        getAllLangs: jest.fn(() => ['en', 'zh']),
+        setCurrentLang: jest.fn(),
     }));
 });
 
@@ -57,7 +60,7 @@ describe('MainWindowController', () => {
                     <header class="main-title-bar">
                         <div class="title-section left">
                             <div class="product-logo">&#129302;</div>
-                            <div class="product-name">Multi AI Chat</div>
+                            <div class="product-name" data-lang-key="productName">Multi AI Chat</div>
                             <div class="lang-container">
                                 <div class="lang-switcher" id="lang-switcher">&#127760;</div>
                                 <div class="lang-dropdown" id="lang-dropdown"></div>
@@ -98,11 +101,7 @@ describe('MainWindowController', () => {
         mockMessage = new Message();
         mockConfig = new Config();
         // Mock i18n to have the new getAllLangs method
-        mockI18n = {
-            getText: jest.fn(key => key),
-            getAllLangs: jest.fn(() => ['en', 'zh']),
-            setCurrentLang: jest.fn(),
-        };
+        mockI18n = new I18n();
 
         controller = new MainWindowController(RECEIVER_ID, mockMessage, mockConfig, mockI18n);
         controller.init();
@@ -112,7 +111,7 @@ describe('MainWindowController', () => {
         expect(document.querySelector('.main-window')).not.toBeNull();
         expect(document.querySelector('.content-area')).not.toBeNull();
         expect(document.querySelector('.prompt-area')).not.toBeNull();
-        expect(mockI18n.getText).toHaveBeenCalledWith('app.title');
+        expect(mockI18n.getText).toHaveBeenCalledWith('productName');
     });
 
     test('addChatArea should create, initialize, and store a new ChatArea', () => {
@@ -157,7 +156,7 @@ describe('MainWindowController', () => {
         promptTextarea.value = 'Hello, world!';
         sendButton.click();
 
-        expect(mockMessage.broadcast).toHaveBeenCalledWith('chat', { prompt: 'Hello, world!' });
+        expect(mockMessage.send).toHaveBeenCalledWith('chat', { prompt: 'Hello, world!' });
         expect(promptTextarea.value).toBe('');
     });
 
