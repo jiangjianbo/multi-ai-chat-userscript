@@ -17,6 +17,7 @@ function MainWindowController(receiverId, message, config, i18n) {
     this.util = new Util();
     this.chatAreas = new Map();
     this.driverFactory = new DriverFactory();
+    this.selectedProviders = new Map(); // K: providerName, V: chatAreaId
     this.element = null;
     this.chatAreaContainer = null;
     this.layoutSwitcher = null;
@@ -332,14 +333,21 @@ function MainWindowController(receiverId, message, config, i18n) {
         this.chatAreaContainer.appendChild(wrapper);
         wrapper.appendChild(container);
 
-        const chatArea = new ChatArea(this, data.id, data.url, container);
+        const chatArea = new ChatArea(this, data.id, data.url, container, this.i18n);
         chatArea.init(data);
         this.switchLanguage(this.i18n.getCurrentLang(), chatArea.element, true);
 
         chatArea.setEventHandler('onEvtNewSession', this._handleNewSession.bind(this));
         chatArea.setEventHandler('onEvtShare', this._handleShare.bind(this));
         chatArea.setEventHandler('onEvtParamChanged', this._handleParamChanged.bind(this));
-        chatArea.setEventHandler('onEvtProviderChanged', this._handleProviderChanged.bind(this));
+        chatArea.setEventHandler('onEvtProviderChanged', (ca, newProvider, oldProvider) => {
+            if (oldProvider && this.selectedProviders.get(oldProvider) === ca.id) {
+                this.selectedProviders.delete(oldProvider);
+            }
+            if (newProvider) {
+                this.selectedProviders.set(newProvider, ca.id);
+            }
+        });
         chatArea.setEventHandler('onEvtPromptSend', this._handlePromptSend.bind(this));
         chatArea.setEventHandler('onEvtExport', this._handleExport.bind(this));
 
@@ -347,6 +355,10 @@ function MainWindowController(receiverId, message, config, i18n) {
         this.updateDefaultLayout();
         this.updateNewChatButtonState();
         console.log(`Added ChatArea: ${data.id}`);
+
+        if (data.providerName && data.providerName !== 'New Chat') {
+            this.selectedProviders.set(data.providerName, data.id);
+        }
     };
 
     this.updateDefaultLayout = function() {
@@ -369,6 +381,11 @@ function MainWindowController(receiverId, message, config, i18n) {
     this.removeChatArea = function(id) {
         const chatArea = this.chatAreas.get(id);
         if (chatArea) {
+            const providerName = chatArea.getProvider();
+            if (providerName && this.selectedProviders.get(providerName) === id) {
+                this.selectedProviders.delete(providerName);
+            }
+
             const wrapper = chatArea.container.parentElement;
             chatArea.destroy(); // Let chat area clean up itself
             if (wrapper) {
@@ -406,6 +423,21 @@ function MainWindowController(receiverId, message, config, i18n) {
 
     this._handleExport = function(chatArea) {
         this.message.send(chatArea.id, 'export', {});
+    };
+
+    /**
+     * @description 获取当前被其他ChatArea占用的AI提供商列表。
+     * @param {string} requestingChatAreaId - 请求此列表的ChatArea的ID，该ChatArea自己的选择不会被视为不可用。
+     * @returns {string[]} - 不可用的AI提供商名称数组。
+     */
+    this.getUnavailableProviders = function(requestingChatAreaId) {
+        const unavailable = [];
+        this.selectedProviders.forEach((chatAreaId, providerName) => {
+            if (chatAreaId !== requestingChatAreaId) {
+                unavailable.push(providerName);
+            }
+        });
+        return unavailable;
     };
 }
 

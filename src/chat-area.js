@@ -1,7 +1,7 @@
 const DriverFactory = require('./driver-factory');
 const Util = require('./util');
 
-function ChatArea(mainController, id, url, container) {
+function ChatArea(mainController, id, url, container, i18n) {
     const driverFactory = new DriverFactory();
     const utils = new Util();
     
@@ -9,6 +9,7 @@ function ChatArea(mainController, id, url, container) {
     this.id = id;
     this.url = url;
     this.container = container;
+    this.i18n = i18n;
     this.element = null;
     this.hideTimeout = null;
     this.pinned = false;
@@ -83,12 +84,6 @@ function ChatArea(mainController, id, url, container) {
         }).join('');
 
         const overlayHtml = this.url ? '' : `
-            <style>
-                .chat-area-instance.forced-selection .model-selector {
-                    border: 2px solid red; /* Highlight color */
-                    border-radius: 5px;
-                }
-            </style>
             <div class="forced-selection-overlay">
                 <div class="selection-hint" style="position: absolute; top: 10px; left: 10px; text-align: left; color: white; font-size: 1.2em; background-color: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; z-index: 10; display: flex; align-items: center;">
                     <div style="font-size: 2em; margin-right: 10px; line-height: 1;">↖️</div>
@@ -105,7 +100,8 @@ function ChatArea(mainController, id, url, container) {
             <div class="chat-area-title">
                 <div class="title-left">
                     <div class="${modelSelectorClass}">
-                        <div class="model-name">${data.providerName} &#9662;</div>
+                        <div class="model-name">${data.providerName}</div>
+                        <div class="model-dropdown-arrow">&#9662;</div> <!-- 新增的箭头div -->
                         <div class="custom-dropdown model-dropdown">
                             ${providers}
                         </div>
@@ -210,7 +206,7 @@ function ChatArea(mainController, id, url, container) {
             option.addEventListener('click', (e) => {
                 const oldProvider = this.getProvider();
                 const newProvider = e.currentTarget.dataset.value;
-                this.providerNameDisplay.innerHTML = `${newProvider} &#9662;`;
+                this.providerNameDisplay.textContent = newProvider;
                 this.eventHandlers.onEvtProviderChanged(this, newProvider, oldProvider);
                 this.modelDropdown.classList.remove('visible');
 
@@ -263,8 +259,34 @@ function ChatArea(mainController, id, url, container) {
         }
     };
 
+    /**
+     * @description 根据不可用提供商列表更新下拉选项的UI状态。
+     * @param {string[]} unavailableProviders - 不可用的AI提供商名称数组。
+     */
+    this.updateProviderOptions = function(unavailableProviders) {
+        const currentSelectedProvider = this.getProvider(); // 获取当前ChatArea已选择的提供商
+
+        this.modelDropdown.querySelectorAll('.model-option').forEach(option => {
+            const providerName = option.dataset.value;
+            // 如果提供商在不可用列表中，并且不是当前ChatArea自己的选择，则禁用
+            if (unavailableProviders.includes(providerName) && providerName !== currentSelectedProvider) {
+                option.classList.add('unavailable');
+                option.style.pointerEvents = 'none'; // 阻止点击
+                option.setAttribute('title', this.i18n.getText('providerUnavailable')); // 提示不可用语言key
+            } else {
+                option.classList.remove('unavailable');
+                option.style.pointerEvents = 'auto'; // 允许点击
+                option.removeAttribute('title');
+            }
+        });
+    };
+
     this.toggleDropdown = function(event, dropdown) {
         event.stopPropagation();
+        if (dropdown === this.modelDropdown) {
+            const unavailable = this.mainController.getUnavailableProviders(this.id);
+            this.updateProviderOptions(unavailable);
+        }
         dropdown.classList.toggle('visible');
     };
 
@@ -328,7 +350,7 @@ function ChatArea(mainController, id, url, container) {
     };
 
     this.getProvider = function() {
-        return this.providerNameDisplay.textContent.replace('▼', '').trim();
+        return this.providerNameDisplay.textContent.trim();
     };
 
     this.getWebAccess = function() {

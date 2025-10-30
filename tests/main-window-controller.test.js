@@ -7,7 +7,7 @@ const RECEIVER_ID = 'test-receiver-id';
 
 // Mocks
 jest.mock('../src/chat-area', () => {
-    return jest.fn().mockImplementation((controller, id, url, container) => ({
+    return jest.fn().mockImplementation((mainController, id, url, container, i18n) => ({
         id: id,
         container: container, // Pass container to the mock instance
         init: jest.fn(),
@@ -21,6 +21,7 @@ jest.mock('../src/chat-area', () => {
         addQuestion: jest.fn(),
         updateModelVersion: jest.fn(),
         newSession: jest.fn(),
+        getProvider: jest.fn(() => 'MockProvider'), // 添加 getProvider mock
     }));
 });
 

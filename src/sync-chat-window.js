@@ -203,6 +203,29 @@ function SyncChatWindow() {
             z-index: 101;
             position: relative;
         }
+
+        .chat-area-instance.forced-selection .model-selector {
+            border: 2px solid red; /* Highlight color */
+            border-radius: 5px;
+        }
+        /* 新增的样式 */
+        .model-option.unavailable {
+            color: #888; /* 灰色文本 */
+            background-color: #f5f5f5; /* 浅灰色背景 */
+            cursor: not-allowed;
+        }
+        /* 为 model-selector 添加相对定位 */
+        .model-selector {
+            position: relative;
+        }
+        /* 为 model-dropdown-arrow 添加绝对定位 */
+        .model-dropdown-arrow {
+            position: absolute;
+            right: -5px; /* 调整位置 */
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none; /* 确保点击穿透到 model-name */
+        }
         `;
         const styleSheet = doc.createElement("style");
         styleSheet.type = "text/css";
