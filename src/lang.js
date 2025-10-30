@@ -24,7 +24,8 @@ const resources = {
         'closeButtonTitle': 'Close',
         'inputPlaceholder': 'Input',
         'typeMessagePlaceholder': 'Type your message...',
-        'sendButtonTitle': 'Send'
+        'sendButtonTitle': 'Send',
+        'selectProviderHint': 'Please select an AI provider from the dropdown above to start chatting.'
     },
     'zh': {
         'app.title': '多AI同步聊天',
@@ -51,7 +52,8 @@ const resources = {
         'closeButtonTitle': '关闭',
         'inputPlaceholder': '输入',
         'typeMessagePlaceholder': '输入你的消息...',
-        'sendButtonTitle': '发送'
+        'sendButtonTitle': '发送',
+        'selectProviderHint': '请从上方下拉菜单中选择一个AI提供商以开始聊天。'
     },
     'ar': {
         'app.title': 'دردشة متزامنة متعددة الذكاء الاصطناعي',
@@ -78,7 +80,8 @@ const resources = {
         'closeButtonTitle': 'إغلاق',
         'inputPlaceholder': 'إدخال',
         'typeMessagePlaceholder': 'اكتب رسالتك...',
-        'sendButtonTitle': 'إرسال'
+        'sendButtonTitle': 'إرسال',
+        'selectProviderHint': 'الرجاء تحديد مزود الذكاء الاصطناعي من القائمة المنسدلة أعلاه لبدء الدردشة.'
     }
 };
 

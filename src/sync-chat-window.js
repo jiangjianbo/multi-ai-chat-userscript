@@ -221,63 +221,64 @@ function SyncChatWindow() {
         _addStyles(doc);
 
         const htmlSrc = `
-            <div class="main-window">
-                <!-- Title Bar -->
-                <header class="main-title-bar">
-                    <div class="title-section left">
-                        <div class="product-logo">&#129302;</div>
-                        <div class="product-name">Multi AI Chat</div>
-                        <div class="lang-container">
-                            <div class="lang-switcher" id="lang-switcher">&#127760;</div>
-                            <div class="lang-dropdown" id="lang-dropdown">
-                                <!-- Populated by MainWindowController -->
-                            </div>
-                        </div>
-                        <button class="title-action-button" id="new-chat-button" title="New Chat">&#10133;</button>
-                    </div>
-                    <div class="title-section center" id="layout-switcher">
-                        <button class="layout-button active" data-layout="1">1</button>
-                        <button class="layout-button" data-layout="2">2</button>
-                        <button class="layout-button" data-layout="4">4</button>
-                        <button class="layout-button" data-layout="6">6</button>
-                    </div>
-                    <div class="title-section right">
-                        <button class="title-action-button">&#10006;</button>
-                    </div>
-                </header>
-
-                <!-- Content Area -->
-                <main class="content-area" id="content-area">
-                    <!-- ChatAreas will be added here by MainWindowController -->
-                </main>
-
-                <!-- Prompt Input Area -->
-                <footer class="prompt-area">
-                    <button class="prompt-action-button" id="settings-button">&#9881;</button>
-                    <div class="settings-menu" id="settings-menu">
-                        <div class="setting-item">
-                            <label for="web-access">Web Access</label>
-                            <label class="switch">
-                                <input type="checkbox" id="web-access">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="setting-item">
-                            <label for="long-thought">Long Thought</label>
-                            <label class="switch">
-                                <input type="checkbox" id="long-thought">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="prompt-input-wrapper" id="prompt-wrapper">
-                        <textarea id="prompt-textarea" rows="1" placeholder="Ask all AIs..."></textarea>
-                    </div>
-                    <button class="prompt-action-button" id="global-send-button" title="Send">&#10148;</button>
-                </footer>
+<div class="main-window">
+    <!-- Title Bar -->
+    <header class="main-title-bar">
+        <div class="title-section left">
+            <div class="product-logo">&#129302;</div>
+            <div class="product-name" data-lang-key="productName">Multi AI Chat</div>
+            <div class="lang-container">
+                <div class="lang-switcher" id="lang-switcher">&#127760;</div>
+                <div class="lang-dropdown" id="lang-dropdown">
+                    <!-- Populated by MainWindowController -->
+                </div>
             </div>
+            <button class="title-action-button" id="new-chat-button" title="New Chat" data-lang-key="newChatButtonTitle">&#10133;</button>
+        </div>
+        <div class="title-section center" id="layout-switcher">
+            <button class="layout-button active" data-layout="1">1</button>
+            <button class="layout-button" data-layout="2">2</button>
+            <button class="layout-button" data-layout="4">4</button>
+            <button class="layout-button" data-layout="6">6</button>
+        </div>
+        <div class="title-section right">
+            <button class="title-action-button">&#10006;</button>
+        </div>
+    </header>
+
+    <!-- Content Area -->
+    <main class="content-area" id="content-area">
+        <!-- ChatAreas will be added here by MainWindowController -->
+    </main>
+
+    <!-- Prompt Input Area -->
+    <footer class="prompt-area">
+        <button class="prompt-action-button" id="settings-button" title="Settings" data-lang-key="settingsButtonTitle">&#9881;</button>
+        <div class="settings-menu" id="settings-menu">
+            <div class="setting-item">
+                <label for="web-access" data-lang-key="webAccessLabel">Web Access</label>
+                <label class="switch">
+                    <input type="checkbox" id="web-access">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <label for="long-thought" data-lang-key="longThoughtLabel">Long Thought</label>
+                <label class="switch">
+                    <input type="checkbox" id="long-thought">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="prompt-input-wrapper" id="prompt-wrapper">
+            <textarea id="prompt-textarea" rows="1" placeholder="Ask all AIs..." data-lang-key="promptTextareaPlaceholder"></textarea>
+        </div>
+        <button class="prompt-action-button" id="global-send-button" title="Send" data-lang-key="globalSendButtonTitle">&#10148;</button>
+    </footer>
+</div>
         `;
 
+        const theLang = require('./lang');
         const initScript = ignoreScriptForTesting ? '' : `
             <script>
                 ${require('./util').toString()}
@@ -291,7 +292,7 @@ function SyncChatWindow() {
                 ${require('./chat-area').toString()}
                 
                 ${require('./main-window-controller').toString()}
-                const lang = ${JSON.stringify(require('./lang'))};
+                const lang = ${JSON.stringify(theLang)};
 
 				const util = new Util(); /* PageDriver要用到 */
                 const storage = new Storage();
@@ -300,7 +301,7 @@ function SyncChatWindow() {
                 const i18n = new I18n(config, lang);
                 const message = new Message(config.get('channelName'));
                 
-                const mainWindowController = new MainWindowController(this.MULTI_AI_CHAT_MAIN_WINDOW, message, config, i18n);
+                const mainWindowController = new MainWindowController('${this.MULTI_AI_CHAT_MAIN_WINDOW}', message, config, i18n);
                 mainWindowController.init();
 
                 console.log("Main window script loaded.");

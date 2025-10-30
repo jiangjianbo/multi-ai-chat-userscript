@@ -82,14 +82,29 @@ function ChatArea(mainController, id, url, container) {
             return `<div class="message-bubble ${msg.type}" ${id}><div class="bubble-content">${msg.content}</div></div>`;
         }).join('');
 
-        const overlayHtml = this.url ? '' : '<div class="forced-selection-overlay"></div>';
+        const overlayHtml = this.url ? '' : `
+            <style>
+                .chat-area-instance.forced-selection .model-selector {
+                    border: 2px solid red; /* Highlight color */
+                    border-radius: 5px;
+                }
+            </style>
+            <div class="forced-selection-overlay">
+                <div class="selection-hint" style="position: absolute; top: 10px; left: 10px; text-align: left; color: white; font-size: 1.2em; background-color: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; z-index: 10; display: flex; align-items: center;">
+                    <div style="font-size: 2em; margin-right: 10px; line-height: 1;">↖️</div>
+                    <span data-lang-key="selectProviderHint">Please select an AI provider from the dropdown above to start chatting.</span>
+                </div>
+            </div>
+        `;
+
+        const modelSelectorClass = this.url ? 'model-selector' : 'model-selector highlight-dropdown';
 
         return `
         <div class="chat-area-instance">
             ${overlayHtml}
             <div class="chat-area-title">
                 <div class="title-left">
-                    <div class="model-selector">
+                    <div class="${modelSelectorClass}">
                         <div class="model-name">${data.providerName} &#9662;</div>
                         <div class="custom-dropdown model-dropdown">
                             ${providers}
