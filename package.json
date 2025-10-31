@@ -5,13 +5,16 @@
     "test:watch": "jest --watch",
     "research:build": "webpack --config webpack.research.js",
     "research:watch": "webpack --config webpack.research.js --watch",
-    "research:main-window": "webpack --config webpack.research.js --env entry=sync-chat-window"
+    "research:main-window": "webpack --config webpack.research.js --env entry=sync-chat-window",
+    "chrome:build": "rm -rf dist/chrome-extension dist/chrome-extension.zip dist/chrome-extension.crx && webpack --config webpack.chrome.js && crx pack dist/chrome-extension -o dist/chrome-extension.crx -p chrome-extension-key.pem && zip -r dist/chrome-extension.zip dist/chrome-extension"
   },
   "devDependencies": {
     "@babel/core": "^7.22.0",
     "@babel/preset-env": "^7.22.0",
     "babel-jest": "^29.5.0",
     "babel-loader": "^9.1.0",
+    "copy-webpack-plugin": "^13.0.1",
+    "crx": "^5.0.1",
     "html-webpack-plugin": "^5.6.4",
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",
@@ -20,6 +23,7 @@
     "terser-webpack-plugin": "^5.3.9",
     "webpack": "^5.88.0",
     "webpack-cli": "^5.1.4",
-    "wrapper-webpack-plugin": "^2.2.2"
+    "wrapper-webpack-plugin": "^2.2.2",
+    "zip-cli": "^0.0.0"
   }
 }
