@@ -55,7 +55,7 @@ function PageController(message, config, i18n, util) {
             tag: 'button',
             '@id': 'multi-ai-sync-btn',
             '@style': { position: 'fixed', top: '10px', right: '10px', zIndex: 9999 },
-            text: 'Sync Chat' // TODO: Use i18n
+            text: this.i18n.getText('sync_chat_button_label')
         });
 
         syncButton.addEventListener('click', this.handleSyncButtonClick.bind(this));

@@ -4,6 +4,7 @@ const resources = {
         'button.send': 'Send',
         'button.send.title': 'Send',
         'prompt.placeholder': 'Ask all AIs...',
+        'sync_chat_button_label': 'Sync Chat',
         // New keys for sync-chat-window.html
         'productName': 'Multi AI Chat',
         'newChatButtonTitle': 'New Chat',
@@ -33,6 +34,7 @@ const resources = {
         'button.send': '发送',
         'button.send.title': '发送',
         'prompt.placeholder': '向所有AI提问...',
+        'sync_chat_button_label': '同步聊天',
         // New keys for sync-chat-window.html
         'productName': '多AI同步聊天',
         'newChatButtonTitle': '新建聊天',
@@ -62,6 +64,7 @@ const resources = {
         'button.send': 'إرسال',
         'button.send.title': 'إرسال',
         'prompt.placeholder': 'اسأل كل الذكاء الاصطناعي...',
+        'sync_chat_button_label': 'مزامنة الدردشة',
         // New keys for sync-chat-window.html
         'productName': 'دردشة متزامنة متعددة الذكاء الاصطناعي',
         'newChatButtonTitle': 'محادثة جديدة',
