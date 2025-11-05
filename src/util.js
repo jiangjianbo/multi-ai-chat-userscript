@@ -207,6 +207,60 @@ function Util() {
         // this can be extended. For now, focus on standard boolean inputs.
         return undefined;
     }  
+
+    /**
+     * 获取函数对象的名称
+     * @param {Function} func 对象
+     * @returns {string|null} 函数名称，若无法获取则返回 null
+     */
+    this.getFunctionName = function(func) {
+        if (typeof func !== 'function') {
+            return null;
+        }
+        return func.name || func.toString().match(/function ([^\(]+)/)[1];
+    }
+
+    /**
+     * 将特殊字符转换为 HTML 实体，防止 XSS 攻击
+     * @param {string} unsafe 呆html的字符串
+     * @returns 
+     */
+    this.escapeHtml = function(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    /**
+     * 将 JSON 对象转换为安全的字符串，防止 XSS 攻击
+     * @param {*} jsonObj json对象
+     * @returns {string} 安全的字符串，使用JSON.parse可以还原
+     */
+    this.safeJsonString = function(jsonObj) {
+        return JSON.stringify(jsonObj)
+            .replace(/</g, '\\u003c')  // 转义 <
+            .replace(/>/g, '\\u003e')  // 转义 >
+            .replace(/&/g, '\\u0026')  // 转义 &
+            .replace(/'/g, '\\u0027'); // 转义单引号
+    }
+
+    /**
+     * 返回依赖库的源代码
+     * @returns 返回依赖库的源代码
+     */
+    this.safeString = function(str) {
+        return str
+            .replace(/\\/g, '\\\\')  // 先转义反斜杠
+            .replace(/'/g, "\\'")    // 转义单引号
+            .replace(/`/g, "'")      // 将反引号替换为单引号
+            .replace(/\n/g, '\\n')   // 转义换行符
+            .replace(/\r/g, '\\r')   // 转义回车符
+            .replace(/\t/g, '\\t');  // 转义制表符
+        ;
+    }
 }
 
 module.exports = Util;

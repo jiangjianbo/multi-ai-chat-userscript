@@ -10,7 +10,6 @@
 // @match        *://chat.deepseek.com/*
 // @match        *://x.com/i/grok*
 // @match        *://www.tongyi.com/*
-// @match        *://*/*multi-ai-sync-chat-window*
 // @grant        GM_addStyle
 // @grant        GM_getValue
 // @grant        GM_setValue

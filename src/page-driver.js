@@ -1,5 +1,4 @@
 const Util = require('./util');
-const util = new Util();
 
 /**
  * @description 页面驱动的抽象基类。
@@ -9,6 +8,8 @@ const util = new Util();
  * @property {function} onOption - 回调函数，当选项更改时调用。
  */
 function GenericPageDriver() {
+    this.util = new Util();
+
     this.selectors = {
         promptInput: 'textarea',
         sendButton: 'button[type="submit"]',
@@ -31,6 +32,7 @@ function GenericPageDriver() {
     this.onModelVersionChange = (version) => {};
     this.onNewSession = () => {};
 
+    this.className = this.util.getFunctionName(this);
     this.observer = null;
     this.currentModelVersionObserver = null;
     this.optionObservers = [];
@@ -50,7 +52,7 @@ function GenericPageDriver() {
      * @returns {HTMLElement|null}  提示输入框元素。
      */
     this.elementPromptInput = function() {
-        return util.$(this.selectors.promptInput);
+        return this.util.$(this.selectors.promptInput);
     };
 
     /**
@@ -58,7 +60,7 @@ function GenericPageDriver() {
      * @returns {HTMLElement|null} 发送按钮元素。
      */
     this.elementSendButton = function() {
-        return util.$(this.selectors.sendButton);
+        return this.util.$(this.selectors.sendButton);
     };
 
     /**
@@ -66,7 +68,7 @@ function GenericPageDriver() {
      * @returns {HTMLElement|null} 对话区域元素。
      */
     this.elementConversationArea = function() {
-        return util.$(this.selectors.conversationArea);
+        return this.util.$(this.selectors.conversationArea);
     };
 
     /**
@@ -74,7 +76,7 @@ function GenericPageDriver() {
      * @returns {HTMLElement|null} 历史记录区域元素。
      */
     this.elementHistoryArea = function() {
-        return util.$(this.selectors.historyArea);
+        return this.util.$(this.selectors.historyArea);
     };
 
     /**
@@ -82,7 +84,7 @@ function GenericPageDriver() {
      * @returns {NodeListOf<HTMLElement>} 用户问题元素列表。
      */
     this.elementQuestions = function() {
-        return util.$$(this.selectors.questions);
+        return this.util.$$(this.selectors.questions);
     };
 
     /**
@@ -90,7 +92,7 @@ function GenericPageDriver() {
      * @returns {NodeListOf<HTMLElement>} 回答元素列表。
      */
     this.elementAnswers = function() {
-        return util.$$(this.selectors.answers);
+        return this.util.$$(this.selectors.answers);
     };
 
     /**
@@ -98,7 +100,7 @@ function GenericPageDriver() {
      * @returns {NodeListOf<HTMLElement>} 历史记录项元素列表。
      */
     this.elementHistoryItems = function() {
-        return util.$$(this.selectors.historyItems);
+        return this.util.$$(this.selectors.historyItems);
     };
 
     /**
@@ -124,7 +126,7 @@ function GenericPageDriver() {
      * @returns {HTMLElement|null} 会话标题元素。
      */
     this.elementChatTitle = function() {
-        return util.$(this.selectors.chatTitle);
+        return this.util.$(this.selectors.chatTitle);
     };
 
     /**
@@ -141,7 +143,7 @@ function GenericPageDriver() {
      * @returns {HTMLElement|null} 新会话按钮元素。
      */
     this.elementNewSessionButton = function() {
-        return util.$(this.selectors.newSessionButton);
+        return this.util.$(this.selectors.newSessionButton);
     };
 
     /**
@@ -149,7 +151,7 @@ function GenericPageDriver() {
      * @returns {HTMLElement|null} 网页访问选项元素。
      */
     this.elementWebAccessOption = function() {
-        return util.$(this.selectors.webAccessOption);
+        return this.util.$(this.selectors.webAccessOption);
     };
 
     /**
@@ -157,7 +159,7 @@ function GenericPageDriver() {
      * @returns {HTMLElement|null} 长思选项元素。
      */
     this.elementLongThoughtOption = function() {
-        return util.$(this.selectors.longThoughtOption);
+        return this.util.$(this.selectors.longThoughtOption);
     };
 
     /**
@@ -165,7 +167,7 @@ function GenericPageDriver() {
      * @returns {HTMLElement|null} 模型版本列表元素。
      */
     this.elementModelVersionList = function() {
-        return util.$(this.selectors.modelVersionList);
+        return this.util.$(this.selectors.modelVersionList);
     };
 
     /**
@@ -173,7 +175,7 @@ function GenericPageDriver() {
      * @returns {HTMLElement|null} 当前模型版本元素。
      */
     this.elementCurrentModelVersion = function() {
-        return util.$(this.selectors.currentModelVersion);
+        return this.util.$(this.selectors.currentModelVersion);
     };
 
     // --- DOM Data Getters ---
@@ -183,7 +185,7 @@ function GenericPageDriver() {
      * @returns {string} 提示输入框元素。
      */
     this.getPromptInput = function() {
-        return util.getText(this.elementPromptInput());
+        return this.util.getText(this.elementPromptInput());
     };
 
     /**
@@ -242,7 +244,7 @@ function GenericPageDriver() {
      */
     this.getWebAccessOption = function() {
         const el = this.elementWebAccessOption();
-        return util.getBoolean(el)
+        return this.util.getBoolean(el)
     };
 
     /**
@@ -251,7 +253,7 @@ function GenericPageDriver() {
      */
     this.getLongThoughtOption = function() {
         const el = this.elementLongThoughtOption();
-        return util.getBoolean(el)
+        return this.util.getBoolean(el)
     };
 
     /**
@@ -267,7 +269,7 @@ function GenericPageDriver() {
      * @returns {string} 当前模型版本
      */
     this.getCurrentModelVersion = function() {
-        return util.getText(this.elementCurrentModelVersion());
+        return this.util.getText(this.elementCurrentModelVersion());
     };
 
     /**
@@ -276,7 +278,7 @@ function GenericPageDriver() {
      */
     this.getChatTitle = function() {
         const el = this.elementChatTitle();
-        return util.getText(el, '');
+        return this.util.getText(el, '');
     };
 
     /**
@@ -304,7 +306,7 @@ function GenericPageDriver() {
      * @param {string} message 要发送的消息
      */
     this.setPrompt = function(message) {
-        const input = util.$(this.selectors.promptInput);
+        const input = this.util.$(this.selectors.promptInput);
         if (input) {
             input.value = message;
             // 触发输入事件，以防页面有自己的监听器
@@ -319,7 +321,7 @@ function GenericPageDriver() {
      */
     this.send = function() {
         if (this.selectors.sendButton !== '') {
-            const button = util.$(this.selectors.sendButton);
+            const button = this.util.$(this.selectors.sendButton);
             if (button) {
                 button.click();
             } else {
@@ -371,7 +373,7 @@ function GenericPageDriver() {
 
     // --- 事件监控 ---
 
-    this.startMonitoring = function() {
+    this.startMonitoring = async function() {
         let lastQuestionCount = this.getConversationCount();
         let lastAnswerCount = this.elementAnswers().length;
         let lastChatTitle = this.getChatTitle();
@@ -398,7 +400,7 @@ function GenericPageDriver() {
                     if (currentAnswerCount > lastAnswerCount) {
                         mutation.addedNodes.forEach(node => {
                             if (node.nodeType === 1 && node.matches(this.selectors.answers)) {
-                                const allAnswers = Array.from(util.$$(this.selectors.answers));
+                                const allAnswers = Array.from(this.util.$$(this.selectors.answers));
                                 const newAnswerIndex = allAnswers.indexOf(node);
                                 this.onAnswer(newAnswerIndex, node);
                             }
@@ -416,7 +418,7 @@ function GenericPageDriver() {
             });
         });
 
-        const conversationArea = util.$(this.selectors.conversationArea);
+        const conversationArea = this.util.$(this.selectors.conversationArea);
         if (conversationArea) {
             this.observer.observe(conversationArea, { childList: true, subtree: true, attributes: true, characterData: true });
         } else {
@@ -508,8 +510,8 @@ function KimiPageDriver() {
     };
     this.selectors = Object.assign({}, this.selectors, kimiSelectors);
     
-    this.optionButton = util.$(this.selectors.optionButton);
-    this.modelVersionButton = util.$(this.selectors.modelVersionButton);
+    this.optionButton = this.util.$(this.selectors.optionButton);
+    this.modelVersionButton = this.util.$(this.selectors.modelVersionButton);
 
     this.cachedWebAccess = null;
     this.cachedLongThought = null;
@@ -521,24 +523,24 @@ function KimiPageDriver() {
     this.init = async function() {
         // Initial caching for WebAccess and LongThought options
         if (this.optionButton) {
-            await util.clickAndGet(this.optionButton, () => {
-                this.cachedWebAccess = util.getBoolean(util.$(this.selectors.webAccessOption));
-                this.cachedLongThought = util.getBoolean(util.$(this.selectors.longThoughtOption));
+            await this.util.clickAndGet(this.optionButton, () => {
+                this.cachedWebAccess = this.util.getBoolean(this.util.$(this.selectors.webAccessOption));
+                this.cachedLongThought = this.util.getBoolean(this.util.$(this.selectors.longThoughtOption));
             });
 
             // Add event listener to refresh cache on subsequent clicks
             this.optionButton.addEventListener('click', async () => {
                 // A short delay to allow the popover to open
                 await new Promise(resolve => setTimeout(resolve, 200));
-                this.cachedWebAccess = util.getBoolean(util.$(this.selectors.webAccessOption));
-                this.cachedLongThought = util.getBoolean(util.$(this.selectors.longThoughtOption));
+                this.cachedWebAccess = this.util.getBoolean(this.util.$(this.selectors.webAccessOption));
+                this.cachedLongThought = this.util.getBoolean(this.util.$(this.selectors.longThoughtOption));
             });
         }
 
         // Initial caching for Model Versions
         if (this.modelVersionButton) {
-            await util.clickAndGet(this.modelVersionButton, () => {
-                this.cachedVersions = Array.from(util.$(this.selectors.modelVersionList), node => node.textContent);
+            await this.util.clickAndGet(this.modelVersionButton, () => {
+                this.cachedVersions = Array.from(this.util.$(this.selectors.modelVersionList), node => node.textContent);
             });
         }
     };

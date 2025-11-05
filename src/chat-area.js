@@ -61,6 +61,8 @@ function ChatArea(mainController, id, url, container, i18n) {
      * @returns 
      */
     this.render = function(data) {
+        console.debug(`Rendering ChatArea ${data.id} with provider ${data.providerName}, data = ${JSON.stringify(data)}`);
+        
         const providers = driverFactory.getProviders().map((m, i) => 
             `<div class="model-option" data-value="${m}">${m}</div>`
         ).join('');

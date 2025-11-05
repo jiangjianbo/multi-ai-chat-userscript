@@ -29,6 +29,7 @@ function main() {
             const message = new Message(config.get('channelName'));
             const pageController = new PageController(message, config, i18n, util);
             pageController.init();
+            console.log('PageController Initialized!');
         });
     }
 }

@@ -1,3 +1,5 @@
+const Util = require('./util');
+
 /**
  * @description The class for checking and creating the main window.
  */
@@ -227,10 +229,7 @@ function SyncChatWindow() {
             pointer-events: none; /* 确保点击穿透到 model-name */
         }
         `;
-        const styleSheet = doc.createElement("style");
-        styleSheet.type = "text/css";
-        styleSheet.innerText = styles;
-        doc.head.appendChild(styleSheet);
+        return styles;
     }
 
     /**
@@ -241,7 +240,7 @@ function SyncChatWindow() {
     this.createWindow = function(doc, ignoreScriptForTesting = false) {
         doc.title = 'Multi-AI Sync Chat';
         // Inject styles
-        _addStyles(doc);
+        const styles = _addStyles(doc);
 
         const htmlSrc = `
 <div class="main-window">
@@ -301,41 +300,50 @@ function SyncChatWindow() {
 </div>
         `;
 
-        const theLang = require('./lang');
-        const initScript = ignoreScriptForTesting ? '' : `
-            <script>
-                ${require('./util').toString()}
-                ${require('./storage').toString()}
-                ${require('./config').toString()}
-                ${require('./i18n').toString()}
-                ${require('./message').toString()}
-                
-                ${require('./page-driver').toString()}
-                ${require('./driver-factory').toString()}
-                ${require('./chat-area').toString()}
-                
-                ${require('./main-window-controller').toString()}
-                const lang = ${JSON.stringify(theLang)};
-
-				const util = new Util(); /* PageDriver要用到 */
-                const storage = new Storage();
-                const defaultConfig = { channelName: 'multi-ai-chat' };
-                const config = new Config(storage, defaultConfig);
-                const i18n = new I18n(config, lang);
-                const message = new Message(config.get('channelName'));
-                
-                const mainWindowController = new MainWindowController('${this.MULTI_AI_CHAT_MAIN_WINDOW}', message, config, i18n);
-                mainWindowController.init();
-
-                console.log("Main window script loaded.");
-            </script>
+        const util = new Util();
+        const initScriptTemplate = `
+                console.log('Initializing main window.');
+debugger;
+                window.mainWindowName = '${this.MULTI_AI_CHAT_MAIN_WINDOW}';
+                // INSERT_MAIN_WINDOW_INDEX_JS_HERE
+                console.log('Main window initialized.');
         `;
-
-        doc.body.innerHTML = `
+        const initScript = ignoreScriptForTesting ? '' : initScriptTemplate.replace('// INSERT_MAIN_WINDOW_INDEX_JS_HERE', __MAIN_WINDOW_INITIALIZER_SCRIPT__);
+       
+        doc.write(`
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Multi AI Chat</title>
+        <style>${styles}</style>
+    </head>
+    <body>
             <div id="root">${htmlSrc}</div>
-            ${initScript}
-            `;
-    };
+            <script>${initScript}</script>
+            <div style="position: fixed;
+        top: 10px;
+        right: 10px;
+        background: white;
+        border: 1px solid #ccc;
+        padding: 10px;
+        max-height: 80vh;
+        overflow: auto;
+        z-index: 10000;
+        font-family: monospace;
+        white-space: pre-wrap;
+        word-break: break-all;"
+            ><textarea style="width: 100%;
+            height: 100%;
+            resize: none;
+            box-sizing: border-box;">${util.escapeHtml(initScript)}</textarea></div>
+    </body>
+</html>`
+        );
+        doc.close();
+
+    }
 
     /**
      * @description Checks for the main window and creates it if it doesn't exist.
@@ -343,15 +351,25 @@ function SyncChatWindow() {
      */
     this.checkAndCreateWindow = function() {
         if (this.exist()) {
+            console.log('Main window already exists. Focusing on it.');
             const win = window.top.multiAiChatMainWindow;
             win.focus();
             return win;
         }
 
+        console.log('Creating new main window.');
         const newWindow = window.open('', this.MULTI_AI_CHAT_MAIN_WINDOW, 'width=1200,height=800');
         if (newWindow) {
             window.top.multiAiChatMainWindow = newWindow;
+
+            // 在父窗口监听子窗口的错误
+            newWindow.onerror = function (msg, url, lineNo, columnNo, error) {
+                console.log('子窗口错误:', { msg, url, lineNo, columnNo, error });
+                return true;
+            };
+
             this.createWindow(newWindow.document);
+            console.log('Main window created.');
         }
         return newWindow;
     };

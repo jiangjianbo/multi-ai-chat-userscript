@@ -25,10 +25,10 @@ function PageController(message, config, i18n, util) {
     /**
      * @description 初始化，注入UI，选择驱动。
      */
-    this.init = function() {
+    this.init = async function() {
         const hostname = window.location.hostname;
         this.driver = driverFactory.createDriver(hostname);
-        this.driver.init();
+        const initialized = this.driver.init();
         
         this.syncChatWindow = new SyncChatWindow();
 
@@ -46,6 +46,7 @@ function PageController(message, config, i18n, util) {
         this.driver.onNewSession = this.handleDriverNewSession.bind(this);
 
         // 开始监控页面变化
+        await initialized; // 等待初始化完成
         this.driver.startMonitoring();
     };
 
