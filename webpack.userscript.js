@@ -57,7 +57,7 @@ module.exports = async () => {
             ]
         },
         optimization: {
-            minimize: true,
+            minimize: false,
             minimizer: [new TerserPlugin({
                 terserOptions: {
                     compress: { drop_console: false },

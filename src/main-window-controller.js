@@ -16,7 +16,8 @@ function MainWindowController(receiverId, message, config, i18n) {
     this.i18n = i18n;
     this.util = new Util();
     this.chatAreas = new Map();
-    this.driverFactory = new DriverFactory();
+    this.driverFactory = new DriverFactory(); // 只是用来获取提供商URL和模型列表
+    this.defaultDriverParams = null; // 默认的页面参数， webAccess, longThought等  
     this.selectedProviders = new Map(); // K: providerName, V: chatAreaId
     this.element = null;
     this.chatAreaContainer = null;
@@ -116,7 +117,7 @@ function MainWindowController(receiverId, message, config, i18n) {
         });
 
         // Close Window
-        this.element.querySelector('.title-action-button').addEventListener('click', () => {
+        document.getElementById('main-window-close-button').addEventListener('click', () => {
             window.close();
         });
 
@@ -134,7 +135,9 @@ function MainWindowController(receiverId, message, config, i18n) {
         // Settings Menu
         this.settingsButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.settingsMenu.style.display = this.settingsMenu.style.display === 'block' ? 'none' : 'block';
+            const isDisplay = this.settingsMenu.style.display === 'block';
+            // 切换显示和隐藏
+            this.settingsMenu.style.display = isDisplay ? 'none' : 'block';
         });
         this.settingsMenu.addEventListener('click', (e) => e.stopPropagation());
 
@@ -166,10 +169,29 @@ function MainWindowController(receiverId, message, config, i18n) {
         });
 
         this.newChatButton.addEventListener('click', () => {
-                    const newId = `chat-area-${Date.now()}`;
-                    const webAccess = this.settingsMenu.querySelector('#web-access').checked;
-                    const longThought = this.settingsMenu.querySelector('#long-thought').checked;
-                    this.addChatArea({ id: newId, url: null, providerName: 'New Chat', params: { webAccess, longThought } });        });
+            debugger;
+            try {
+                const newId = `chat-area-${Date.now()}`;
+                const webAccess = this.settingsMenu.querySelector('#web-access').checked;
+                const longThought = this.settingsMenu.querySelector('#long-thought').checked;
+                this.addChatArea(
+                    {
+                        id: newId,
+                        url: null,
+                        providerName: 'New Chat',
+                        title: 'New Chat',
+                        params: {
+                            webAccess, longThought,
+                            models: [], // 默认没有模型列表
+                            modelVersion: null // 默认没有模型版本
+                        },
+                        conversation: []
+                    }
+                );
+            }catch(e){
+                console.error("error:" + e);
+            }
+        });
 
         // Populate Language Dropdown
         const langs = this.i18n.getAllLangs();
@@ -217,14 +239,14 @@ function MainWindowController(receiverId, message, config, i18n) {
         const displayOrder = [...pinned, ...unpinned];
 
         allAreas.forEach(area => {
-            if (area.container.parentElement) {
-                area.container.parentElement.style.display = 'none';
+            if (area.container) {
+                area.container.style.display = 'none';
             }
         });
 
         for (let i = 0; i < Math.min(layout, displayOrder.length); i++) {
-            if (displayOrder[i].container.parentElement) {
-                displayOrder[i].container.parentElement.style.display = 'block';
+            if (displayOrder[i].container) {
+                displayOrder[i].container.style.display = 'flex';
             }
         }
     };
@@ -238,9 +260,20 @@ function MainWindowController(receiverId, message, config, i18n) {
 
     /**
      * @description Handles the 'create' message to add a new chat area.
-     * @param {object} data - Message data ({ id, url, title, ... }).
+     * @param {object} data - Message data {id, providerName, url, pinned, params:{webAccess,longThought, models}, conversation:[{type, content}]}.
      */
     this.onMsgCreate = function(data) {
+        // 这里要保存 driver相关的一些参数，检查是否初始化，如果没有初始化，则保存为默认参数
+        if (!this.defaultDriverParams) {
+            this.defaultDriverParams = {
+                webAccess: data.params?.webAccess || false,
+                longThought: data.params?.longThought || false
+            };
+            // 设置参数配置项控件的值
+            this.settingsMenu.querySelector('#web-access').checked = this.defaultDriverParams.webAccess;
+            this.settingsMenu.querySelector('#long-thought').checked = this.defaultDriverParams.longThought;
+        }
+        
         this.addChatArea(data);
     };
 
@@ -320,18 +353,18 @@ function MainWindowController(receiverId, message, config, i18n) {
 
     /**
      * @description Adds a new ChatArea instance.
-     * @param {object} data - 初始化数据，结构为{id, providerName, url, pinned, params:{webAccess,longThought, models}, conversation:[{type, content}]}.
+     * @param {object} data - 初始化数据，结构为{id, providerName, url, pinned, params:{webAccess,longThought, models, modelVersion}, conversation:[{type, content}]}.
      */
     this.addChatArea = function(data) {
+        console.debug(`add chatarea with ${JSON.stringify(data)}`)
+
         if (this.chatAreas.has(data.id)) {
             console.warn(`ChatArea with id ${data.id} already exists.`);
             return;
         }
 
-        const wrapper = this.util.toHtml({ tag: 'div', '@class': 'chat-area-wrapper' });
         const container = this.util.toHtml({ tag: 'div', '@class': 'chat-area-container'});
-        this.chatAreaContainer.appendChild(wrapper);
-        wrapper.appendChild(container);
+        this.chatAreaContainer.appendChild(container);
 
         const chatArea = new ChatArea(this, data.id, data.url, container, this.i18n);
         chatArea.init(data);
@@ -359,6 +392,15 @@ function MainWindowController(receiverId, message, config, i18n) {
         if (data.providerName && data.providerName !== 'New Chat') {
             this.selectedProviders.set(data.providerName, data.id);
         }
+
+        data.conversations?.forEach(item => {
+            if (item.type === 'question') {
+                chatArea.addQuestion(item.content);
+            } else if (item.type === 'answer') {
+                chatArea.addAnswer(item.content);
+            }
+        });
+        
     };
 
     this.updateDefaultLayout = function() {
@@ -399,30 +441,30 @@ function MainWindowController(receiverId, message, config, i18n) {
     };
 
     this._handleNewSession = function(chatArea, providerName) {
-        this.message.send(chatArea.id, 'new_session', { providerName });
+        this.message.send('new_session', { providerName, receiverId: chatArea.id });
     };
 
     this._handleShare = function(chatArea, url) {
         navigator.clipboard.writeText(url);
-        this.message.send(chatArea.id, 'focus', {});
+        this.message.send('focus', {receiverId: chatArea.id });
     };
 
     this._handleParamChanged = function(chatArea, key, newValue, oldValue) {
-        this.message.send(chatArea.id, 'param_changed', { key, newValue, oldValue });
+        this.message.send('param_changed', { key, newValue, oldValue, receiverId: chatArea.id });
     };
 
     this._handleProviderChanged = function(chatArea, newProvider, oldProvider) {
         const newUrl = this.driverFactory.getProviderUrl(newProvider);
-        this.message.send(chatArea.id, 'change_provider', { url: newUrl });
+        this.message.send('change_provider', { url: newUrl, receiverId: chatArea.id });
         chatArea.url = newUrl;
     };
 
     this._handlePromptSend = function(chatArea, text) {
-        this.message.send(chatArea.id, 'prompt', { text });
+        this.message.send('prompt', { text, receiverId: chatArea.id });
     };
 
     this._handleExport = function(chatArea) {
-        this.message.send(chatArea.id, 'export', {});
+        this.message.send('export', {receiverId: chatArea.id });
     };
 
     /**

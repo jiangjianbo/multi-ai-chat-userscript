@@ -37,6 +37,7 @@ function GenericPageDriver() {
     this.currentModelVersionObserver = null;
     this.optionObservers = [];
     this.newSessionButtonListener = null;
+    this.providerName = null;
 
     /**
      * @description 异步初始化方法，可用于预加载或缓存元素。
@@ -44,6 +45,13 @@ function GenericPageDriver() {
     this.init = async function() {
         // Base implementation is empty. Should be overridden by specific drivers if needed.
     };
+
+    /**
+     * 返回当前驱动的提供商代号
+     */
+    this.getProviderName = function() {
+        return this.providerName;
+    },
 
     // --- DOM Element Accessors ---
 
@@ -237,6 +245,27 @@ function GenericPageDriver() {
         const el = this.elementAnswer(index);
         return el ? el.textContent.trim() : '';
     };
+
+    /**
+     * 获取当前的所有对话内容
+     * @returns 对话内容数组[{type, content}]
+     */
+    this.getConversations = function(){
+        const conversations = [];
+        const count = this.getConversationCount();
+
+        for(let i = 0; i < count; ++i) {
+            conversations.push({
+                content: this.getQuestion(i),
+                type: 'question'
+            });
+            conversations.push({
+                type: 'answer',
+                content: this.getAnswer(i)
+            });
+        }
+        return conversations;
+    },
 
     /**
      * 获取网页访问选项状态
@@ -517,6 +546,8 @@ function KimiPageDriver() {
     this.cachedLongThought = null;
     this.cachedVersions = null;
 
+    this.providerName = 'Kimi';
+
     /**
      * @description Initializes the Kimi driver by performing async operations to cache elements.
      */
@@ -589,6 +620,8 @@ function GeminiPageDriver() {
         optionButton: '' //'toolbox-drawer div.toolbox-drawer-button-container button'
     };
     this.selectors = Object.assign({}, this.selectors, geminiSelectors);
+
+    this.providerName = 'Gemini';
 }
 //GeminiPageDriver.prototype = Object.create(GenericPageDriver.prototype);
 
@@ -598,6 +631,7 @@ function ChatGPTPageDriver() {
         // ... ChatGPT 对应的选择器 (占位)
     };
     this.selectors = Object.assign({}, this.selectors, chatGPTSelectors);
+    this.providerName = 'ChatGPT';
 }
 //ChatGPTPageDriver.prototype = Object.create(GenericPageDriver.prototype);
 

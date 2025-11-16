@@ -11,6 +11,15 @@ const resources = require('./lang');
 function MainWindowInitializer() {
     console.log("Main window initializer loading ...");
 
+    // 加入错误处理
+    window.onerror = function (msg, src, line, col, err) {
+        console.error('Global error caught:\\n' + (err && err.stack || msg));
+        return true;   // 阻止默认处理
+    };
+    window.addEventListener('unhandledrejection', e => {
+        console.error('Unhandled rejection:\\n' + e.reason);
+    });
+
     const util = new Util(); 
     const storage = new Storage();
     const defaultConfig = { channelName: 'multi-ai-chat' };

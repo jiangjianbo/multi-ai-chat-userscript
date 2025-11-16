@@ -64,14 +64,23 @@ function PageController(message, config, i18n, util) {
         // TODO: Inject other UI elements like toolbars and indexes
     };
 
-    this.handleSyncButtonClick = function() {
-        this.syncChatWindow.checkAndCreateWindow();
+    this.handleSyncButtonClick = async function() {
+        await this.syncChatWindow.checkAndCreateWindow();
+
+        // 初始化数据，结构为{id, providerName, url, pinned, params:{webAccess,longThought, models}, conversation:[{type, content}]}.
         // 确保窗口创建后再发送消息
         setTimeout(() => {
             this.message.send('create', {
                 id: this.pageId,
                 url: window.location.href,
-                title: this.driver.getChatTitle() || document.title
+                providerName: this.driver.getProviderName(),
+                title: this.driver.getChatTitle() || document.title,
+                params : {
+                    ... this.driver.getOptions(),
+                    models: this.driver.getModelVersionList(),
+                    modelVersion: this.driver.getCurrentModelVersion()
+                },
+                conversation: this.driver.getConversations()
             });
         }, 500);
     };

@@ -69,16 +69,16 @@
         .content-area[data-layout="4"] { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
         .content-area[data-layout="6"] { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr; }
         
-        .mock-chat-area {
+        .chat-area-container {
             background-color: #fff; border: 1px solid var(--border-color); border-radius: 8px;
             display: flex; justify-content: center; align-items: center;
             font-size: 1.5em; color: #aaa; min-height: 200px; cursor: pointer; position: relative;
         }
-        .mock-chat-area.pinned { border-color: var(--pin-color); }
-        .mock-chat-area .pin-icon {
+        .chat-area-container.pinned { border-color: var(--pin-color); }
+        .chat-area-container .pin-icon {
             display: none; position: absolute; top: 10px; right: 10px; font-size: 18px;
         }
-        .mock-chat-area.pinned .pin-icon { display: block; color: var(--pin-color); }
+        .chat-area-container.pinned .pin-icon { display: block; color: var(--pin-color); }
 
         /* Prompt Input Area */
         .prompt-area {
@@ -147,12 +147,12 @@
 
     <!-- Content Area -->
     <main class="content-area" id="content-area" data-layout="1">
-        <div class="mock-chat-area" data-pinned="false">AI 1 <span class="pin-icon">&#128205;</span></div>
-        <div class="mock-chat-area" data-pinned="false">AI 2 <span class="pin-icon">&#128205;</span></div>
-        <div class="mock-chat-area" data-pinned="true">AI 3 <span class="pin-icon">&#128205;</span></div>
-        <div class="mock-chat-area" data-pinned="false">AI 4 <span class="pin-icon">&#128205;</span></div>
-        <div class="mock-chat-area" data-pinned="true">AI 5 <span class="pin-icon">&#128205;</span></div>
-        <div class="mock-chat-area" data-pinned="false">AI 6 <span class="pin-icon">&#128205;</span></div>
+        <div class="chat-area-container" data-pinned="false">AI 1 <span class="pin-icon">&#128205;</span></div>
+        <div class="chat-area-container" data-pinned="false">AI 2 <span class="pin-icon">&#128205;</span></div>
+        <div class="chat-area-container" data-pinned="true">AI 3 <span class="pin-icon">&#128205;</span></div>
+        <div class="chat-area-container" data-pinned="false">AI 4 <span class="pin-icon">&#128205;</span></div>
+        <div class="chat-area-container" data-pinned="true">AI 5 <span class="pin-icon">&#128205;</span></div>
+        <div class="chat-area-container" data-pinned="false">AI 6 <span class="pin-icon">&#128205;</span></div>
     </main>
 
     <!-- Prompt Input Area -->
@@ -185,7 +185,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const contentArea = document.getElementById('content-area');
     const layoutSwitcher = document.getElementById('layout-switcher');
-    const chatAreas = Array.from(document.querySelectorAll('.mock-chat-area'));
+    const chatAreas = Array.from(document.querySelectorAll('.chat-area-container'));
 
     const langContainer = document.querySelector('.lang-container');
     const langSwitcher = document.getElementById('lang-switcher');
@@ -281,6 +281,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Main Window research page initialized with fixes.');
 });
 </script>
-<script src="main-out.js"></script>
+
 </body>
 </html>

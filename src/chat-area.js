@@ -44,7 +44,7 @@ function ChatArea(mainController, id, url, container, i18n) {
     this.init = function(instanceData) {
         const chatAreaHtml = this.render(instanceData);
         this.container.innerHTML = chatAreaHtml;
-        this.element = this.container.querySelector('.chat-area-instance');
+        this.element = this.container;//.querySelector('.chat-area-instance');
         if (!this.url) {
             this.element.classList.add('forced-selection');
         }
@@ -97,7 +97,6 @@ function ChatArea(mainController, id, url, container, i18n) {
         const modelSelectorClass = this.url ? 'model-selector' : 'model-selector highlight-dropdown';
 
         return `
-        <div class="chat-area-instance">
             ${overlayHtml}
             <div class="chat-area-title">
                 <div class="title-left">
@@ -143,7 +142,6 @@ function ChatArea(mainController, id, url, container, i18n) {
                 <textarea rows="1" placeholder="Type your message..." data-lang-key="typeMessagePlaceholder"></textarea>
                 <button title="Send" data-lang-key="sendButtonTitle">&#10148;</button>
             </div>
-        </div>
         `;
     };
 

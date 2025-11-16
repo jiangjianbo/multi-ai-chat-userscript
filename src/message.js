@@ -15,6 +15,8 @@ function Message(channelName) {
      * @param {MessageEvent} event - 消息事件。
      */
     this.handleMessage = function(event) {
+        console.debug(`receive message ${JSON.stringify(event?.data)}`);
+        
         const { type, data } = event.data;
         if (!type) return;
 
@@ -62,6 +64,8 @@ function Message(channelName) {
      */
     this.send = function(type, data) {
         try {
+            console.debug(`send type = ${type}, data = ${JSON.stringify(data)}`);
+
             this.channel.postMessage({ type, data });
         } catch (e) {
             console.error(`Error posting message: ${e}`);

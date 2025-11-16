@@ -95,12 +95,6 @@ function SyncChatWindow() {
         .content-area[data-layout="2"] { grid-template-columns: 1fr 1fr; }
         .content-area[data-layout="4"] { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
         .content-area[data-layout="6"] { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr; }
-
-        .chat-area-wrapper {
-            background-color: #fff; border: 1px solid var(--border-color); border-radius: 8px;
-            display: flex; flex-direction: column; justify-content: center; align-items: stretch;
-            font-size: 1.5em; color: #aaa; cursor: pointer; position: relative;
-        }
         
         /* Prompt Input Area */
         .prompt-area {
@@ -200,13 +194,13 @@ function SyncChatWindow() {
             z-index: 100;
         }
 
-        .chat-area-instance.forced-selection .model-selector,
-        .chat-area-instance.forced-selection .close-button {
+        .chat-area-container.forced-selection .model-selector,
+        .chat-area-container.forced-selection .close-button {
             z-index: 101;
             position: relative;
         }
 
-        .chat-area-instance.forced-selection .model-selector {
+        .chat-area-container.forced-selection .model-selector {
             border: 2px solid red; /* Highlight color */
             border-radius: 5px;
         }
@@ -264,7 +258,7 @@ function SyncChatWindow() {
             <button class="layout-button" data-layout="6">6</button>
         </div>
         <div class="title-section right">
-            <button class="title-action-button">&#10006;</button>
+            <button class="title-action-button" id="main-window-close-button">&#10006;</button>
         </div>
     </header>
 
@@ -349,7 +343,7 @@ debugger;
      * @description Checks for the main window and creates it if it doesn't exist.
      * @returns {Window} - The main window instance.
      */
-    this.checkAndCreateWindow = function() {
+    this.checkAndCreateWindow = async function() {
         if (this.exist()) {
             console.log('Main window already exists. Focusing on it.');
             const win = window.top.multiAiChatMainWindow;
