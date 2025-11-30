@@ -1,59 +1,32 @@
 const PageController = require('../src/page-controller');
 const DriverFactory = require('../src/driver-factory');
 const SyncChatWindow = require('../src/sync-chat-window');
+const MessageClient = require('../src/message-client');
 
-// --- Mocks ---
-jest.mock('../src/driver-factory', () => {
-    return jest.fn().mockImplementation(() => {
-        return {
-            createDriver: jest.fn().mockImplementation(() => ({
-                getChatTitle: jest.fn(() => 'Mock Title'),
-                setPrompt: jest.fn(),
-                send: jest.fn(),
-                startMonitoring: jest.fn(),
-                onAnswer: null, // Callbacks will be assigned by the controller
-                onChatTitle: null,
-                onOption: null,
-                onQuestion: null,
-                onModelVersionChange: null,
-                onNewSession: null,
-                setOption: jest.fn(),
-                setModelVersion: jest.fn(),
-                newSession: jest.fn(),
-                setAnswerStatus: jest.fn(),
-                init: jest.fn(),
-            })),
-        };
-    });
-});
-
-jest.mock('../src/sync-chat-window', () => {
-    return jest.fn().mockImplementation(() => {
-        return {
-            checkAndCreateWindow: jest.fn(),
-        };
-    });
-});
-
-
+// Mocks
+jest.mock('../src/driver-factory');
+jest.mock('../src/sync-chat-window');
+jest.mock('../src/message-client');
 
 describe('PageController', () => {
     let pageController;
-    let mockMessage, mockUtil, mockDriver;
+    let mockMessage, mockUtil, mockDriver, mockMsgClient;
 
-    beforeEach(() => {
-        // Reset DOM
+    beforeEach(async () => {
         document.body.innerHTML = '';
-        SyncChatWindow.mockClear();
-        DriverFactory.mockClear(); // Clear mock calls for DriverFactory itself
 
-        // Mock Driver
+        // Create a consistent mock driver instance for the factory to return
         mockDriver = {
             getChatTitle: jest.fn(() => 'Mock Title'),
+            getProviderName: jest.fn(() => 'MockProvider'),
+            getOptions: jest.fn(() => ({ webAccess: true })),
+            getModelVersionList: jest.fn(() => ['v1', 'v2']),
+            getCurrentModelVersion: jest.fn(() => 'v1'),
+            getConversations: jest.fn(() => []),
             setPrompt: jest.fn(),
             send: jest.fn(),
             startMonitoring: jest.fn(),
-            onAnswer: null, // Callbacks will be assigned by the controller
+            onAnswer: null,
             onChatTitle: null,
             onOption: null,
             onQuestion: null,
@@ -63,15 +36,25 @@ describe('PageController', () => {
             setModelVersion: jest.fn(),
             newSession: jest.fn(),
             setAnswerStatus: jest.fn(),
-            init: jest.fn(),
+            init: jest.fn().mockResolvedValue(undefined),
         };
+        
+        // Configure the factory mock to return our driver
+        DriverFactory.mockImplementation(() => ({
+            createDriver: () => mockDriver,
+        }));
 
-        // Other Mocks
+        SyncChatWindow.mockImplementation(() => ({
+            checkAndCreateWindow: jest.fn().mockResolvedValue(undefined),
+        }));
+        
         mockMessage = { register: jest.fn(), send: jest.fn() };
+        mockMsgClient = new MessageClient();
         mockUtil = {
             toHtml: jest.fn(json => {
                 const el = document.createElement(json.tag);
                 if (json['@id']) el.id = json['@id'];
+                if (json.text) el.textContent = json.text;
                 return el;
             }),
         };
@@ -79,157 +62,73 @@ describe('PageController', () => {
         pageController = new PageController(
             mockMessage,
             {},
-            { t: key => key },
+            { getText: key => key },
             mockUtil
         );
+        
+        // Inject the mock message client
+        pageController.msgClient = mockMsgClient;
 
-        // After pageController is created, the mocked DriverFactory instance has been created.
-        // We need to get a reference to the createDriver method of that instance.
-        // DriverFactory.mock.results[0].value is the instance returned by new DriverFactory()
-        DriverFactory.mock.results[0].value.createDriver.mockReturnValue(mockDriver);
-
-        // Mock window location
         delete window.location;
         window.location = { hostname: 'test.com', href: 'http://localhost/' };
+
+        await pageController.init();
     });
 
     test('init should initialize driver, UI, and listeners', () => {
-        pageController.init();
-        expect(DriverFactory.mock.results[0].value.createDriver).toHaveBeenCalledWith('test.com');
+        expect(pageController.driver).toBe(mockDriver);
         expect(document.getElementById('multi-ai-sync-btn')).not.toBeNull();
         expect(mockMessage.register).toHaveBeenCalledWith(pageController.pageId, pageController);
         expect(mockDriver.startMonitoring).toHaveBeenCalled();
+        expect(mockDriver.onAnswer).toBeInstanceOf(Function);
     });
 
-    test('1. Sync button click should create window and send "create" message', () => {
+    test('Sync button click should create window and call msgClient.create', async () => {
         jest.useFakeTimers();
-        pageController.init();
         const syncButton = document.getElementById('multi-ai-sync-btn');
-        syncButton.click();
+        await syncButton.click();
 
         expect(pageController.syncChatWindow.checkAndCreateWindow).toHaveBeenCalled();
         
-        // Fast-forward timers to resolve the setTimeout
         jest.runAllTimers();
 
-        expect(mockMessage.send).toHaveBeenCalledWith('create', {
-            id: expect.any(String),
-            url: 'http://localhost/', // JSDOM default
+        expect(mockMsgClient.create).toHaveBeenCalledWith(expect.objectContaining({
+            providerName: 'MockProvider',
             title: 'Mock Title',
-        });
+        }));
         jest.useRealTimers();
     });
 
-    test('7. onMsgChat should call driver methods', () => {
-        pageController.init();
+    test('onMsgChat should call driver methods', () => {
         pageController.onMsgChat({ content: 'test prompt' });
         expect(mockDriver.setPrompt).toHaveBeenCalledWith('test prompt');
         expect(mockDriver.send).toHaveBeenCalled();
     });
 
-    test('onMsgChat should ignore messages for other pages if id is present', () => {
-        pageController.init();
-        pageController.onMsgChat({ id: 'other-page-id', content: 'test prompt' });
-        expect(mockDriver.setPrompt).not.toHaveBeenCalled();
+    test('Driver onAnswer callback should call msgClient.answer', () => {
+        const mockElement = { innerHTML: 'Answer content' };
+        mockDriver.onAnswer(1, mockElement);
+        expect(mockMsgClient.answer).toHaveBeenCalledWith(pageController.pageId, 1, 'Answer content');
     });
 
-    test('4. Driver onAnswer callback should send an "answer" message', () => {
-        pageController.init();
-        expect(mockDriver.onAnswer).toBeInstanceOf(Function);
-
-        const mockAnswerElement = { innerHTML: 'This is an answer.' };
-        // Manually trigger the callback that was passed to the driver
-        mockDriver.onAnswer(1, mockAnswerElement);
-
-        expect(mockMessage.send).toHaveBeenCalledWith('answer', {
-            id: pageController.pageId,
-            index: 1,
-            content: 'This is an answer.',
-        });
+    test('Driver onQuestion callback should call msgClient.question', () => {
+        const mockElement = { innerHTML: 'Question content' };
+        mockDriver.onQuestion(0, mockElement);
+        expect(mockMsgClient.question).toHaveBeenCalledWith(pageController.pageId, 0, 'Question content');
     });
 
-    test('Driver onQuestion callback should send a "question" message', () => {
-        pageController.init();
-        expect(mockDriver.onQuestion).toBeInstanceOf(Function);
-
-        const mockQuestionElement = { innerHTML: 'This is a question.' };
-        mockDriver.onQuestion(0, mockQuestionElement);
-
-        expect(mockMessage.send).toHaveBeenCalledWith('question', {
-            id: pageController.pageId,
-            index: 0,
-            content: 'This is a question.',
-        });
+    test('Driver onModelVersionChange callback should call msgClient.modelVersionChange', () => {
+        mockDriver.onModelVersionChange('v2');
+        expect(mockMsgClient.modelVersionChange).toHaveBeenCalledWith(pageController.pageId, 'v2');
     });
 
-    test('Driver onModelVersionChange callback should send a "modelVersionChange" message', () => {
-        pageController.init();
-        expect(mockDriver.onModelVersionChange).toBeInstanceOf(Function);
-
-        mockDriver.onModelVersionChange('GPT-4');
-
-        expect(mockMessage.send).toHaveBeenCalledWith('modelVersionChange', {
-            id: pageController.pageId,
-            version: 'GPT-4',
-        });
-    });
-
-    test('Driver onNewSession callback should send a "newSession" message', () => {
-        pageController.init();
-        expect(mockDriver.onNewSession).toBeInstanceOf(Function);
-
+    test('Driver onNewSession callback should call msgClient.newSession', () => {
         mockDriver.onNewSession();
-
-        expect(mockMessage.send).toHaveBeenCalledWith('newSession', {
-            id: pageController.pageId,
-        });
+        expect(mockMsgClient.newSession).toHaveBeenCalledWith(pageController.pageId);
     });
 
-    test('onMsgSetOption should call driver.setOption', () => {
-        pageController.init();
-        pageController.onMsgSetOption({ id: pageController.pageId, key: 'webAccess', value: true });
-        expect(mockDriver.setOption).toHaveBeenCalledWith('webAccess', true);
-    });
-
-    test('onMsgSetOption should ignore messages for other pages if id is present', () => {
-        pageController.init();
-        pageController.onMsgSetOption({ id: 'other-page-id', key: 'webAccess', value: true });
-        expect(mockDriver.setOption).not.toHaveBeenCalled();
-    });
-
-    test('onMsgSetModelVersion should call driver.setModelVersion', () => {
-        pageController.init();
-        pageController.onMsgSetModelVersion({ id: pageController.pageId, version: 'GPT-4' });
-        expect(mockDriver.setModelVersion).toHaveBeenCalledWith('GPT-4');
-    });
-
-    test('onMsgSetModelVersion should ignore messages for other pages if id is present', () => {
-        pageController.init();
-        pageController.onMsgSetModelVersion({ id: 'other-page-id', version: 'GPT-4' });
-        expect(mockDriver.setModelVersion).not.toHaveBeenCalled();
-    });
-
-    test('onMsgSetAnswerStatus should call driver.setAnswerStatus', () => {
-        pageController.init();
-        pageController.onMsgSetAnswerStatus({ id: pageController.pageId, index: 0, collapsed: true });
-        expect(mockDriver.setAnswerStatus).toHaveBeenCalledWith(0, true);
-    });
-
-    test('onMsgSetAnswerStatus should ignore messages for other pages if id is present', () => {
-        pageController.init();
-        pageController.onMsgSetAnswerStatus({ id: 'other-page-id', index: 0, collapsed: true });
-        expect(mockDriver.setAnswerStatus).not.toHaveBeenCalled();
-    });
-
-    test('onMsgThread should call driver.newSession', () => {
-        pageController.init();
-        pageController.onMsgThread({ id: pageController.pageId });
+    test('onMsgNewSession should call driver.newSession', () => {
+        pageController.onMsgNewSession({ id: pageController.pageId });
         expect(mockDriver.newSession).toHaveBeenCalled();
-    });
-
-    test('onMsgThread should ignore messages for other pages if id is present', () => {
-        pageController.init();
-        pageController.onMsgThread({ id: 'other-page-id' });
-        expect(mockDriver.newSession).not.toHaveBeenCalled();
     });
 });

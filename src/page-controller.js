@@ -1,6 +1,7 @@
 const DriverFactory = require('./driver-factory');
 const { GenericPageDriver } = require('./page-driver');
 const SyncChatWindow = require('./sync-chat-window');
+const MessageClient = require('./message-client');
 
 /**
  * @description 在原生AI页面运行的核心控制器。
@@ -13,6 +14,7 @@ function PageController(message, config, i18n, util) {
     const driverFactory = new DriverFactory();
 
     this.message = message;
+    this.msgClient = new MessageClient(message);
     this.config = config;
     this.i18n = i18n;
     this.util = util;
@@ -70,7 +72,7 @@ function PageController(message, config, i18n, util) {
         // 初始化数据，结构为{id, providerName, url, pinned, params:{webAccess,longThought, models}, conversation:[{type, content}]}.
         // 确保窗口创建后再发送消息
         setTimeout(() => {
-            this.message.send('create', {
+            this.msgClient.create({
                 id: this.pageId,
                 url: window.location.href,
                 providerName: this.driver.getProviderName(),
@@ -102,7 +104,7 @@ function PageController(message, config, i18n, util) {
     /**
      * @description 处理来自主窗口的创建新会话的指令。
      */
-    this.onMsgThread = function(data) {
+    this.onMsgNewSession = function(data) {
         // 如果消息包含id，则只响应特定页面的请求
         if (data.id && data.id !== this.pageId) {
             return;
@@ -152,47 +154,27 @@ function PageController(message, config, i18n, util) {
     // --- Driver Event Handlers ---
 
     this.handleDriverAnswer = function(index, element) {
-        this.message.send('answer', {
-            id: this.pageId,
-            index: index,
-            content: element.innerHTML // or .textContent
-        });
+        this.msgClient.answer(this.pageId, index, element.innerHTML);
     };
 
     this.handleDriverChatTitle = function(title) {
-        this.message.send('titleChange', {
-            id: this.pageId,
-            title: title
-        });
+        this.msgClient.titleChange(this.pageId, title);
     };
 
     this.handleDriverOption = function(key, value) {
-        this.message.send('optionChange', {
-            id: this.pageId,
-            key: key,
-            value: value
-        });
+        this.msgClient.optionChange(this.pageId, key, value);
     };
 
     this.handleDriverQuestion = function(index, element) {
-        this.message.send('question', {
-            id: this.pageId,
-            index: index,
-            content: element.innerHTML // or .textContent
-        });
+        this.msgClient.question(this.pageId, index, element.innerHTML);
     };
 
     this.handleDriverModelVersionChange = function(version) {
-        this.message.send('modelVersionChange', {
-            id: this.pageId,
-            version: version
-        });
+        this.msgClient.modelVersionChange(this.pageId, version);
     };
 
     this.handleDriverNewSession = function() {
-        this.message.send('newSession', {
-            id: this.pageId
-        });
+        this.msgClient.newSession(this.pageId);
     };
 }
 

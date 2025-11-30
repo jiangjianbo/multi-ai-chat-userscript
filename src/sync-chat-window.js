@@ -302,7 +302,7 @@ debugger;
                 // INSERT_MAIN_WINDOW_INDEX_JS_HERE
                 console.log('Main window initialized.');
         `;
-        const initScript = ignoreScriptForTesting ? '' : initScriptTemplate.replace('// INSERT_MAIN_WINDOW_INDEX_JS_HERE', __MAIN_WINDOW_INITIALIZER_SCRIPT__);
+        const initScript = ignoreScriptForTesting ? '' : initScriptTemplate.replace('// INSERT_MAIN_WINDOW_INDEX_JS_HERE', typeof __MAIN_WINDOW_INITIALIZER_SCRIPT__ !== 'undefined' ? __MAIN_WINDOW_INITIALIZER_SCRIPT__ : '');
        
         doc.write(`
 <!DOCTYPE html>
@@ -328,7 +328,7 @@ debugger;
         font-family: monospace;
         white-space: pre-wrap;
         word-break: break-all;"
-            ><textarea style="width: 100%;
+            ><textarea id="raw" style="width: 100%;
             height: 100%;
             resize: none;
             box-sizing: border-box;">${util.escapeHtml(initScript)}</textarea></div>

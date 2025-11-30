@@ -96,7 +96,7 @@ var MainWindowInitializer;
                 var DriverFactory = __webpack_require__(540);
                 var Util = __webpack_require__(825);
                 function ChatArea(mainController, id, url, container, i18n) {
-                    var _this3 = this;
+                    var _this4 = this;
                     var driverFactory = new DriverFactory();
                     var utils = new Util();
                     this.mainController = mainController;
@@ -175,7 +175,7 @@ var MainWindowInitializer;
                         }).join('');
                         var overlayHtml = this.url ? '' : "\n            <div class=\"forced-selection-overlay\">\n                <div class=\"selection-hint\" style=\"position: absolute; top: 10px; left: 10px; text-align: left; color: white; font-size: 1.2em; background-color: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; z-index: 10; display: flex; align-items: center;\">\n                    <div style=\"font-size: 2em; margin-right: 10px; line-height: 1;\">\u2196\uFE0F</div>\n                    <span data-lang-key=\"selectProviderHint\">Please select an AI provider from the dropdown above to start chatting.</span>\n                </div>\n            </div>\n        ";
                         var modelSelectorClass = this.url ? 'model-selector' : 'model-selector highlight-dropdown';
-                        return "\n            ".concat(overlayHtml, "\n            <div class=\"chat-area-title\">\n                <div class=\"title-left\">\n                    <div class=\"").concat(modelSelectorClass, "\">\n                        <div class=\"model-name\">").concat(data.providerName, "</div>\n                        <div class=\"model-dropdown-arrow\">&#9662;</div> <!-- \u65B0\u589E\u7684\u7BAD\u5934div -->\n                        <div class=\"custom-dropdown model-dropdown\">\n                            ").concat(providers, "\n                        </div>\n                    </div>\n                    <div class=\"title-button new-session-button\" title=\"New Session\" data-lang-key=\"newSessionButtonTitle\">&#10133;</div>\n                </div>\n                <div class=\"title-center\">\n                    <div class=\"title-button expand-all\" title=\"Expand All\" data-lang-key=\"expandAllButtonTitle\">&#x2924;</div>\n                    <div class=\"title-button collapse-all\" title=\"Collapse All\" data-lang-key=\"collapseAllButtonTitle\">&#x2922;</div>\n                    <div class=\"title-button export-button\" title=\"Export Content\" data-lang-key=\"exportContentButtonTitle\">&#128228;</div>\n                </div>\n                <div class=\"title-right\">\n                    <div class=\"params-selector\">\n                        <div class=\"title-button params-button\" title=\"Parameters\" data-lang-key=\"parametersButtonTitle\">&#9881;</div>\n                        <div class=\"custom-dropdown params-dropdown\">\n                            <div class=\"param-item\" data-param-name=\"webAccess\"><label data-lang-key=\"webAccessLabel\">Web Access</label><label class=\"toggle-switch\"><input type=\"checkbox\" id=\"web-access-").concat(data.id, "\" ").concat(data.params.webAccess ? 'checked' : '', "><span class=\"slider\"></span></label></div>\n                            <div class=\"param-item\" data-param-name=\"longThought\"><label data-lang-key=\"longThoughtLabel\">Long Thought</label><label class=\"toggle-switch\"><input type=\"checkbox\" id=\"long-thought-").concat(data.id, "\" ").concat(data.params.longThought ? 'checked' : '', "><span class=\"slider\"></span></label></div>\n                            <hr>\n                            <div class=\"param-item\" data-param-name=\"modelVersion\"><label data-lang-key=\"modelVersionLabel\">Model Version</label>\n                                <select>").concat(versions, "</select>\n                            </div>\n                        </div>\n                    </div>\n                    <div class=\"title-button share-button\" title=\"Share\" data-lang-key=\"shareButtonTitle\">&#128279;</div>\n                    <div class=\"title-button pin-button\" title=\"Pin\" data-lang-key=\"pinButtonTitle\"><span class=\"icon\">&#128204;</span></div>\n                    <div class=\"title-button close-button\" title=\"Close\" data-lang-key=\"closeButtonTitle\">&#10006;</div>\n                </div>\n            </div>\n            <div class=\"chat-area-main\">\n                <div class=\"chat-area-index\">\n                    ").concat(indexHtml, "\n                </div>\n                <div class=\"chat-area-conversation\">").concat(conversationHtml, "</div>\n            </div>\n            <div class=\"input-placeholder\" data-lang-key=\"inputPlaceholder\">Input</div>\n            <div class=\"chat-area-input\">\n                <textarea rows=\"1\" placeholder=\"Type your message...\" data-lang-key=\"typeMessagePlaceholder\"></textarea>\n                <button title=\"Send\" data-lang-key=\"sendButtonTitle\">&#10148;</button>\n            </div>\n        ");
+                        return "\n            <div class=\"chat-area-instance\">\n            ".concat(overlayHtml, "\n            <div class=\"chat-area-title\">\n                <div class=\"title-left\">\n                    <div class=\"").concat(modelSelectorClass, "\">\n                        <div class=\"model-name\">").concat(data.providerName, "</div>\n                        <div class=\"model-dropdown-arrow\">&#9662;</div> <!-- \u65B0\u589E\u7684\u7BAD\u5934div -->\n                        <div class=\"custom-dropdown model-dropdown\">\n                            ").concat(providers, "\n                        </div>\n                    </div>\n                    <div class=\"title-button new-session-button\" title=\"New Session\" data-lang-key=\"newSessionButtonTitle\">&#10133;</div>\n                </div>\n                <div class=\"title-center\">\n                    <div class=\"title-button expand-all\" title=\"Expand All\" data-lang-key=\"expandAllButtonTitle\">&#x2924;</div>\n                    <div class=\"title-button collapse-all\" title=\"Collapse All\" data-lang-key=\"collapseAllButtonTitle\">&#x2922;</div>\n                    <div class=\"title-button export-button\" title=\"Export Content\" data-lang-key=\"exportContentButtonTitle\">&#128228;</div>\n                </div>\n                <div class=\"title-right\">\n                    <div class=\"params-selector\">\n                        <div class=\"title-button params-button\" title=\"Parameters\" data-lang-key=\"parametersButtonTitle\">&#9881;</div>\n                        <div class=\"custom-dropdown params-dropdown\">\n                            <div class=\"param-item\" data-param-name=\"webAccess\"><label data-lang-key=\"webAccessLabel\">Web Access</label><label class=\"toggle-switch\"><input type=\"checkbox\" id=\"web-access-").concat(data.id, "\" ").concat(data.params.webAccess ? 'checked' : '', "><span class=\"slider\"></span></label></div>\n                            <div class=\"param-item\" data-param-name=\"longThought\"><label data-lang-key=\"longThoughtLabel\">Long Thought</label><label class=\"toggle-switch\"><input type=\"checkbox\" id=\"long-thought-").concat(data.id, "\" ").concat(data.params.longThought ? 'checked' : '', "><span class=\"slider\"></span></label></div>\n                            <hr>\n                            <div class=\"param-item\" data-param-name=\"modelVersion\"><label data-lang-key=\"modelVersionLabel\">Model Version</label>\n                                <select>").concat(versions, "</select>\n                            </div>\n                        </div>\n                    </div>\n                    <div class=\"title-button share-button\" title=\"Share\" data-lang-key=\"shareButtonTitle\">&#128279;</div>\n                    <div class=\"title-button pin-button\" title=\"Pin\" data-lang-key=\"pinButtonTitle\"><span class=\"icon\">&#128204;</span></div>\n                    <div class=\"title-button close-button\" title=\"Close\" data-lang-key=\"closeButtonTitle\">&#10006;</div>\n                </div>\n            </div>\n            <div class=\"chat-area-main\">\n                <div class=\"chat-area-index\">\n                    ").concat(indexHtml, "\n                </div>\n                <div class=\"chat-area-conversation\">").concat(conversationHtml, "</div>\n            </div>\n            <div class=\"input-placeholder\" data-lang-key=\"inputPlaceholder\">Input</div>\n            <div class=\"chat-area-input\">\n                <textarea rows=\"1\" placeholder=\"Type your message...\" data-lang-key=\"typeMessagePlaceholder\"></textarea>\n                <button title=\"Send\" data-lang-key=\"sendButtonTitle\">&#10148;</button>\n            </div>\n            </div>\n        ");
                     };
                     this.cacheDOMElements = function () {
                         this.mainArea = this.element.querySelector('.chat-area-main');
@@ -192,26 +192,26 @@ var MainWindowInitializer;
                         this.paramsDropdown = this.paramsSelector.querySelector('.params-dropdown');
                     };
                     this.initEventListeners = function () {
-                        var _this = this;
+                        var _this2 = this;
                         this.pinButton = this.element.querySelector('.pin-button');
                         this.pinButton.addEventListener('click', function () {
-                            return _this.setPin(!_this.isPinned());
+                            return _this2.setPin(!_this2.isPinned());
                         });
                         this.element.querySelector('.close-button').addEventListener('click', function () {
-                            _this.eventHandlers.onEvtClose(_this);
-                            _this.mainController.removeChatArea(_this.id);
+                            _this2.eventHandlers.onEvtClose(_this2);
+                            _this2.mainController.removeChatArea(_this2.id);
                         });
                         this.element.querySelector('.new-session-button').addEventListener('click', function () {
-                            _this.eventHandlers.onEvtNewSession(_this, _this.getProvider());
+                            _this2.eventHandlers.onEvtNewSession(_this2, _this2.getProvider());
                         });
                         this.element.querySelector('.share-button').addEventListener('click', function () {
-                            _this.eventHandlers.onEvtShare(_this, _this.getUrl());
+                            _this2.eventHandlers.onEvtShare(_this2, _this2.getUrl());
                         });
                         this.providerNameDisplay.addEventListener('click', function (e) {
-                            return _this.toggleDropdown(e, _this.modelDropdown);
+                            return _this2.toggleDropdown(e, _this2.modelDropdown);
                         });
                         this.paramsButton.addEventListener('click', function (e) {
-                            return _this.toggleDropdown(e, _this.paramsDropdown);
+                            return _this2.toggleDropdown(e, _this2.paramsDropdown);
                         });
                         var selectOldValue;
                         var selectElement = this.paramsDropdown.querySelector('select');
@@ -232,55 +232,71 @@ var MainWindowInitializer;
                                 oldValue = selectOldValue;
                             }
                             if (name) {
-                                _this.eventHandlers.onEvtParamChanged(_this, name, newValue, oldValue);
+                                _this2.eventHandlers.onEvtParamChanged(_this2, name, newValue, oldValue);
                             }
                         });
                         this.modelDropdown.querySelectorAll('.model-option').forEach(function (option) {
                             option.addEventListener('click', function (e) {
-                                var oldProvider = _this.getProvider();
+                                var oldProvider = _this2.getProvider();
                                 var newProvider = e.currentTarget.dataset.value;
-                                _this.providerNameDisplay.textContent = newProvider;
-                                _this.eventHandlers.onEvtProviderChanged(_this, newProvider, oldProvider);
-                                _this.modelDropdown.classList.remove('visible');
-                                if (_this.element.classList.contains('forced-selection')) {
-                                    _this.element.classList.remove('forced-selection');
-                                    var overlay = _this.element.querySelector('.forced-selection-overlay');
+                                _this2.providerNameDisplay.textContent = newProvider;
+                                _this2.eventHandlers.onEvtProviderChanged(_this2, newProvider, oldProvider);
+                                _this2.modelDropdown.classList.remove('visible');
+                                if (_this2.element.classList.contains('forced-selection')) {
+                                    _this2.element.classList.remove('forced-selection');
+                                    var overlay = _this2.element.querySelector('.forced-selection-overlay');
                                     if (overlay) {
                                         overlay.remove();
                                     }
-                                    _this.url = driverFactory.getProviderUrl(newProvider);
+                                    _this2.url = driverFactory.getProviderUrl(newProvider);
                                 }
                             });
                         });
                         this.element.querySelector('.expand-all').addEventListener('click', function () {
-                            return _this.expandAll();
+                            return _this2.expandAll();
                         });
                         this.element.querySelector('.collapse-all').addEventListener('click', function () {
-                            return _this.collapseAll();
+                            return _this2.collapseAll();
                         });
                         this.element.querySelector('.export-button').addEventListener('click', function () {
-                            _this.eventHandlers.onEvtExport(_this);
+                            _this2.eventHandlers.onEvtExport(_this2);
                         });
                         this.placeholder.addEventListener('mouseenter', function () {
-                            return _this.showInput();
+                            return _this2.showInput();
                         });
                         this.inputArea.addEventListener('mouseenter', function () {
-                            return _this.showInput();
+                            return _this2.showInput();
                         });
                         this.inputArea.addEventListener('mouseleave', function () {
-                            return _this.undockInput();
+                            return _this2.undockInput();
                         });
                         this.textarea.addEventListener('focus', function () {
-                            return _this.dockInput();
+                            return _this2.dockInput();
                         });
                         this.inputArea.addEventListener('focusout', function (e) {
-                            return _this.handleFocusOut(e);
+                            return _this2.handleFocusOut(e);
                         });
                         this.inputArea.querySelector('button').addEventListener('click', function () {
-                            var prompt = _this.textarea.value.trim();
+                            var prompt = _this2.textarea.value.trim();
                             if (prompt) {
-                                _this.eventHandlers.onEvtPromptSend(_this, prompt);
-                                _this.textarea.value = '';
+                                _this2.eventHandlers.onEvtPromptSend(_this2, prompt);
+                                _this2.textarea.value = '';
+                            }
+                        });
+                        this.element.querySelector('.chat-area-index').addEventListener('click', function (e) {
+                            if (e.target.tagName === 'A') {
+                                e.preventDefault();
+                                var targetId = e.target.getAttribute('href');
+                                var targetElement = _this2.conversationArea.querySelector(targetId);
+                                if (targetElement) {
+                                    var containerRect = _this.conversationArea.getBoundingClientRect();
+                                    var targetRect = targetElement.getBoundingClientRect();
+                                    var scrollOffset = targetRect.top - containerRect.top + _this.conversationArea.scrollTop;
+                                    _this.conversationArea.scrollTo({
+                                        top: scrollOffset,
+                                        behavior: 'smooth'
+                                    });
+                                }
                             }
                         });
                     };
@@ -306,7 +322,7 @@ var MainWindowInitializer;
                      * @param {string[]} unavailableProviders - 不可用的AI提供商名称数组。
                      */
                     this.updateProviderOptions = function (unavailableProviders) {
-                        var _this2 = this;
+                        var _this3 = this;
                         var currentSelectedProvider = this.getProvider(); // 获取当前ChatArea已选择的提供商
 
                         this.modelDropdown.querySelectorAll('.model-option').forEach(function (option) {
@@ -315,7 +331,7 @@ var MainWindowInitializer;
                             if (unavailableProviders.includes(providerName) && providerName !== currentSelectedProvider) {
                                 option.classList.add('unavailable');
                                 option.style.pointerEvents = 'none'; // 阻止点击
-                                option.setAttribute('title', _this2.i18n.getText('providerUnavailable')); // 提示不可用语言key
+                                option.setAttribute('title', _this3.i18n.getText('providerUnavailable')); // 提示不可用语言key
                             } else {
                                 option.classList.remove('unavailable');
                                 option.style.pointerEvents = 'auto'; // 允许点击
@@ -336,12 +352,12 @@ var MainWindowInitializer;
                         this.paramsDropdown.classList.remove('visible');
                     };
                     this.expandAll = function () {
-                        return _this3.answerBubbles.forEach(function (b) {
+                        return _this4.answerBubbles.forEach(function (b) {
                             return b.classList.remove('collapsed');
                         });
                     };
                     this.collapseAll = function () {
-                        return _this3.answerBubbles.forEach(function (b) {
+                        return _this4.answerBubbles.forEach(function (b) {
                             return b.classList.add('collapsed');
                         });
                     };
@@ -356,13 +372,13 @@ var MainWindowInitializer;
                         this.mainArea.style.paddingBottom = "".concat(this.inputArea.offsetHeight, "px");
                     };
                     this.undockInput = function () {
-                        var _this4 = this;
+                        var _this5 = this;
                         this.inputArea.classList.remove('docked');
                         this.mainArea.style.paddingBottom = '0px';
                         this.hideTimeout = setTimeout(function () {
-                            if (!_this4.inputArea.contains(document.activeElement)) {
-                                _this4.inputArea.classList.remove('visible');
-                                _this4.placeholder.classList.remove('hidden');
+                            if (!_this5.inputArea.contains(document.activeElement)) {
+                                _this5.inputArea.classList.remove('visible');
+                                _this5.placeholder.classList.remove('hidden');
                             }
                         }, 300);
                     };
@@ -455,6 +471,381 @@ var MainWindowInitializer;
                 /***/
 }),
 
+/***/ 120:
+/***/ ((module) => {
+
+                /**
+                 * @description A client for sending semantic messages.
+                 * @param {object} message - The message object from message.js.
+                 */
+                function MessageClient(message) {
+                    this.message = message;
+                }
+
+                /**
+                 * @description Sends a parameter changed message.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} key - The key of the parameter that changed.
+                 * @param {*} newValue - The new value of the parameter.
+                 * @param {*} oldValue - The old value of the parameter.
+                 */
+                MessageClient.prototype.sendParamChanged = function (receiverId, key, newValue, oldValue) {
+                    this.message.send('param_changed', {
+                        key: key,
+                        newValue: newValue,
+                        oldValue: oldValue,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a command to sync the chat.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} prompt - The prompt to sync.
+                 */
+                MessageClient.prototype.syncChat = function (receiverId, prompt) {
+                    this.message.send('sync_chat', {
+                        prompt: prompt,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message to get a parameter value.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} key - The key of the parameter to get.
+                 */
+                MessageClient.prototype.getParam = function (receiverId, key) {
+                    this.message.send('get_param', {
+                        key: key,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a response with a parameter value.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} key - The key of the parameter.
+                 * @param {*} value - The value of the parameter.
+                 */
+                MessageClient.prototype.paramValue = function (receiverId, key, value) {
+                    this.message.send('param_value', {
+                        key: key,
+                        value: value,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message indicating the chat has started.
+                 * @param {string} receiverId - The ID of the receiver.
+                 */
+                MessageClient.prototype.chatStarted = function (receiverId) {
+                    this.message.send('chat_started', {
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message indicating the chat has completed.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} response - The chat response.
+                 */
+                MessageClient.prototype.chatCompleted = function (receiverId, response) {
+                    this.message.send('chat_completed', {
+                        response: response,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message indicating the chat has failed.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} error - The error message.
+                 */
+                MessageClient.prototype.chatFailed = function (receiverId, error) {
+                    this.message.send('chat_failed', {
+                        error: error,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message to register a chat area.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} name - The name of the chat area.
+                 * @param {string} url - The URL of the chat area.
+                 */
+                MessageClient.prototype.registerChatArea = function (receiverId, name, url) {
+                    this.message.send('register_chat_area', {
+                        name: name,
+                        url: url,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message to get all chat areas.
+                 * @param {string} receiverId - The ID of the receiver.
+                 */
+                MessageClient.prototype.getAllChatAreas = function (receiverId) {
+                    this.message.send('get_all_chat_areas', {
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a response with all chat areas.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {Array} chatAreas - The list of chat areas.
+                 */
+                MessageClient.prototype.allChatAreas = function (receiverId, chatAreas) {
+                    this.message.send('all_chat_areas', {
+                        chatAreas: chatAreas,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message to close the window.
+                 * @param {string} receiverId - The ID of the receiver.
+                 */
+                MessageClient.prototype.closeWindow = function (receiverId) {
+                    this.message.send('close_window', {
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message to set a value in storage.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} key - The key of the value to set.
+                 * @param {*} value - The value to set.
+                 */
+                MessageClient.prototype.storageSet = function (receiverId, key, value) {
+                    this.message.send('storage_set', {
+                        key: key,
+                        value: value,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message to get a value from storage.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} key - The key of the value to get.
+                 */
+                MessageClient.prototype.storageGet = function (receiverId, key) {
+                    this.message.send('storage_get', {
+                        key: key,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a response with a value from storage.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} key - The key of the value.
+                 * @param {*} value - The value.
+                 */
+                MessageClient.prototype.storageValue = function (receiverId, key, value) {
+                    this.message.send('storage_value', {
+                        key: key,
+                        value: value,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message to remove a value from storage.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} key - The key of the value to remove.
+                 */
+                MessageClient.prototype.storageRemove = function (receiverId, key) {
+                    this.message.send('storage_remove', {
+                        key: key,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message to get all values from storage.
+                 * @param {string} receiverId - The ID of the receiver.
+                 */
+                MessageClient.prototype.storageGetAll = function (receiverId) {
+                    this.message.send('storage_get_all', {
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a response with all values from storage.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {object} values - The values from storage.
+                 */
+                MessageClient.prototype.storageAllValues = function (receiverId, values) {
+                    this.message.send('storage_all_values', {
+                        values: values,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a message to clear storage.
+                 * @param {string} receiverId - The ID of the receiver.
+                 */
+                MessageClient.prototype.storageClear = function (receiverId) {
+                    this.message.send('storage_clear', {
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a chat message.
+                 * @param {string} prompt - The prompt to send.
+                 */
+                MessageClient.prototype.chat = function (prompt) {
+                    this.message.send('chat', {
+                        prompt: prompt
+                    });
+                };
+
+                /**
+                 * @description Sends a new session message.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} providerName - The name of the provider.
+                 */
+                MessageClient.prototype.newSession = function (receiverId, providerName) {
+                    this.message.send('new_session', {
+                        providerName: providerName,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a focus message.
+                 * @param {string} receiverId - The ID of the receiver.
+                 */
+                MessageClient.prototype.focus = function (receiverId) {
+                    this.message.send('focus', {
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a change provider message.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} url - The new URL of the provider.
+                 */
+                MessageClient.prototype.changeProvider = function (receiverId, url) {
+                    this.message.send('change_provider', {
+                        url: url,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a prompt message.
+                 * @param {string} receiverId - The ID of the receiver.
+                 * @param {string} text - The prompt text.
+                 */
+                MessageClient.prototype.prompt = function (receiverId, text) {
+                    this.message.send('prompt', {
+                        text: text,
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends an export message.
+                 * @param {string} receiverId - The ID of the receiver.
+                 */
+                MessageClient.prototype["export"] = function (receiverId) {
+                    this.message.send('export', {
+                        receiverId: receiverId
+                    });
+                };
+
+                /**
+                 * @description Sends a create message.
+                 * @param {object} data - The data for creating a chat area.
+                 */
+                MessageClient.prototype.create = function (data) {
+                    this.message.send('create', data);
+                };
+
+                /**
+                 * @description Sends an answer message.
+                 * @param {string} id - The ID of the chat area.
+                 * @param {number} index - The index of the answer.
+                 * @param {string} content - The content of the answer.
+                 */
+                MessageClient.prototype.answer = function (id, index, content) {
+                    this.message.send('answer', {
+                        id: id,
+                        index: index,
+                        content: content
+                    });
+                };
+
+                /**
+                 * @description Sends a title change message.
+                 * @param {string} id - The ID of the chat area.
+                 * @param {string} title - The new title.
+                 */
+                MessageClient.prototype.titleChange = function (id, title) {
+                    this.message.send('titleChange', {
+                        id: id,
+                        title: title
+                    });
+                };
+
+                /**
+                 * @description Sends an option change message.
+                 * @param {string} id - The ID of the chat area.
+                 * @param {string} key - The key of the option.
+                 * @param {*} value - The new value of the option.
+                 */
+                MessageClient.prototype.optionChange = function (id, key, value) {
+                    this.message.send('optionChange', {
+                        id: id,
+                        key: key,
+                        value: value
+                    });
+                };
+
+                /**
+                 * @description Sends a question message.
+                 * @param {string} id - The ID of the chat area.
+                 * @param {number} index - The index of the question.
+                 * @param {string} content - The content of the question.
+                 */
+                MessageClient.prototype.question = function (id, index, content) {
+                    this.message.send('question', {
+                        id: id,
+                        index: index,
+                        content: content
+                    });
+                };
+
+                /**
+                 * @description Sends a model version change message.
+                 * @param {string} id - The ID of the chat area.
+                 * @param {string} version - The new model version.
+                 */
+                MessageClient.prototype.modelVersionChange = function (id, version) {
+                    this.message.send('modelVersionChange', {
+                        id: id,
+                        version: version
+                    });
+                };
+                if (true && module.exports) {
+                    module.exports = MessageClient;
+                }
+
+                /***/
+}),
+
 /***/ 190:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
@@ -467,6 +858,7 @@ var MainWindowInitializer;
                 var ChatArea = __webpack_require__(89);
                 var Util = __webpack_require__(825);
                 var DriverFactory = __webpack_require__(540);
+                var MessageClient = __webpack_require__(120);
 
                 /**
                  * @description Core controller for the main window.
@@ -479,6 +871,7 @@ var MainWindowInitializer;
                     var _this = this;
                     this.receiverId = receiverId;
                     this.message = message;
+                    this.msgClient = new MessageClient(message);
                     this.config = config;
                     this.i18n = i18n;
                     this.util = new Util();
@@ -501,13 +894,32 @@ var MainWindowInitializer;
                             });
                         },
                         onEvtAllPrompt: function onEvtAllPrompt(prompt) {
-                            _this.message.send('chat', {
-                                prompt: prompt
-                            });
+                            _this.msgClient.chat(prompt);
                         }
                     };
                     this.setEventHandler = function (eventName, handler) {
                         this.eventHandlers[eventName] = handler;
+                    };
+                    this._handleNewSession = function (chatArea, providerName) {
+                        this.msgClient.newSession(chatArea.id, providerName);
+                    };
+                    this._handleShare = function (chatArea, url) {
+                        navigator.clipboard.writeText(url);
+                        this.msgClient.focus(chatArea.id);
+                    };
+                    this._handleParamChanged = function (chatArea, key, newValue, oldValue) {
+                        this.msgClient.sendParamChanged(chatArea.id, key, newValue, oldValue);
+                    };
+                    this._handleProviderChanged = function (chatArea, newProvider, oldProvider) {
+                        var newUrl = this.driverFactory.getProviderUrl(newProvider);
+                        this.msgClient.changeProvider(chatArea.id, newUrl);
+                        chatArea.url = newUrl;
+                    };
+                    this._handlePromptSend = function (chatArea, text) {
+                        this.msgClient.prompt(chatArea.id, text);
+                    };
+                    this._handleExport = function (chatArea) {
+                        this.msgClient["export"](chatArea.id);
                     };
 
                     /**
@@ -894,47 +1306,15 @@ var MainWindowInitializer;
                             if (providerName && this.selectedProviders.get(providerName) === id) {
                                 this.selectedProviders["delete"](providerName);
                             }
-                            var wrapper = chatArea.container.parentElement;
                             chatArea.destroy(); // Let chat area clean up itself
-                            if (wrapper) {
-                                wrapper.remove(); // Controller removes the wrapper it created
+                            if (chatArea.container) {
+                                chatArea.container.remove();
                             }
                             this.chatAreas["delete"](id);
                             this.updateDefaultLayout();
                             this.updateNewChatButtonState();
                             console.log("Removed ChatArea: ".concat(id));
                         }
-                    };
-                    this._handleNewSession = function (chatArea, providerName) {
-                        this.message.send(chatArea.id, 'new_session', {
-                            providerName: providerName
-                        });
-                    };
-                    this._handleShare = function (chatArea, url) {
-                        navigator.clipboard.writeText(url);
-                        this.message.send(chatArea.id, 'focus', {});
-                    };
-                    this._handleParamChanged = function (chatArea, key, newValue, oldValue) {
-                        this.message.send(chatArea.id, 'param_changed', {
-                            key: key,
-                            newValue: newValue,
-                            oldValue: oldValue
-                        });
-                    };
-                    this._handleProviderChanged = function (chatArea, newProvider, oldProvider) {
-                        var newUrl = this.driverFactory.getProviderUrl(newProvider);
-                        this.message.send(chatArea.id, 'change_provider', {
-                            url: newUrl
-                        });
-                        chatArea.url = newUrl;
-                    };
-                    this._handlePromptSend = function (chatArea, text) {
-                        this.message.send(chatArea.id, 'prompt', {
-                            text: text
-                        });
-                    };
-                    this._handleExport = function (chatArea) {
-                        this.message.send(chatArea.id, 'export', {});
                     };
 
                     /**
@@ -1541,7 +1921,7 @@ var MainWindowInitializer;
                      * @param {MessageEvent} event - 消息事件。
                      */
                     this.handleMessage = function (event) {
-                        console.debug("receive message ".concat(JSON.stringify(event)));
+                        console.debug("receive message ".concat(JSON.stringify(event === null || event === void 0 ? void 0 : event.data)));
                         var _event$data = event.data,
                             type = _event$data.type,
                             data = _event$data.data;

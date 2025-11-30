@@ -97,6 +97,7 @@ function ChatArea(mainController, id, url, container, i18n) {
         const modelSelectorClass = this.url ? 'model-selector' : 'model-selector highlight-dropdown';
 
         return `
+            <div class="chat-area-instance">
             ${overlayHtml}
             <div class="chat-area-title">
                 <div class="title-left">
@@ -141,6 +142,7 @@ function ChatArea(mainController, id, url, container, i18n) {
             <div class="chat-area-input">
                 <textarea rows="1" placeholder="Type your message..." data-lang-key="typeMessagePlaceholder"></textarea>
                 <button title="Send" data-lang-key="sendButtonTitle">&#10148;</button>
+            </div>
             </div>
         `;
     };

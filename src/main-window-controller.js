@@ -1,6 +1,7 @@
 const ChatArea = require('./chat-area');
 const Util = require('./util');
 const DriverFactory = require('./driver-factory');
+const MessageClient = require('./message-client');
 
 /**
  * @description Core controller for the main window.
@@ -12,6 +13,7 @@ const DriverFactory = require('./driver-factory');
 function MainWindowController(receiverId, message, config, i18n) {
     this.receiverId = receiverId;
     this.message = message;
+    this.msgClient = new MessageClient(message);
     this.config = config;
     this.i18n = i18n;
     this.util = new Util();
@@ -30,13 +32,40 @@ function MainWindowController(receiverId, message, config, i18n) {
             this.chatAreas.forEach(area => area.setLongThought(newValue));
         },
         onEvtAllPrompt: (prompt) => {
-            this.message.send('chat', { prompt });
+            this.msgClient.chat(prompt);
         }
     };
 
     this.setEventHandler = function(eventName, handler) {
         this.eventHandlers[eventName] = handler;
     };
+    this._handleNewSession = function(chatArea, providerName) {
+        this.msgClient.newSession(chatArea.id, providerName);
+    };
+
+    this._handleShare = function(chatArea, url) {
+        navigator.clipboard.writeText(url);
+        this.msgClient.focus(chatArea.id);
+    };
+
+    this._handleParamChanged = function(chatArea, key, newValue, oldValue) {
+        this.msgClient.sendParamChanged(chatArea.id, key, newValue, oldValue);
+    };
+
+    this._handleProviderChanged = function(chatArea, newProvider, oldProvider) {
+        const newUrl = this.driverFactory.getProviderUrl(newProvider);
+        this.msgClient.changeProvider(chatArea.id, newUrl);
+        chatArea.url = newUrl;
+    };
+
+    this._handlePromptSend = function(chatArea, text) {
+        this.msgClient.prompt(chatArea.id, text);
+    };
+
+    this._handleExport = function(chatArea) {
+        this.msgClient.export(chatArea.id);
+    };
+
 
     /**
      * @description Switches the application language and updates all UI elements with `data-lang-key`.
@@ -428,43 +457,15 @@ function MainWindowController(receiverId, message, config, i18n) {
                 this.selectedProviders.delete(providerName);
             }
 
-            const wrapper = chatArea.container.parentElement;
             chatArea.destroy(); // Let chat area clean up itself
-            if (wrapper) {
-                wrapper.remove(); // Controller removes the wrapper it created
+            if (chatArea.container) {
+                chatArea.container.remove();
             }
             this.chatAreas.delete(id);
             this.updateDefaultLayout();
             this.updateNewChatButtonState();
             console.log(`Removed ChatArea: ${id}`);
         }
-    };
-
-    this._handleNewSession = function(chatArea, providerName) {
-        this.message.send('new_session', { providerName, receiverId: chatArea.id });
-    };
-
-    this._handleShare = function(chatArea, url) {
-        navigator.clipboard.writeText(url);
-        this.message.send('focus', {receiverId: chatArea.id });
-    };
-
-    this._handleParamChanged = function(chatArea, key, newValue, oldValue) {
-        this.message.send('param_changed', { key, newValue, oldValue, receiverId: chatArea.id });
-    };
-
-    this._handleProviderChanged = function(chatArea, newProvider, oldProvider) {
-        const newUrl = this.driverFactory.getProviderUrl(newProvider);
-        this.message.send('change_provider', { url: newUrl, receiverId: chatArea.id });
-        chatArea.url = newUrl;
-    };
-
-    this._handlePromptSend = function(chatArea, text) {
-        this.message.send('prompt', { text, receiverId: chatArea.id });
-    };
-
-    this._handleExport = function(chatArea) {
-        this.message.send('export', {receiverId: chatArea.id });
     };
 
     /**

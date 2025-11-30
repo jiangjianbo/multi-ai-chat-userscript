@@ -12,9 +12,8 @@ describe('SyncChatWindow', () => {
         mockWindow = {
             document: {
                 title: '',
-                body: { innerHTML: '' },
-                head: { appendChild: jest.fn() },
-                createElement: jest.fn(() => ({})),
+                write: jest.fn(),
+                close: jest.fn(),
             },
             focus: jest.fn(),
             closed: false
@@ -27,54 +26,44 @@ describe('SyncChatWindow', () => {
         jest.restoreAllMocks();
     });
 
-    test('1. exist should return false if window does not exist', () => {
+    test('exist should return false if window does not exist', () => {
         expect(syncChatWindow.exist()).toBe(false);
     });
 
-    test('1. exist should return false if window is closed', () => {
+    test('exist should return false if window is closed', () => {
         window.top.multiAiChatMainWindow = { closed: true };
         expect(syncChatWindow.exist()).toBe(false);
     });
 
-    test('1. exist should return true if window exists and is open', () => {
+    test('exist should return true if window exists and is open', () => {
         window.top.multiAiChatMainWindow = { closed: false };
         expect(syncChatWindow.exist()).toBe(true);
     });
 
-    test('2. createWindow should populate the document', () => {
+    test('createWindow should populate the document by calling write', () => {
         const doc = {
             title: '',
-            body: { innerHTML: '' },
-            head: { appendChild: jest.fn() },
-            createElement: jest.fn(() => ({})),
+            write: jest.fn(),
+            close: jest.fn(),
         };
-        // Mock require, because it's used inside createWindow
-        jest.mock('../util', () => 'function Util(){}', { virtual: true });
-        jest.mock('../i18n', () => 'function I18n(){}', { virtual: true });
-        jest.mock('../config', () => 'function Config(){}', { virtual: true });
-        jest.mock('../storage', () => 'function Storage(){}', { virtual: true });
-        jest.mock('../message', () => 'function Message(){}', { virtual: true });
-        jest.mock('../chat-area', () => 'function ChatArea(){}', { virtual: true });
-        jest.mock('../main-window-controller', () => 'function MainWindowController(){}', { virtual: true });
-        jest.mock('../lang', () => '{}', { virtual: true });
 
-        syncChatWindow.createWindow(doc);
+        syncChatWindow.createWindow(doc, true); // ignoreScriptForTesting = true
         expect(doc.title).toBe('Multi-AI Sync Chat');
-        expect(doc.body.innerHTML).toContain('<div id="root">');
-        expect(doc.createElement).toHaveBeenCalledWith('style');
-        expect(doc.head.appendChild).toHaveBeenCalled();
+        expect(doc.write).toHaveBeenCalledTimes(1);
+        expect(doc.write).toHaveBeenCalledWith(expect.stringContaining('<div id="root">'));
+        expect(doc.close).toHaveBeenCalledTimes(1);
     });
 
-    test('checkAndCreateWindow should create a new window if one does not exist', () => {
-        const newWin = syncChatWindow.checkAndCreateWindow();
+    test('checkAndCreateWindow should create a new window if one does not exist', async () => {
+        const newWin = await syncChatWindow.checkAndCreateWindow();
         expect(window.open).toHaveBeenCalledWith('', 'multi-ai-chat-main-window', 'width=1200,height=800');
         expect(newWin).toBe(mockWindow);
         expect(window.top.multiAiChatMainWindow).toBe(mockWindow);
     });
 
-    test('checkAndCreateWindow should focus the existing window if it exists', () => {
+    test('checkAndCreateWindow should focus the existing window if it exists', async () => {
         window.top.multiAiChatMainWindow = mockWindow;
-        const existingWin = syncChatWindow.checkAndCreateWindow();
+        const existingWin = await syncChatWindow.checkAndCreateWindow();
         expect(window.open).not.toHaveBeenCalled();
         expect(mockWindow.focus).toHaveBeenCalled();
         expect(existingWin).toBe(mockWindow);
