@@ -30,7 +30,7 @@ const runCompiler = (compiler) => {
 
 module.exports = async () => {
     const initializerEntry = path.resolve(__dirname, 'src/main-window-initializer.js');
-    const initializerOutputDir = path.resolve(__dirname, 'dist', 'tmp');
+    const initializerOutputDir = path.resolve(__dirname, 'dist');
     const initializerOutputFile = 'main-window-initializer.bundle.js';
     const initializerBundlePath = path.join(initializerOutputDir, initializerOutputFile);
 
@@ -82,9 +82,6 @@ module.exports = async () => {
 
     // Read the bundled content
     const initializerScriptContent = fs.readFileSync(initializerBundlePath, 'utf8');
-    // Clean up the temp dir
-    fs.rmSync(initializerOutputDir, { recursive: true, force: true });
-
 
     // Main userscript config
     const mainConfig = {

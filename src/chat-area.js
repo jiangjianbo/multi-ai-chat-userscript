@@ -44,7 +44,7 @@ function ChatArea(mainController, id, url, container, i18n) {
     this.init = function(instanceData) {
         const chatAreaHtml = this.render(instanceData);
         this.container.innerHTML = chatAreaHtml;
-        this.element = this.container;//.querySelector('.chat-area-instance');
+        this.element = this.container.querySelector('.chat-area-instance');
         if (!this.url) {
             this.element.classList.add('forced-selection');
         }

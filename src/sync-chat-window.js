@@ -328,10 +328,8 @@ debugger;
         font-family: monospace;
         white-space: pre-wrap;
         word-break: break-all;"
-            ><textarea id="raw" style="width: 100%;
-            height: 100%;
-            resize: none;
-            box-sizing: border-box;">${util.escapeHtml(initScript)}</textarea></div>
+            >
+            </div>
     </body>
 </html>`
         );
