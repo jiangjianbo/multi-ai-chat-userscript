@@ -197,10 +197,10 @@ describe('MainWindowController', () => {
     
     // ... other tests for onMsg... remain the same
 
-    test('_handleNewSession should call msgClient.newSession', () => {
+    test('_handleNewSession should call msgClient.thread', () => {
         const mockChatArea = { id: 'chat-1' };
         controller._handleNewSession(mockChatArea, 'provider-x');
-        expect(mockMsgClient.newSession).toHaveBeenCalledWith('chat-1', 'provider-x');
+        expect(mockMsgClient.thread).toHaveBeenCalledWith('chat-1');
     });
 
     test('_handleShare should call msgClient.focus', () => {
@@ -232,5 +232,126 @@ describe('MainWindowController', () => {
         const mockChatArea = { id: 'chat-1' };
         controller._handleExport(mockChatArea);
         expect(mockMsgClient.export).toHaveBeenCalledWith('chat-1');
+    });
+
+    test('onMsgOptionChange should call updateOption on the correct ChatArea', () => {
+        const chatData = { id: 'chat-1', params: {} };
+        controller.addChatArea(chatData);
+        const chatAreaInstance = controller.chatAreas.get('chat-1');
+
+        const optionData = { id: 'chat-1', key: 'webAccess', value: true };
+        controller.onMsgOptionChange(optionData);
+
+        expect(chatAreaInstance.updateOption).toHaveBeenCalledWith('webAccess', true);
+    });
+
+    test('onMsgQuestion should call addQuestion on the correct ChatArea', () => {
+        const chatData = { id: 'chat-1', params: {} };
+        controller.addChatArea(chatData);
+        const chatAreaInstance = controller.chatAreas.get('chat-1');
+
+        const questionData = { id: 'chat-1', content: 'What is AI?' };
+        controller.onMsgQuestion(questionData);
+
+        expect(chatAreaInstance.addQuestion).toHaveBeenCalledWith('What is AI?');
+    });
+
+    test('onMsgModelVersionChange should call updateModelVersion on the correct ChatArea', () => {
+        const chatData = { id: 'chat-1', params: {} };
+        controller.addChatArea(chatData);
+        const chatAreaInstance = controller.chatAreas.get('chat-1');
+
+        const versionData = { id: 'chat-1', version: 'v2.0' };
+        controller.onMsgModelVersionChange(versionData);
+
+        expect(chatAreaInstance.updateModelVersion).toHaveBeenCalledWith('v2.0');
+    });
+
+    test('onMsgThread should call newSession on the correct ChatArea', () => {
+        const chatData = { id: 'chat-1', params: {} };
+        controller.addChatArea(chatData);
+        const chatAreaInstance = controller.chatAreas.get('chat-1');
+
+        const threadData = { id: 'chat-1' };
+        controller.onMsgThread(threadData);
+
+        expect(chatAreaInstance.newSession).toHaveBeenCalled();
+    });
+
+    test('_handleParamChanged should call msgClient.setModelVersion for modelVersion', () => {
+        const mockChatArea = { id: 'chat-1' };
+        controller._handleParamChanged(mockChatArea, 'modelVersion', 'v2.0', 'v1.0');
+        expect(mockMsgClient.setModelVersion).toHaveBeenCalledWith('chat-1', 'v2.0');
+    });
+
+    test('_handleParamChanged should call msgClient.setOption for webAccess', () => {
+        const mockChatArea = { id: 'chat-1' };
+        controller._handleParamChanged(mockChatArea, 'webAccess', true, false);
+        expect(mockMsgClient.setOption).toHaveBeenCalledWith('chat-1', 'webAccess', true);
+    });
+
+    test('_handleParamChanged should call msgClient.setOption for longThought', () => {
+        const mockChatArea = { id: 'chat-1' };
+        controller._handleParamChanged(mockChatArea, 'longThought', true, false);
+        expect(mockMsgClient.setOption).toHaveBeenCalledWith('chat-1', 'longThought', true);
+    });
+
+    test('_handleParamChanged should call msgClient.sendParamChanged for other parameters', () => {
+        const mockChatArea = { id: 'chat-1' };
+        controller._handleParamChanged(mockChatArea, 'customParam', 'newValue', 'oldValue');
+        expect(mockMsgClient.sendParamChanged).toHaveBeenCalledWith('chat-1', 'customParam', 'newValue', 'oldValue');
+    });
+
+    test('getUnavailableProviders should return providers used by other ChatAreas', () => {
+        // Populate selectedProviders map directly (this is populated by addChatArea in real implementation)
+        controller.selectedProviders.set('ProviderA', 'chat-1');
+        controller.selectedProviders.set('ProviderB', 'chat-2');
+        controller.selectedProviders.set('ProviderC', 'chat-3');
+
+        const unavailable = controller.getUnavailableProviders('chat-1');
+        expect(unavailable).toEqual(expect.arrayContaining(['ProviderB', 'ProviderC']));
+        expect(unavailable).not.toContain('ProviderA');
+    });
+
+    test('updateDefaultLayout should set layout based on number of ChatAreas', () => {
+        // Initially 0 areas
+        controller.updateDefaultLayout();
+        expect(document.querySelector('.content-area').dataset.layout).toBe('1');
+
+        // Add 2 areas - should become layout 2
+        controller.addChatArea({ id: 'chat-1', params: {} });
+        controller.addChatArea({ id: 'chat-2', params: {} });
+        expect(document.querySelector('.content-area').dataset.layout).toBe('2');
+
+        // Add 2 more areas (total 4) - should become layout 4
+        controller.addChatArea({ id: 'chat-3', params: {} });
+        controller.addChatArea({ id: 'chat-4', params: {} });
+        expect(document.querySelector('.content-area').dataset.layout).toBe('4');
+
+        // Add 2 more areas (total 6) - should become layout 6
+        controller.addChatArea({ id: 'chat-5', params: {} });
+        controller.addChatArea({ id: 'chat-6', params: {} });
+        expect(document.querySelector('.content-area').dataset.layout).toBe('6');
+    });
+
+    test('updateNewChatButtonState should disable button when layout is full', () => {
+        const button = document.getElementById('new-chat-button');
+        const layoutContainer = document.querySelector('.content-area');
+
+        // Layout 1, 0 areas - button enabled
+        layoutContainer.dataset.layout = '1';
+        controller.chatAreas.clear();
+        controller.updateNewChatButtonState();
+        expect(button.disabled).toBe(false);
+
+        // Layout 1, 1 area - button disabled
+        controller.chatAreas.set('chat-1', {});
+        controller.updateNewChatButtonState();
+        expect(button.disabled).toBe(true);
+
+        // Layout 2, 1 area - button enabled
+        layoutContainer.dataset.layout = '2';
+        controller.updateNewChatButtonState();
+        expect(button.disabled).toBe(false);
     });
 });

@@ -53,6 +53,7 @@ function PageController(message, config, i18n, util) {
     };
 
     this.injectUI = function() {
+        // Inject sync button
         const syncButton = this.util.toHtml({
             tag: 'button',
             '@id': 'multi-ai-sync-btn',
@@ -62,8 +63,429 @@ function PageController(message, config, i18n, util) {
 
         syncButton.addEventListener('click', this.handleSyncButtonClick.bind(this));
         document.body.appendChild(syncButton);
-        
-        // TODO: Inject other UI elements like toolbars and indexes
+
+        // Wait for conversation area to be available, then inject enhancements
+        this.waitForConversationArea();
+    };
+
+    /**
+     * @description 等待对话区域加载完成后注入 UI 增强功能
+     */
+    this.waitForConversationArea = function() {
+        const checkAndInject = () => {
+            const conversationArea = this.driver.elementConversationArea();
+            if (conversationArea) {
+                this.injectConversationEnhancements();
+            } else {
+                setTimeout(checkAndInject, 500);
+            }
+        };
+        checkAndInject();
+    };
+
+    /**
+     * @description 注入对话增强 UI（索引、展开/折叠按钮等）
+     */
+    this.injectConversationEnhancements = function() {
+        const conversationArea = this.driver.elementConversationArea();
+        if (!conversationArea) return;
+
+        // Inject CSS styles
+        this.injectStyles();
+
+        // Ensure the conversation area has relative positioning
+        const currentStyle = window.getComputedStyle(conversationArea);
+        if (currentStyle.position === 'static') {
+            conversationArea.style.position = 'relative';
+        }
+
+        // Inject toolbar (expand/collapse all buttons)
+        this.injectToolbar();
+
+        // Inject conversation index
+        this.injectConversationIndex();
+
+        // Inject hover toolbars for answers
+        this.injectAnswerToolbars();
+    };
+
+    /**
+     * @description 注入 UI 增强功能的 CSS 样式
+     */
+    this.injectStyles = function() {
+        if (document.getElementById('multi-ai-enhancement-styles')) return;
+
+        const styles = `
+            .multi-ai-answer-collapsed > *:not(.multi-ai-answer-toolbar) {
+                max-height: 30px !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+            }
+            .multi-ai-answer-collapsed {
+                position: relative;
+            }
+        `;
+
+        const styleElement = document.createElement('style');
+        styleElement.id = 'multi-ai-enhancement-styles';
+        styleElement.textContent = styles;
+        document.head.appendChild(styleElement);
+    };
+
+    /**
+     * @description 注入工具栏（全部展开/折叠按钮）
+     */
+    this.injectToolbar = function() {
+        const conversationArea = this.driver.elementConversationArea();
+        if (!conversationArea || conversationArea.querySelector('.multi-ai-toolbar')) return;
+
+        const toolbar = this.util.toHtml({
+            tag: 'div',
+            '@class': 'multi-ai-toolbar',
+            '@style': {
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                zIndex: 1000,
+                display: 'flex',
+                gap: '10px'
+            },
+            child: [
+                {
+                    tag: 'button',
+                    '@class': 'multi-ai-expand-all',
+                    '@style': {
+                        padding: '5px 10px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                    },
+                    text: this.i18n.getText('expandAllButtonTitle') || 'Expand All'
+                },
+                {
+                    tag: 'button',
+                    '@class': 'multi-ai-collapse-all',
+                    '@style': {
+                        padding: '5px 10px',
+                        backgroundColor: '#6c757d',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                    },
+                    text: this.i18n.getText('collapseAllButtonTitle') || 'Collapse All'
+                }
+            ]
+        });
+
+        conversationArea.appendChild(toolbar);
+
+        // Add event listeners
+        toolbar.querySelector('.multi-ai-expand-all').addEventListener('click', () => this.expandAllAnswers());
+        toolbar.querySelector('.multi-ai-collapse-all').addEventListener('click', () => this.collapseAllAnswers());
+    };
+
+    /**
+     * @description 注入对话索引（垂直悬浮的数字索引）
+     */
+    this.injectConversationIndex = function() {
+        const conversationArea = this.driver.elementConversationArea();
+        if (!conversationArea || conversationArea.querySelector('.multi-ai-conversation-index')) return;
+
+        const indexContainer = this.util.toHtml({
+            tag: 'div',
+            '@class': 'multi-ai-conversation-index',
+            '@style': {
+                position: 'absolute',
+                top: '0',
+                left: '0',
+                width: '45px',
+                height: '100%',
+                padding: '10px 0',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '10px',
+                zIndex: 100,
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(2px)',
+                opacity: '0.9',
+                borderRight: '1px solid #ddd'
+            }
+        });
+
+        conversationArea.appendChild(indexContainer);
+
+        // Update index when conversation changes
+        this.updateConversationIndex();
+
+        // Monitor for new answers
+        const observer = new MutationObserver(() => {
+            this.updateConversationIndex();
+            this.injectAnswerToolbars();
+        });
+
+        observer.observe(conversationArea, { childList: true, subtree: true });
+        this.conversationIndexObserver = observer;
+    };
+
+    /**
+     * @description 更新对话索引
+     */
+    this.updateConversationIndex = function() {
+        const indexContainer = document.querySelector('.multi-ai-conversation-index');
+        if (!indexContainer) return;
+
+        const answers = this.driver.elementAnswers();
+        const currentIndexes = indexContainer.querySelectorAll('.index-item');
+        const currentCount = currentIndexes.length;
+        const newCount = answers.length;
+
+        // Add new index items if needed
+        for (let i = currentCount; i < newCount; i++) {
+            const answerElement = answers[i];
+            const questionElement = this.driver.elementQuestion(i);
+
+            const indexItem = this.util.toHtml({
+                tag: 'div',
+                '@class': 'index-item',
+                '@style': {
+                    cursor: 'pointer',
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    backgroundColor: '#f0f0f0',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    color: '#666',
+                    transition: 'all 0.3s ease'
+                },
+                child: [{
+                    tag: 'a',
+                    '@href': `#multi-ai-answer-${i}`,
+                    '@style': {
+                        textDecoration: 'none',
+                        color: 'inherit'
+                    },
+                    text: `${i + 1}`
+                }]
+            });
+
+            // Add hover event to show question preview
+            const questionText = questionElement ? this.util.getText(questionElement) : '';
+            if (questionText) {
+                indexItem.title = questionText;
+
+                // Create tooltip element
+                const tooltip = this.util.toHtml({
+                    tag: 'div',
+                    '@class': 'index-tooltip',
+                    '@style': {
+                        position: 'absolute',
+                        left: '40px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        color: 'white',
+                        padding: '8px 12px',
+                        borderRadius: '5px',
+                        fontSize: '12px',
+                        maxWidth: '300px',
+                        wordWrap: 'break-word',
+                        whiteSpace: 'normal',
+                        zIndex: 1000,
+                        display: 'none',
+                        pointerEvents: 'none'
+                    },
+                    text: questionText
+                });
+
+                indexItem.appendChild(tooltip);
+
+                indexItem.addEventListener('mouseenter', () => {
+                    tooltip.style.display = 'block';
+                });
+
+                indexItem.addEventListener('mouseleave', () => {
+                    tooltip.style.display = 'none';
+                });
+            }
+
+            // Add click event to scroll to answer and expand if collapsed
+            indexItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.scrollToAnswer(i);
+            });
+
+            // Hover effect
+            indexItem.addEventListener('mouseenter', () => {
+                indexItem.style.backgroundColor = '#007bff';
+                indexItem.style.color = 'white';
+            });
+
+            indexItem.addEventListener('mouseleave', () => {
+                indexItem.style.backgroundColor = '#f0f0f0';
+                indexItem.style.color = '#666';
+            });
+
+            indexContainer.appendChild(indexItem);
+
+            // Add ID to answer element for anchoring
+            if (answerElement && !answerElement.id) {
+                answerElement.id = `multi-ai-answer-${i}`;
+            }
+        }
+
+        // Remove extra index items if answers were deleted
+        while (indexContainer.children.length > newCount) {
+            indexContainer.removeChild(indexContainer.lastChild);
+        }
+    };
+
+    /**
+     * @description 注入单个答案的悬浮工具条
+     */
+    this.injectAnswerToolbars = function() {
+        const answers = this.driver.elementAnswers();
+        answers.forEach((answer, index) => {
+            // Check if toolbar already exists
+            if (answer.querySelector('.multi-ai-answer-toolbar')) return;
+
+            // Add collapsed class if needed
+            const isCollapsed = this.driver.getAnswerStatus(index);
+            if (isCollapsed) {
+                answer.classList.add('multi-ai-answer-collapsed');
+            }
+
+            const toolbar = this.util.toHtml({
+                tag: 'div',
+                '@class': 'multi-ai-answer-toolbar',
+                '@style': {
+                    position: 'absolute',
+                    top: '-15px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    display: 'none',
+                    gap: '5px',
+                    zIndex: 100
+                },
+                child: [
+                    {
+                        tag: 'button',
+                        '@class': 'multi-ai-answer-expand',
+                        '@style': {
+                            padding: '3px 8px',
+                            fontSize: '12px',
+                            backgroundColor: '#007bff',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer'
+                        },
+                        text: '⬇'
+                    },
+                    {
+                        tag: 'button',
+                        '@class': 'multi-ai-answer-collapse',
+                        '@style': {
+                            padding: '3px 8px',
+                            fontSize: '12px',
+                            backgroundColor: '#6c757d',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '3px',
+                            cursor: 'pointer'
+                        },
+                        text: '⬆'
+                    }
+                ]
+            });
+
+            answer.style.position = 'relative';
+            answer.appendChild(toolbar);
+
+            // Show toolbar on hover
+            answer.addEventListener('mouseenter', () => {
+                toolbar.style.display = 'flex';
+            });
+
+            answer.addEventListener('mouseleave', () => {
+                toolbar.style.display = 'none';
+            });
+
+            // Add event listeners
+            toolbar.querySelector('.multi-ai-answer-expand').addEventListener('click', () => {
+                this.expandAnswer(index);
+            });
+
+            toolbar.querySelector('.multi-ai-answer-collapse').addEventListener('click', () => {
+                this.collapseAnswer(index);
+            });
+        });
+    };
+
+    /**
+     * @description 滚动到指定答案并展开
+     */
+    this.scrollToAnswer = function(index) {
+        const answer = this.driver.elementAnswer(index);
+        if (!answer) return;
+
+        // Expand if collapsed
+        this.expandAnswer(index);
+
+        // Scroll to answer
+        answer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+
+    /**
+     * @description 展开所有答案
+     */
+    this.expandAllAnswers = function() {
+        const answers = this.driver.elementAnswers();
+        answers.forEach((_, index) => {
+            this.expandAnswer(index);
+        });
+    };
+
+    /**
+     * @description 折叠所有答案
+     */
+    this.collapseAllAnswers = function() {
+        const answers = this.driver.elementAnswers();
+        answers.forEach((_, index) => {
+            this.collapseAnswer(index);
+        });
+    };
+
+    /**
+     * @description 展开单个答案
+     */
+    this.expandAnswer = function(index) {
+        const answer = this.driver.elementAnswer(index);
+        if (!answer) return;
+
+        answer.classList.remove('multi-ai-answer-collapsed');
+        this.driver.setAnswerStatus(index, false);
+    };
+
+    /**
+     * @description 折叠单个答案
+     */
+    this.collapseAnswer = function(index) {
+        const answer = this.driver.elementAnswer(index);
+        if (!answer) return;
+
+        answer.classList.add('multi-ai-answer-collapsed');
+        this.driver.setAnswerStatus(index, true);
     };
 
     this.handleSyncButtonClick = async function() {

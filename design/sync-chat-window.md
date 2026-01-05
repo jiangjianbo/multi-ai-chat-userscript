@@ -83,8 +83,11 @@ sequenceDiagram
 
 ### 文件结构
 
--   `src/sync-chat-window.js`:`SyncChatWindow`和 `MainWindowController` 的源代码。
--   `tests/sync-chat-window.test.js`:`SyncChatWindow`和  `MainWindowController` 模块的单元测试。
+-   `src/sync-chat-window.js`:`SyncChatWindow` 的源代码，负责主窗口的创建和检查。
+-   `src/main-window-controller.js`:`MainWindowController` 的源代码，负责主窗口的核心控制逻辑。
+-   `src/main-window-initializer.js`：主窗口初始化器，在构建时被编译并注入到主窗口 HTML 中。
+-   `tests/sync-chat-window.test.js`:`SyncChatWindow` 模块的单元测试。
+-   `tests/main-window-controller.test.js`:`MainWindowController` 模块的单元测试。
 
 ### API 定义 (`MainWindowController`)
 

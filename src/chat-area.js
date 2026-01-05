@@ -386,18 +386,45 @@ function ChatArea(mainController, id, url, container, i18n) {
     };
 
     this.updateOption = function(key, value) {
-        // This will depend on how options are displayed in ChatArea.
-        // For now, we'll just log it.
-        console.log(`ChatArea ${this.id}: Option ${key} updated to ${value}`);
+        if (key === 'webAccess') {
+            this.setWebAccess(value);
+        } else if (key === 'longThought') {
+            this.setLongThought(value);
+        } else {
+            console.log(`ChatArea ${this.id}: Option ${key} updated to ${value}`);
+        }
     };
 
     this.addQuestion = function(content) {
         this.addMessage(content, 'question');
     };
 
+    this.addAnswer = function(content) {
+        this.addMessage(content, 'answer');
+    };
+
+    this.handleAnswer = function(data) {
+        if (data && data.content) {
+            this.addAnswer(data.content);
+        }
+    };
+
     this.updateModelVersion = function(version) {
-        // Assuming there's an element to display the model version.
-        // For now, we'll just log it.
+        const selectElement = this.paramsDropdown.querySelector('select');
+        if (selectElement) {
+            // Check if the version exists in the options
+            const optionExists = Array.from(selectElement.options).some(option => option.value === version);
+            if (optionExists) {
+                selectElement.value = version;
+            } else {
+                // If version doesn't exist, add it as a new option
+                const newOption = document.createElement('option');
+                newOption.value = version;
+                newOption.textContent = version;
+                selectElement.appendChild(newOption);
+                selectElement.value = version;
+            }
+        }
         console.log(`ChatArea ${this.id}: Model version updated to ${version}`);
     };
 

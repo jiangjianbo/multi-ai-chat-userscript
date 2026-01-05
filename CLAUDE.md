@@ -37,7 +37,7 @@ pnpm run research:main-window  # 仅构建主窗口研究代码
 ### 主从分离架构
 
 - **原生页面（从）**: 注入"同步对比"按钮和 PageDriver。使用 `PageController` + 具体的 `PageDriver`（如 `KimiPageDriver`）。
-- **主窗口（主）**: 独立的控制面板窗口（`window.name === 'multi-ai-sync-chat-window'`）。由 `SyncChatWindow` 管理，包含多个 `ChatArea` 实例。
+- **主窗口（主）**: 独立的控制面板窗口（`window.name === 'multi-ai-chat-main-window'`）。由 `MainWindowController` 管理，包含多个 `ChatArea` 实例。
 
 ### 平台支持
 
@@ -46,9 +46,11 @@ pnpm run research:main-window  # 仅构建主窗口研究代码
 
 ### 入口点
 
-`src/index.js` 延迟 3 秒后运行。根据环境初始化：
-- 如果是主窗口 → 初始化 `SyncChatWindow`
+`src/index.js` 根据环境初始化：
+- 如果是主窗口（`window.name === 'multi-ai-chat-main-window'`）→ 跳过初始化
 - 否则 → 初始化 `PageController` 用于原生 AI 页面
+
+主窗口由 `main-window-initializer.js` 初始化，该文件在构建时被编译并注入到主窗口 HTML 中。
 
 ### 驱动模式
 
@@ -78,7 +80,8 @@ pnpm run research:main-window  # 仅构建主窗口研究代码
 原生页面驱动 (page-driver) ← 工具类
 原生页面控制器 (page-controller) ← 驱动、消息、工具类、配置、国际化
 内容块 (chat-area) ← 消息、工具类、配置、国际化
-主窗口 (sync-chat-window) ← 内容块、工具类、配置、国际化
+主窗口控制器 (main-window-controller) ← 内容块、工具类、配置、国际化、驱动工厂
+主窗口创建器 (sync-chat-window) ← 工具类
 ```
 
 详细架构见 `design/architect.md` 中的 Mermaid 图。
@@ -162,7 +165,8 @@ function MyClass(args) {
 ### 核心源文件
 - `src/index.js`: 入口点，检测环境
 - `src/page-controller.js`: 原生页面控制器
-- `src/sync-chat-window.js`: 主窗口控制器
+- `src/sync-chat-window.js`: 主窗口创建和管理
+- `src/main-window-controller.js`: 主窗口核心控制器
 - `src/main-window-initializer.js`: 主窗口js代码构造器，编译时候会单独编译到输出文件中，然后输出文件内容替换到主窗口html的标记位置，让主窗口可以以独立和无依赖的方式运行脚本
 - `src/chat-area.js`: 单个 AI 对话面板
 - `src/page-driver.js`: 页面驱动基类
@@ -197,8 +201,8 @@ Key: `multi_ai_sync_config`
 ## Important Constraints
 
 - 原生页面只注入"同步对比"按钮；所有其他逻辑通过消息通信
-- 主窗口是独立 tab，支持 1/2/3/4/6 面板布局
+- 主窗口是独立 tab，支持 1/2/4/6 面板布局
 - 所有 UI 文字使用 i18n key 引用
 - 阿拉伯语需要 RTL 支持
-- 脚本初始化前延迟 3 秒
+- 主窗口通过 `window.name === 'multi-ai-chat-main-window'` 标识
 - 所有模块都有对应的设计文档（`design/*.md`）

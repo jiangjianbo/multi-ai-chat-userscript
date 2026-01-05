@@ -276,6 +276,43 @@ MessageClient.prototype.modelVersionChange = function(id, version) {
     this.message.send('modelVersionChange', { id: id, version: version });
 };
 
+/**
+ * @description Sends a set option message to PageController.
+ * @param {string} id - The ID of the chat area.
+ * @param {string} key - The key of the option to set.
+ * @param {*} value - The new value of the option.
+ */
+MessageClient.prototype.setOption = function(id, key, value) {
+    this.message.send('setOption', { id: id, key: key, value: value });
+};
+
+/**
+ * @description Sends a set model version message to PageController.
+ * @param {string} id - The ID of the chat area.
+ * @param {string} version - The model version to set.
+ */
+MessageClient.prototype.setModelVersion = function(id, version) {
+    this.message.send('setModelVersion', { id: id, version: version });
+};
+
+/**
+ * @description Sends a set answer status message to PageController.
+ * @param {string} id - The ID of the chat area.
+ * @param {number} index - The index of the answer.
+ * @param {boolean} collapsed - Whether the answer should be collapsed.
+ */
+MessageClient.prototype.setAnswerStatus = function(id, index, collapsed) {
+    this.message.send('setAnswerStatus', { id: id, index: index, collapsed: collapsed });
+};
+
+/**
+ * @description Sends a thread message to PageController for new session.
+ * @param {string} id - The ID of the chat area.
+ */
+MessageClient.prototype.thread = function(id) {
+    this.message.send('thread', { id: id });
+};
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = MessageClient;
 }

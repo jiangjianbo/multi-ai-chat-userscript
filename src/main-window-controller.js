@@ -40,7 +40,8 @@ function MainWindowController(receiverId, message, config, i18n) {
         this.eventHandlers[eventName] = handler;
     };
     this._handleNewSession = function(chatArea, providerName) {
-        this.msgClient.newSession(chatArea.id, providerName);
+        // Use thread message as per design document
+        this.msgClient.thread(chatArea.id);
     };
 
     this._handleShare = function(chatArea, url) {
@@ -49,7 +50,14 @@ function MainWindowController(receiverId, message, config, i18n) {
     };
 
     this._handleParamChanged = function(chatArea, key, newValue, oldValue) {
-        this.msgClient.sendParamChanged(chatArea.id, key, newValue, oldValue);
+        if (key === 'modelVersion') {
+            this.msgClient.setModelVersion(chatArea.id, newValue);
+        } else if (key === 'webAccess' || key === 'longThought') {
+            this.msgClient.setOption(chatArea.id, key, newValue);
+        } else {
+            // For other parameters, use param_changed message
+            this.msgClient.sendParamChanged(chatArea.id, key, newValue, oldValue);
+        }
     };
 
     this._handleProviderChanged = function(chatArea, newProvider, oldProvider) {
@@ -378,6 +386,15 @@ function MainWindowController(receiverId, message, config, i18n) {
         if (chatArea) {
             chatArea.newSession();
         }
+    };
+
+    /**
+     * @description Handles the 'thread' message to start a new session (alias for newSession).
+     * @param {object} data - Message data ({ id }).
+     */
+    this.onMsgThread = function(data) {
+        // Thread message is equivalent to newSession
+        this.onMsgNewSession(data);
     };
 
     /**
