@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Window Complete</title>
+    <style>
+        :root {
+            --border-color: #ddd;
+            --background-color: #f4f4f4;
+            --title-bg: #fff;
+            --text-color: #333;
+            --button-bg: #e9e9e9;
+            --button-hover-bg: #dcdcdc;
+            --button-active-bg: #007bff;
+            --button-active-text: #fff;
+            --pin-color: #ffc107;
+            --index-width: 45px;
+        }
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            position: relative;
+        }
+        .main-window {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Title Bar */
+        .main-title-bar {
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--title-bg);
+        }
+        .title-section { display: flex; align-items: center; gap: 15px; }
+        .title-section.left { justify-content: flex-start; }
+        .title-section.center { justify-content: center; flex-grow: 1; }
+        .title-section.right { justify-content: flex-end; }
+        .product-logo { font-size: 20px; }
+        .product-name { font-weight: bold; font-size: 16px; }
+        .lang-switcher, .layout-button, .title-action-button {
+            cursor: pointer; padding: 6px 10px; border-radius: 5px; border: 1px solid transparent; background-color: var(--button-bg);
+        }
+        .lang-switcher:hover, .layout-button:hover, .title-action-button:hover { background-color: var(--button-hover-bg); }
+        .layout-button.active { background-color: var(--button-active-bg); color: var(--button-active-text); }
+
+        /* Language Dropdown */
+        .lang-container { position: relative; }
+        .lang-dropdown {
+            display: none; position: absolute; top: calc(100% + 5px); left: 0; background-color: white; border: 1px solid var(--border-color); border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 100;
+        }
+        .lang-dropdown div { padding: 8px 15px; cursor: pointer; white-space: nowrap; }
+        .lang-dropdown div:hover { background-color: #f0f0f0; }
+
+        /* Content Area */
+        .content-area {
+            flex-grow: 1; padding: 10px; display: grid; gap: 10px; overflow: auto;
+        }
+        .content-area[data-layout="1"] { grid-template-columns: 1fr; }
+        .content-area[data-layout="2"] { grid-template-columns: 1fr 1fr; }
+        .content-area[data-layout="4"] { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .content-area[data-layout="6"] { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr; }
+
+        /* ChatArea Container */
+        .chat-area-container {
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--background-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        .chat-area-container.pinned { border-color: var(--pin-color); }
+
+        /* Title Bar & Dropdowns */
+        .chat-area-title { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border-color); background-color: #fff; position: relative; }
+        .title-left, .title-right, .title-center { display: flex; align-items: center; gap: 12px; }
+        .title-center { flex-grow: 1; justify-content: center; }
+        .title-button { cursor: pointer; font-size: 18px; padding: 5px; border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+        .title-button:hover { background-color: #eee; }
+        .pin-button .icon { transition: transform 0.2s ease; display: inline-block; }
+        .pin-button.pinned .icon { transform: rotate(-45deg); color: #007bff; }
+        .model-selector, .params-selector { position: relative; }
+        .model-name, .params-button { cursor: pointer; padding: 5px 8px; border-radius: 5px; font-size: 14px; }
+        .model-name { font-weight: bold; }
+        .custom-dropdown { display: none; position: absolute; top: calc(100% + 5px); right: 0; background-color: #fff; border: 1px solid var(--border-color); border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 110; padding: 10px; min-width: 200px; }
+        .custom-dropdown.model-dropdown { left: 0; right: auto; min-width: 120px; padding: 5px 0; }
+        .custom-dropdown.visible { display: block; }
+        .model-option { padding: 8px 15px; cursor: pointer; font-size: 14px; }
+        .model-option:hover { background-color: #eee; }
+        .param-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .param-item:last-child { margin-bottom: 0; }
+        .param-item label { font-size: 14px; margin-right: 10px; }
+        .toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .param-item select { width: 100%; padding: 5px; border-radius: 4px; border: 1px solid var(--border-color); }
+
+        /* Main, Index, Conversation, Input */
+        .chat-area-main { flex-grow: 1; overflow: hidden; position: relative; transition: padding-bottom 0.3s ease; }
+        .chat-area-index { position: absolute; top: 0; left: 0; height: 100%; width: var(--index-width); padding: 10px 0; display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10; background-color: rgba(255, 255, 255, 0.7); backdrop-filter: blur(2px); opacity: 0.85; border-right: 1px solid var(--border-color); }
+        .index-button { cursor: pointer; width: 24px; height: 24px; border-radius: 4px; background-color: #f0f0f0; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: bold; }
+        .index-button:hover { background-color: #ccc; }
+        .index-item a { font-size: 14px; color: #666; text-decoration: none; }
+        .chat-area-conversation { height: 100%; padding: 20px 20px 20px calc(var(--index-width) + 10px); overflow-y: auto; box-sizing: border-box; scroll-behavior: smooth; }
+        .message-bubble { max-width: 90%; padding: 10px 15px; border-radius: 15px; margin-bottom: 15px; position: relative; transition: all 0.3s ease; }
+        .message-bubble.question { background-color: #dcf8c6; margin-left: auto; }
+        .message-bubble.answer { background-color: #fff; margin-right: auto; border: 1px solid var(--border-color); }
+        .message-bubble.answer.collapsed > .bubble-content { max-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .input-placeholder { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 80px; height: 30px; border-radius: 15px; background-color: rgba(0, 0, 0, 0.4); color: white; display: flex; justify-content: center; align-items: center; font-size: 12px; cursor: pointer; pointer-events: all; transition: all 0.3s ease; z-index: 20; }
+        .input-placeholder.hidden { opacity: 0; transform: translateX(-50%) scale(0.5); visibility: hidden; }
+        .chat-area-input { box-sizing: border-box; position: absolute; bottom: 0; left: 0; width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px; padding-left: calc(var(--index-width) + 10px); background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(5px); border-top: 1px solid var(--border-color); box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 25; opacity: 0; visibility: hidden; transform: translateY(100%); transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease; }
+        .chat-area-input.visible { opacity: 1; visibility: visible; transform: translateY(0); }
+        .chat-area-input.docked { background-color: #fff; }
+        .chat-area-input textarea { flex-grow: 1; border: 1px solid var(--border-color); border-radius: 5px; padding: 8px; font-size: 14px; resize: none; }
+        .chat-area-input button { flex-shrink: 0; width: 36px; height: 36px; border: none; background-color: #007bff; color: white; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; justify-content: center; align-items: center; }
+
+        /* Prompt Input Area */
+        .prompt-area {
+            flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+            padding: 10px 15px; border-top: 1px solid var(--border-color); background-color: var(--title-bg);
+            position: relative;
+        }
+        .prompt-action-button {
+            flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; border: none;
+            background-color: var(--button-bg); cursor: pointer; font-size: 20px;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .prompt-action-button:hover { background-color: var(--button-hover-bg); }
+
+        /* Settings Menu */
+        .settings-menu {
+            display: none; position: absolute; bottom: calc(100% + 5px); left: 15px; background-color: white;
+            border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 -4px 8px rgba(0,0,0,0.1);
+            padding: 10px; z-index: 100; width: 200px;
+        }
+        .settings-menu .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+        .settings-menu .setting-item label { cursor: pointer; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .prompt-input-wrapper { flex-grow: 1; display: grid; }
+        .prompt-input-wrapper::after, .prompt-input-wrapper textarea {
+            grid-area: 1 / 1 / 2 / 2; width: 100%; min-height: 20px; max-height: 200px;
+            padding: 8px 12px; font-size: 14px; line-height: 1.5; border: 1px solid var(--border-color);
+            border-radius: 18px; resize: none; box-sizing: border-box; overflow: auto;
+        }
+        .prompt-input-wrapper::after { content: attr(data-replicated-value) " "; white-space: pre-wrap; visibility: hidden; }
+        .prompt-input-wrapper textarea { overflow: auto; }
+    </style>
+</head>
+<body>
+
+<div class="main-window">
+    <!-- Title Bar -->
+    <header class="main-title-bar">
+        <div class="title-section left">
+            <div class="product-logo">&#129302;</div>
+            <div class="product-name">Multi AI Chat</div>
+            <div class="lang-container">
+                <div class="lang-switcher" id="lang-switcher">&#127760;</div>
+                <div class="lang-dropdown" id="lang-dropdown">
+                    <div data-lang="en">English</div>
+                    <div data-lang="zh">中文</div>
+                </div>
+            </div>
+        </div>
+        <div class="title-section center" id="layout-switcher">
+            <button class="layout-button active" data-layout="1">1</button>
+            <button class="layout-button" data-layout="2">2</button>
+            <button class="layout-button" data-layout="4">4</button>
+            <button class="layout-button" data-layout="6">6</button>
+        </div>
+        <div class="title-section right">
+            <button class="title-action-button" id="main-window-close-button">&#10006;</button>
+        </div>
+    </header>
+
+    <!-- Content Area -->
+    <main class="content-area" id="content-area" data-layout="1">
+        <!-- ChatAreas will be added here -->
+    </main>
+
+    <!-- Prompt Input Area -->
+    <footer class="prompt-area">
+        <button class="prompt-action-button" id="settings-button">&#9881;</button>
+        <div class="settings-menu" id="settings-menu">
+            <div class="setting-item">
+                <label for="web-access">Web Access</label>
+                <label class="switch">
+                    <input type="checkbox" id="web-access">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <label for="long-thought">Long Thought</label>
+                <label class="switch">
+                    <input type="checkbox" id="long-thought">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="prompt-input-wrapper" id="prompt-wrapper">
+            <textarea id="prompt-textarea" rows="1" placeholder="Ask all AIs..."></textarea>
+        </div>
+        <button class="prompt-action-button" id="global-send-button">&#10148;</button>
+    </footer>
+</div>
+
+<script>
+// ChatArea Class from research/chat-area.html
+function ChatArea(container, updateLayoutCallback) {
+    this.container = container;
+    this.updateLayoutCallback = updateLayoutCallback;
+
+    this.init = function(instanceData) {
+        this.container.innerHTML = this.render(instanceData);
+        this.cacheDOMElements();
+        this.initEventListeners();
+    };
+
+    this.render = function(data) {
+        const answers = data.conversation.filter(msg => msg.type === 'answer');
+
+        const indexHtml = answers.map((ans, i) =>
+            `<div class="index-item"><a href="#answer-${data.id}-${i}">${i + 1}</a></div>`
+        ).join('');
+
+        const conversationHtml = data.conversation.map(msg => {
+            let id = '';
+            if (msg.type === 'answer') {
+                const answerIndex = answers.indexOf(msg);
+                id = `id="answer-${data.id}-${answerIndex}"`;
+            }
+            return `<div class="message-bubble ${msg.type}" ${id}><div class="bubble-content">${msg.content}</div></div>`;
+        }).join('');
+
+        return `
+        <div class="chat-area-title">
+            <div class="title-left">
+                <div class="model-selector">
+                    <div class="model-name">${data.providerName} &#9662;</div>
+                    <div class="custom-dropdown model-dropdown">
+                        <div class="model-option" data-value="Gemini">Gemini</div>
+                        <div class="model-option" data-value="ChatGPT">ChatGPT</div>
+                        <div class="model-option" data-value="Kimi">Kimi</div>
+                        <div class="model-option" data-value="DeepSeek">DeepSeek</div>
+                        <div class="model-option" data-value="Grok">Grok</div>
+                        <div class="model-option" data-value="Tongyi">Tongyi</div>
+                    </div>
+                </div>
+                <div class="title-button new-session-button" title="New Session">&#10133;</div>
+            </div>
+            <div class="title-center">
+                <div class="title-button expand-all" title="Expand All">&#x2924;</div>
+                <div class="title-button collapse-all" title="Collapse All">&#x2922;</div>
+            </div>
+            <div class="title-right">
+                <div class="params-selector">
+                    <div class="title-button params-button" title="Parameters">&#9881;</div>
+                    <div class="custom-dropdown params-dropdown">
+                        <div class="param-item"><label>Web Access</label><label class="toggle-switch"><input type="checkbox" ${data.params.webAccess ? 'checked' : ''}><span class="slider"></span></label></div>
+                        <div class="param-item"><label>Long Thought</label><label class="toggle-switch"><input type="checkbox" ${data.params.longThought ? 'checked' : ''}><span class="slider"></span></label></div>
+                        <hr>
+                        <div class="param-item"><label>Model Version</label><select><option>V2.2</option><option>V1.5 Pro</option><option>V1.0</option></select></div>
+                    </div>
+                </div>
+                <div class="title-button share-button" title="Share">&#128279;</div>
+                <div class="title-button pin-button" title="Pin"><span class="icon">&#128204;</span></div>
+                <div class="title-button close-button" title="Close">&#10006;</div>
+            </div>
+        </div>
+        <div class="chat-area-main">
+            <div class="chat-area-index">
+                ${indexHtml}
+            </div>
+            <div class="chat-area-conversation">${conversationHtml}</div>
+        </div>
+        <div class="input-placeholder">Input</div>
+        <div class="chat-area-input">
+            <textarea rows="1" placeholder="Type your message..."></textarea>
+            <button title="Send">&#10148;</button>
+        </div>
+        `;
+    };
+
+    this.cacheDOMElements = function() {
+        this.mainArea = this.container.querySelector('.chat-area-main');
+        this.placeholder = this.container.querySelector('.input-placeholder');
+        this.inputArea = this.container.querySelector('.chat-area-input');
+        this.textarea = this.container.querySelector('textarea');
+        this.conversationArea = this.container.querySelector('.chat-area-conversation');
+        this.answerBubbles = this.container.querySelectorAll('.message-bubble.answer');
+        this.modelSelector = this.container.querySelector('.model-selector');
+        this.providerNameDisplay = this.modelSelector.querySelector('.model-name');
+        this.modelDropdown = this.modelSelector.querySelector('.model-dropdown');
+        this.paramsSelector = this.container.querySelector('.params-selector');
+        this.paramsButton = this.paramsSelector.querySelector('.params-button');
+        this.paramsDropdown = this.paramsSelector.querySelector('.params-dropdown');
+    };
+
+    this.initEventListeners = function() {
+        this.container.querySelector('.pin-button').addEventListener('click', (e) => {
+            const isPinned = this.container.dataset.pinned === 'true';
+            this.container.dataset.pinned = !isPinned;
+            this.container.classList.toggle('pinned', !isPinned);
+            e.currentTarget.classList.toggle('pinned', !isPinned);
+            if (this.updateLayoutCallback) {
+                this.updateLayoutCallback();
+            }
+        });
+        this.container.querySelector('.close-button').addEventListener('click', () => {
+            alert('Close clicked in: ' + this.providerNameDisplay.textContent.trim());
+        });
+        this.container.querySelector('.new-session-button').addEventListener('click', () => {
+            alert('New Session clicked in: ' + this.providerNameDisplay.textContent.trim());
+        });
+        this.container.querySelector('.share-button').addEventListener('click', () => {
+            alert('Share clicked in: ' + this.providerNameDisplay.textContent.trim());
+        });
+
+        this.providerNameDisplay.addEventListener('click', (e) => this.toggleDropdown(e, this.modelDropdown));
+        this.paramsButton.addEventListener('click', (e) => this.toggleDropdown(e, this.paramsDropdown));
+        this.modelDropdown.querySelectorAll('.model-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const newValue = e.currentTarget.dataset.value;
+                this.providerNameDisplay.innerHTML = `${newValue} &#9662;`;
+                alert(`Model changed to: ${newValue}`);
+            });
+        });
+
+        this.container.querySelector('.expand-all').addEventListener('click', () => this.expandAll());
+        this.container.querySelector('.collapse-all').addEventListener('click', () => this.collapseAll());
+
+        // 关键：索引链接点击事件处理，阻止默认跳转行为
+        this.container.querySelectorAll('.index-item a').forEach(anchor => {
+            anchor.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetElement = this.container.querySelector(anchor.getAttribute('href'));
+                if (targetElement) this.conversationArea.scrollTop = targetElement.offsetTop - this.conversationArea.offsetTop - 20;
+            });
+        });
+
+        this.placeholder.addEventListener('mouseenter', () => this.showInput());
+        this.inputArea.addEventListener('mouseenter', () => this.showInput());
+        this.inputArea.addEventListener('mouseleave', () => this.undockInput());
+        this.textarea.addEventListener('focus', () => this.dockInput());
+        this.inputArea.addEventListener('focusout', (e) => this.handleFocusOut(e));
+    };
+
+    this.toggleDropdown = function(event, dropdown) {
+        event.stopPropagation();
+        const isVisible = dropdown.classList.contains('visible');
+        document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('visible'));
+        if (!isVisible) dropdown.classList.add('visible');
+    };
+
+    this.expandAll = () => this.answerBubbles.forEach(b => b.classList.remove('collapsed'));
+    this.collapseAll = () => this.answerBubbles.forEach(b => b.classList.add('collapsed'));
+
+    this.showInput = function() {
+        clearTimeout(this.hideTimeout);
+        this.placeholder.classList.add('hidden');
+        this.inputArea.classList.add('visible');
+    };
+
+    this.dockInput = function() {
+        this.showInput();
+        this.inputArea.classList.add('docked');
+        this.mainArea.style.paddingBottom = `${this.inputArea.offsetHeight}px`;
+    };
+
+    this.undockInput = function() {
+        this.inputArea.classList.remove('docked');
+        this.mainArea.style.paddingBottom = '0px';
+        this.hideTimeout = setTimeout(() => {
+            if (!this.inputArea.contains(document.activeElement)) {
+                this.inputArea.classList.remove('visible');
+                this.placeholder.classList.remove('hidden');
+            }
+        }, 300);
+    };
+
+    this.handleFocusOut = function(event) {
+        if (!this.inputArea.contains(event.relatedTarget)) this.undockInput();
+    };
+}
+
+// Main Window Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const contentArea = document.getElementById('content-area');
+    const layoutSwitcher = document.getElementById('layout-switcher');
+    const chatAreaContainers = [];
+
+    const langContainer = document.querySelector('.lang-container');
+    const langSwitcher = document.getElementById('lang-switcher');
+    const langDropdown = document.getElementById('lang-dropdown');
+
+    const settingsButton = document.getElementById('settings-button');
+    const settingsMenu = document.getElementById('settings-menu');
+
+    // 创建测试数据
+    const instancesData = [
+        {
+            id: 1,
+            providerName: 'Gemini',
+            params: { webAccess: false, longThought: true },
+            conversation: [
+                { type: 'question', content: '1Compare let, const, and var.' },
+                { type: 'answer', content: '<code>var</code> is function-scoped, <code>let</code> and <code>const</code> are block-scoped.' },
+                { type: 'question', content: '2Show a table.' },
+                { type: 'answer', content: 'Table content here...' },
+                { type: 'question', content: '3Third question' },
+                { type: 'answer', content: 'Third answer...' },
+                { type: 'question', content: '4Fourth question' },
+                { type: 'answer', content: 'Fourth answer...' },
+                { type: 'question', content: '5Fifth question' },
+                { type: 'answer', content: 'Fifth answer...' },
+                { type: 'question', content: '6Sixth question' },
+                { type: 'answer', content: 'Sixth answer...' },
+            ]
+        },
+        {
+            id: 2,
+            providerName: 'Kimi',
+            params: { webAccess: true, longThought: false },
+            conversation: [
+                { type: 'question', content: 'Tell me a short story.' },
+                { type: 'answer', content: 'The last man on Earth sat alone in a room. There was a knock on the door.' },
+                { type: 'question', content: 'Another question' },
+                { type: 'answer', content: 'Another answer...' },
+            ]
+        },
+        {
+            id: 3,
+            providerName: 'ChatGPT',
+            params: { webAccess: false, longThought: false },
+            conversation: [
+                { type: 'question', content: 'Hello ChatGPT' },
+                { type: 'answer', content: 'Hello! How can I help you today?' },
+            ]
+        },
+        {
+            id: 4,
+            providerName: 'DeepSeek',
+            params: { webAccess: true, longThought: true },
+            conversation: [
+                { type: 'question', content: 'What is AI?' },
+                { type: 'answer', content: 'AI stands for Artificial Intelligence...' },
+            ]
+        }
+    ];
+
+    // 初始化 ChatAreas
+    instancesData.forEach(data => {
+        const container = document.createElement('div');
+        container.className = 'chat-area-container';
+        container.dataset.pinned = 'false';
+        contentArea.appendChild(container);
+        chatAreaContainers.push(container);
+
+        const chatArea = new ChatArea(container, updateLayout);
+        chatArea.init(data);
+    });
+
+    /**
+     * Updates the layout based on current settings, prioritizing pinned items.
+     */
+    function updateLayout() {
+        const layout = parseInt(contentArea.dataset.layout, 10);
+
+        const pinned = chatAreaContainers.filter(area => area.dataset.pinned === 'true');
+        const unpinned = chatAreaContainers.filter(area => area.dataset.pinned === 'false');
+
+        const displayOrder = [...pinned, ...unpinned];
+
+        chatAreaContainers.forEach(area => {
+            area.style.display = 'none';
+        });
+
+        for (let i = 0; i < Math.min(layout, displayOrder.length); i++) {
+            displayOrder[i].style.display = 'flex';
+        }
+    }
+
+    // Layout Switcher Logic
+    layoutSwitcher.addEventListener('click', (e) => {
+        if (e.target.matches('.layout-button')) {
+            contentArea.dataset.layout = e.target.dataset.layout;
+            layoutSwitcher.querySelector('.active').classList.remove('active');
+            e.target.classList.add('active');
+            updateLayout();
+        }
+    });
+
+    // Language Switcher Logic
+    langSwitcher.addEventListener('click', (e) => {
+        e.stopPropagation();
+        langDropdown.style.display = langDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+
+    langDropdown.addEventListener('click', (e) => {
+        if (e.target.matches('[data-lang]')) {
+            alert(`Language selected: ${e.target.textContent}`);
+            langDropdown.style.display = 'none';
+        }
+    });
+
+    // Settings Menu Logic
+    settingsButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        settingsMenu.style.display = settingsMenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    settingsMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // Global click to close dropdowns/menus
+    document.addEventListener('click', () => {
+        langDropdown.style.display = 'none';
+        settingsMenu.style.display = 'none';
+        document.querySelectorAll('.custom-dropdown.visible').forEach(d => d.classList.remove('visible'));
+    });
+
+    // Auto-growing Textarea Logic
+    const textarea = document.getElementById('prompt-textarea');
+    const wrapper = document.getElementById('prompt-wrapper');
+    textarea.addEventListener('input', () => {
+        wrapper.dataset.replicatedValue = textarea.value;
+    });
+
+    // Close window
+    document.getElementById('main-window-close-button').addEventListener('click', () => {
+        window.close();
+    });
+
+    // Initial setup
+    updateLayout();
+    console.log('Main Window Complete initialized.');
+});
+</script>
+
+</body>
+</html>

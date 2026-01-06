@@ -187,6 +187,78 @@ function Util() {
     }
 
     /**
+     * @description 模拟用户通过键盘输入文本到指定元素
+     * @param {HTMLElement} element - 目标元素（input, textarea, 或 contenteditable 元素）
+     * @param {string} text - 要输入的文本
+     */
+    this.simulateType = function(element, text) {
+        if (!element) {
+            console.warn('simulateType: element is null or undefined');
+            return;
+        }
+
+        // 先聚焦元素
+        element.focus();
+
+        // 清空现有内容
+        if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            element.value = '';
+        } else if (element.isContentEditable) {
+            element.innerHTML = '';
+        }
+
+        // 为每个字符模拟键盘输入事件
+        const characters = text.split('');
+        characters.forEach((char) => {
+            // 创建并派发 keydown 事件
+            const keydownEvent = new KeyboardEvent('keydown', {
+                key: char,
+                code: char === '\n' ? 'Enter' : `Key${char.toUpperCase()}`,
+                keyCode: char.charCodeAt(0),
+                which: char.charCodeAt(0),
+                bubbles: true,
+                cancelable: true
+            });
+            element.dispatchEvent(keydownEvent);
+
+            // 创建并派发 keypress 事件
+            const keypressEvent = new KeyboardEvent('keypress', {
+                key: char,
+                keyCode: char.charCodeAt(0),
+                which: char.charCodeAt(0),
+                bubbles: true,
+                cancelable: true
+            });
+            element.dispatchEvent(keypressEvent);
+
+            // 插入字符
+            if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                element.value += char;
+            } else if (element.isContentEditable) {
+                element.textContent += char;
+            }
+
+            // 创建并派发 input 事件
+            const inputEvent = new Event('input', {
+                bubbles: true,
+                cancelable: true
+            });
+            element.dispatchEvent(inputEvent);
+
+            // 创建并派发 keyup 事件
+            const keyupEvent = new KeyboardEvent('keyup', {
+                key: char,
+                code: char === '\n' ? 'Enter' : `Key${char.toUpperCase()}`,
+                keyCode: char.charCodeAt(0),
+                which: char.charCodeAt(0),
+                bubbles: true,
+                cancelable: true
+            });
+            element.dispatchEvent(keyupEvent);
+        });
+    };
+
+    /**
      * @description 获取HTML元素的布尔值状态，主要用于checkbox或具有布尔语义的元素。
      * @param {HTMLElement} element - 要获取布尔值的HTML元素。
      * @returns {boolean|undefined} - 元素的布尔值状态，如果元素没有明确的布尔状态则返回undefined。
@@ -245,6 +317,74 @@ function Util() {
             .replace(/>/g, '\\u003e')  // 转义 >
             .replace(/&/g, '\\u0026')  // 转义 &
             .replace(/'/g, '\\u0027'); // 转义单引号
+    }
+
+    /**
+     * @description 检测编辑器类型
+     * @param {HTMLElement} element - 要检测的HTML元素
+     * @returns {string} - 编辑器类型：'lexical', 'contenteditable', 'input', 'textarea', 'unknown'
+     */
+    this.detectEditorType = function(element) {
+        if (!element) {
+            return 'unknown';
+        }
+
+        // 检查是否为 Lexical 编辑器（通过 data-lexical-editor 属性）
+        if (element.hasAttribute && element.hasAttribute('data-lexical-editor')) {
+            return 'lexical';
+        }
+
+        // 检查是否为 contenteditable 元素
+        if (element.isContentEditable) {
+            return 'contenteditable';
+        }
+
+        // 检查是否为标准表单元素
+        const tagName = element.tagName ? element.tagName.toLowerCase() : '';
+        if (tagName === 'input') {
+            return 'input';
+        } else if (tagName === 'textarea') {
+            return 'textarea';
+        }
+
+        return 'unknown';
+    }
+
+    /**
+     * @description 设置 Lexical 编辑器的内容
+     * @param {HTMLElement} element - Lexical 编辑器元素
+     * @param {string} text - 要设置的文本内容
+     */
+    this.setLexicalContent = function(element, text) {
+        if (!element) {
+            console.warn('setLexicalContent: element is null or undefined');
+            return;
+        }
+
+        // 清空现有内容
+        element.innerHTML = '';
+
+        // 创建 Lexical 编辑器的正确 DOM 结构
+        const paragraph = document.createElement('p');
+        paragraph.setAttribute('dir', 'ltr');
+
+        const span = document.createElement('span');
+        span.setAttribute('data-lexical-text', 'true');
+        span.textContent = text;
+
+        paragraph.appendChild(span);
+        element.appendChild(paragraph);
+
+        // 触发 input 事件通知编辑器内容已改变
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // 尝试触发 Lexical 特有的事件
+        element.dispatchEvent(new InputEvent('input', {
+            bubbles: true,
+            cancelable: true,
+            data: text
+        }));
     }
 
     /**

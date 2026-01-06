@@ -44,7 +44,7 @@ function ChatArea(mainController, id, url, container, i18n) {
     this.init = function(instanceData) {
         const chatAreaHtml = this.render(instanceData);
         this.container.innerHTML = chatAreaHtml;
-        this.element = this.container.querySelector('.chat-area-instance');
+        this.element = this.container;
         if (!this.url) {
             this.element.classList.add('forced-selection');
         }
@@ -97,7 +97,6 @@ function ChatArea(mainController, id, url, container, i18n) {
         const modelSelectorClass = this.url ? 'model-selector' : 'model-selector highlight-dropdown';
 
         return `
-            <div class="chat-area-instance">
             ${overlayHtml}
             <div class="chat-area-title">
                 <div class="title-left">
@@ -142,7 +141,6 @@ function ChatArea(mainController, id, url, container, i18n) {
             <div class="chat-area-input">
                 <textarea rows="1" placeholder="Type your message..." data-lang-key="typeMessagePlaceholder"></textarea>
                 <button title="Send" data-lang-key="sendButtonTitle">&#10148;</button>
-            </div>
             </div>
         `;
     };
@@ -224,6 +222,18 @@ function ChatArea(mainController, id, url, container, i18n) {
         });
         this.element.querySelector('.expand-all').addEventListener('click', () => this.expandAll());
         this.element.querySelector('.collapse-all').addEventListener('click', () => this.collapseAll());
+
+        // 关键：索引链接点击事件处理，阻止默认跳转行为，只让对话内容区域滚动
+        this.element.querySelectorAll('.chat-area-index .index-item a').forEach(anchor => {
+            anchor.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetElement = this.element.querySelector(anchor.getAttribute('href'));
+                if (targetElement && this.conversationArea) {
+                    this.conversationArea.scrollTop = targetElement.offsetTop - this.conversationArea.offsetTop - 20;
+                }
+            });
+        });
+
         this.element.querySelector('.export-button').addEventListener('click', () => {
             this.eventHandlers.onEvtExport(this);
         });
@@ -231,6 +241,17 @@ function ChatArea(mainController, id, url, container, i18n) {
         this.inputArea.addEventListener('mouseenter', () => this.showInput());
         this.inputArea.addEventListener('mouseleave', () => this.undockInput());
         this.textarea.addEventListener('focus', () => this.dockInput());
+        this.textarea.addEventListener('keydown', (e) => {
+            // 回车键发送消息，Shift+回车换行
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const prompt = this.textarea.value.trim();
+                if (prompt) {
+                    this.eventHandlers.onEvtPromptSend(this, prompt);
+                    this.textarea.value = '';
+                }
+            }
+        });
         this.inputArea.addEventListener('focusout', (e) => this.handleFocusOut(e));
 
         this.inputArea.querySelector('button').addEventListener('click', () => {

@@ -40,7 +40,6 @@ describe('ChatArea Module', () => {
     });
 
     test('1. Initialization: should render the full UI structure', () => {
-        expect(container.querySelector('.chat-area-instance')).not.toBeNull();
         expect(container.querySelector('.chat-area-title')).not.toBeNull();
         expect(container.querySelector('.model-name').textContent).toContain('TestModel');
         expect(container.querySelectorAll('.message-bubble').length).toBe(2);

@@ -510,6 +510,20 @@ function PageController(message, config, i18n, util) {
     };
 
     /**
+     * @description 处理来自主窗口的提示词消息（发送给特定 ChatArea）
+     */
+    this.onMsgPrompt = function(data) {
+        // 检查 receiverId 是否匹配当前页面
+        if (data.receiverId && data.receiverId !== this.pageId) {
+            return;
+        }
+        if (data.text) {
+            this.driver.setPrompt(data.text);
+            this.driver.send();
+        }
+    };
+
+    /**
      * @description 处理来自主窗口的聊天消息。
      */
     this.onMsgChat = function(data) {
@@ -517,8 +531,10 @@ function PageController(message, config, i18n, util) {
         if (data.id && data.id !== this.pageId) {
             return;
         }
-        if (data.content) {
-            this.driver.setPrompt(data.content);
+        // 支持两种格式：data.content 和 data.prompt
+        const content = data.content || data.prompt;
+        if (content) {
+            this.driver.setPrompt(content);
             this.driver.send();
         }
     };
@@ -588,7 +604,7 @@ function PageController(message, config, i18n, util) {
     };
 
     this.handleDriverQuestion = function(index, element) {
-        this.msgClient.question(this.pageId, index, element.innerHTML);
+        this.msgClient.question(this.pageId, index, this.util.getText(element));
     };
 
     this.handleDriverModelVersionChange = function(version) {

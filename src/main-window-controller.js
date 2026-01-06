@@ -153,6 +153,19 @@ function MainWindowController(receiverId, message, config, i18n) {
             }
         });
 
+        // 回车键发送消息，Shift+回车换行
+        this.promptTextarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const prompt = this.promptTextarea.value;
+                if (prompt.trim()) {
+                    this.eventHandlers.onEvtAllPrompt(prompt);
+                    this.promptTextarea.value = '';
+                    this.promptWrapper.dataset.replicatedValue = ''; // Reset auto-grow
+                }
+            }
+        });
+
         // Close Window
         document.getElementById('main-window-close-button').addEventListener('click', () => {
             window.close();

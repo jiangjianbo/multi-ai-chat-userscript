@@ -337,9 +337,31 @@ function GenericPageDriver() {
     this.setPrompt = function(message) {
         const input = this.util.$(this.selectors.promptInput);
         if (input) {
-            input.value = message;
-            // 触发输入事件，以防页面有自己的监听器
-            input.dispatchEvent(new Event('input', { bubbles: true }));
+            const editorType = this.util.detectEditorType(input);
+
+            switch (editorType) {
+                case 'lexical':
+                    // 使用专门处理 Lexical 编辑器的方法
+                    this.util.setLexicalContent(input, message);
+                    break;
+
+                case 'contenteditable':
+                    // 对于其他 contenteditable 元素，直接设置内容
+                    input.textContent = message;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    break;
+
+                case 'input':
+                case 'textarea':
+                    // 对于普通的 input/textarea 元素
+                    input.value = message;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    break;
+
+                default:
+                    console.warn(`Unknown editor type: ${editorType}`);
+                    break;
+            }
         } else {
             console.error('Prompt input not found');
         }
@@ -348,18 +370,31 @@ function GenericPageDriver() {
     /**
      * 发送当前提示词输入框的内容
      */
-    this.send = function() {
+    this.send = async function() {
+        // 等待一小段时间，确保编辑器处理完内容
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         if (this.selectors.sendButton !== '') {
             const button = this.util.$(this.selectors.sendButton);
             if (button) {
+                console.debug('Found send button, clicking it:', button);
+                // 聚焦输入框，确保发送按钮可点击
+                const input = this.elementPromptInput();
+                if (input) {
+                    input.focus();
+                }
+                // 再次等待，确保焦点切换完成
+                await new Promise(resolve => setTimeout(resolve, 50));
                 button.click();
             } else {
-                console.error('Send button not found');
+                console.error('Send button not found with selector:', this.selectors.sendButton);
             }
         } else {
             // 直接在prompt输入框按下Enter键发送
             const input = this.elementPromptInput();
             if (input) {
+                console.debug('Using Enter key to send');
+                input.focus();
                 const enterEvent = new KeyboardEvent('keydown', {
                     bubbles: true,
                     cancelable: true,
@@ -428,10 +463,17 @@ function GenericPageDriver() {
                     const currentAnswerCount = this.elementAnswers().length;
                     if (currentAnswerCount > lastAnswerCount) {
                         mutation.addedNodes.forEach(node => {
-                            if (node.nodeType === 1 && node.matches(this.selectors.answers)) {
-                                const allAnswers = Array.from(this.util.$$(this.selectors.answers));
-                                const newAnswerIndex = allAnswers.indexOf(node);
-                                this.onAnswer(newAnswerIndex, node);
+                            if (node.nodeType === 1) {
+                                // Check if the added node or its descendants match the answer selector
+                                const matchedAnswer = node.matches && node.matches(this.selectors.answers) ? node : node.querySelector && node.querySelector(this.selectors.answers);
+
+                                if (matchedAnswer) {
+                                    const allAnswers = Array.from(this.util.$$(this.selectors.answers));
+                                    const newAnswerIndex = allAnswers.indexOf(matchedAnswer);
+                                    if (newAnswerIndex >= 0) {
+                                        this.onAnswer(newAnswerIndex, matchedAnswer);
+                                    }
+                                }
                             }
                         });
                         lastAnswerCount = currentAnswerCount;
@@ -595,7 +637,7 @@ function KimiPageDriver() {
             console.warn('KimiPageDriver not initialized. Call init() before using getters.');
         }
         return this.cachedVersions;
-    };    
+    };
 }
 //KimiPageDriver.prototype = Object.create(GenericPageDriver.prototype);
 
