@@ -241,38 +241,64 @@ function GenericPageDriver() {
     };
 
     /**
-     * 获取指定索引的回答内容（包含思考和结果）
+     * 获取指定索引的回答内容（仅结果部分，不包含思考）
      * @param {number} index - 回答索引
-     * @returns {{thinking: string, result: string}} 回答内容，thinking为思考内容HTML，result为结果内容HTML
+     * @returns 回答内容
      */
     this.getAnswer = function(index) {
+        const el = this.elementAnswerResult(index);
+        return el ? el.innerHTML.trim() : '';
+    };
+
+    /**
+     * 获取指定索引的回答完整内容（包含思考和结果）
+     * @param {number} index - 回答索引
+     * @returns 回答完整HTML内容
+     */
+    this.getAnswerFull = function(index) {
+        const el = this.elementAnswer(index);
+        return el ? el.innerHTML : '';
+    };
+
+    /**
+     * 获取指定索引的回答思考内容
+     * @param {number} index - 回答索引
+     * @returns 回答思考内容HTML
+     */
+    this.getAnswerThinking = function(index) {
         const answerEl = this.elementAnswer(index);
-        if (!answerEl) {
-            return { thinking: '', result: '' };
-        }
+        if (!answerEl) return '';
 
-        // 获取思考内容
-        let thinkingHtml = '';
-        if (this.selectors.answer_thinking) {
-            const thinkingEl = answerEl.querySelector(this.selectors.answer_thinking);
-            if (thinkingEl) {
-                thinkingHtml = thinkingEl.innerHTML.trim();
-            }
-        }
+        const thinkingEl = answerEl.querySelector(this.selectors.answer_thinking);
+        return thinkingEl ? thinkingEl.innerHTML : '';
+    };
 
-        // 获取结果内容
-        let resultHtml = '';
+    /**
+     * 获取指定索引的回答结果内容
+     * @param {number} index - 回答索引
+     * @returns 回答结果内容HTML
+     */
+    this.getAnswerResult = function(index) {
+        const answerEl = this.elementAnswer(index);
+        if (!answerEl) return '';
+
+        const resultEl = answerEl.querySelector(this.selectors.answer_result);
+        return resultEl ? resultEl.innerHTML : '';
+    };
+
+    /**
+     * 获取指定索引的回答结果元素
+     * @param {number} index - 回答索引
+     * @returns 回答结果元素
+     */
+    this.elementAnswerResult = function(index) {
+        const answerEl = this.elementAnswer(index);
+        if (!answerEl) return null;
+
         if (this.selectors.answer_result) {
-            const resultEl = answerEl.querySelector(this.selectors.answer_result);
-            if (resultEl) {
-                resultHtml = resultEl.innerHTML.trim();
-            }
-        } else {
-            // 如果没有定义answer_result选择器，使用整个回答元素
-            resultHtml = answerEl.innerHTML.trim();
+            return answerEl.querySelector(this.selectors.answer_result);
         }
-
-        return { thinking: thinkingHtml, result: resultHtml };
+        return answerEl;
     };
 
     /**
@@ -288,9 +314,10 @@ function GenericPageDriver() {
                 content: this.getQuestion(i),
                 type: 'question'
             });
+            // 使用getAnswerFull获取完整内容（包含思考和结果）
             conversations.push({
                 type: 'answer',
-                content: this.getAnswer(i)
+                content: this.getAnswerFull(i)
             });
         }
         return conversations;

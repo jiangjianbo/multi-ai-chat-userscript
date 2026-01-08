@@ -85,7 +85,7 @@ function ChatArea(mainController, id, url, container, i18n) {
                 const answerIndex = answers.indexOf(msg);
                 id = `id="answer-${data.id}-${answerIndex}"`;
             }
-            return `<div class="message-bubble ${msg.type}" ${id}><div class="bubble-content">${this.renderMessageContent(msg)}</div></div>`;
+            return `<div class="message-bubble ${msg.type}" ${id}><div class="bubble-content">${msg.content}</div></div>`;
         }).join('');
 
         const overlayHtml = this.url ? '' : `
@@ -146,68 +146,6 @@ function ChatArea(mainController, id, url, container, i18n) {
                 <button title="Send" data-lang-key="sendButtonTitle">&#10148;</button>
             </div>
         `;
-    };
-
-    /**
-     * 渲染消息内容（处理JSON格式或纯HTML格式）
-     * @param {object} msg 消息对象 {type, content}
-     * @returns {string} HTML内容
-     */
-    this.renderMessageContent = function(msg) {
-        const longThought = this.getLongThought();
-
-        if (msg.type === 'answer') {
-            // content可能是JSON格式{thinking, result}或纯HTML格式（向后兼容）
-            let answerData;
-            if (typeof msg.content === 'object' && msg.content !== null) {
-                // JSON格式 {thinking: 'xxx', result: 'xxx'}
-                answerData = msg.content;
-            } else {
-                // 纯HTML格式（向后兼容旧代码），尝试解析
-                answerData = this.parseAnswerContent(msg.content);
-            }
-
-            let html = '';
-            if (answerData.thinking && longThought) {
-                html += `
-                    <div class="answer-thinking collapsed">
-                        <div class="thinking-toggle" onclick="this.parentElement.classList.toggle('collapsed')">
-                            <span class="thinking-icon">💭</span>
-                            <span class="thinking-title">Thinking</span>
-                        </div>
-                        <div class="thinking-content">${answerData.thinking}</div>
-                    </div>
-                `;
-            }
-            html += `<div class="answer-result">${answerData.result}</div>`;
-            return html;
-        } else {
-            // question类型，直接返回content
-            return msg.content;
-        }
-    };
-
-    /**
-     * 解析纯HTML格式的回答内容（向后兼容）
-     * @param {string} content HTML内容
-     * @returns {{thinking: string, result: string}}
-     */
-    this.parseAnswerContent = function(content) {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
-
-        const thinkingElement = tempDiv.querySelector('[class*="thinking"]') ||
-                               tempDiv.querySelector('.toolcall-container') ||
-                               tempDiv.querySelector('.thinking-container');
-
-        const resultElement = tempDiv.querySelector('[class*="markdown"]') ||
-                             tempDiv.querySelector('[class*="result"]') ||
-                             tempDiv.querySelector('.markdown-container');
-
-        return {
-            thinking: thinkingElement ? thinkingElement.innerHTML : '',
-            result: resultElement ? resultElement.innerHTML : content
-        };
     };
 
     this.cacheDOMElements = function() {
@@ -661,7 +599,7 @@ function ChatArea(mainController, id, url, container, i18n) {
     /**
      * @description 更新答案内容（包含思考和结果）
      * @param {HTMLElement} answerElement - 答案元素
-     * @param {string|{thinking: string, result: string}} content - 答案内容（JSON格式或HTML）
+     * @param {string} content - 完整的答案HTML内容
      */
     this.updateAnswerContent = function(answerElement, content) {
         const bubbleContent = answerElement.querySelector('.bubble-content');
@@ -669,20 +607,24 @@ function ChatArea(mainController, id, url, container, i18n) {
 
         const longThought = this.getLongThought();
 
-        // content可能是JSON格式{thinking, result}或纯HTML格式（向后兼容）
-        let answerData;
-        if (typeof content === 'object' && content !== null) {
-            // JSON格式 {thinking: 'xxx', result: 'xxx'}
-            answerData = content;
-        } else {
-            // 纯HTML格式（向后兼容旧代码），尝试解析
-            answerData = this.parseAnswerContent(content);
-        }
+        // 创建临时容器来解析内容
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+
+        // 查找思考内容（通过 class 包含 thinking）
+        const thinkingElement = tempDiv.querySelector('[class*="thinking"]') ||
+                               tempDiv.querySelector('.toolcall-container') ||
+                               tempDiv.querySelector('.thinking-container');
+
+        // 查找结果内容（通过 class 包含 markdown 或 result）
+        const resultElement = tempDiv.querySelector('[class*="markdown"]') ||
+                             tempDiv.querySelector('[class*="result"]') ||
+                             tempDiv.querySelector('.markdown-container');
 
         // 构建新的内容结构
         let newContent = '';
 
-        if (answerData.thinking && longThought) {
+        if (thinkingElement && longThought) {
             // 有思考内容且长思考模式开启
             newContent = `
                 <div class="answer-thinking collapsed">
@@ -690,13 +632,16 @@ function ChatArea(mainController, id, url, container, i18n) {
                         <span class="thinking-icon">💭</span>
                         <span class="thinking-title">Thinking</span>
                     </div>
-                    <div class="thinking-content">${answerData.thinking}</div>
+                    <div class="thinking-content">${thinkingElement.innerHTML}</div>
                 </div>
-                <div class="answer-result">${answerData.result}</div>
+                <div class="answer-result">${resultElement ? resultElement.innerHTML : content}</div>
             `;
-        } else {
+        } else if (resultElement) {
             // 只有结果内容
-            newContent = `<div class="answer-result">${answerData.result}</div>`;
+            newContent = `<div class="answer-result">${resultElement.innerHTML}</div>`;
+        } else {
+            // 没有特殊结构，使用原始内容
+            newContent = content;
         }
 
         bubbleContent.innerHTML = newContent;
