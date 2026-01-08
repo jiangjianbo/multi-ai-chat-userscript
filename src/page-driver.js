@@ -15,6 +15,8 @@ function GenericPageDriver() {
         sendButton: 'button[type="submit"]',
         questions: '.question',
         answers: '.answer',
+        answer_thinking: '', // 每个答案的思考内容元素
+        answer_result: '', // 每个答案的最终输出结果元素
         conversationArea: '#conversation',
         chatTitle: 'h1',
         historyItems: '.history-item',
@@ -38,6 +40,8 @@ function GenericPageDriver() {
     this.optionObservers = [];
     this.newSessionButtonListener = null;
     this.providerName = null;
+    this.lastAnswerContentObserver = null;
+    this.lastAnswerDebounceTimer = null;
 
     /**
      * @description 异步初始化方法，可用于预加载或缓存元素。
@@ -237,13 +241,38 @@ function GenericPageDriver() {
     };
 
     /**
-     * 获取指定索引的回答内容
+     * 获取指定索引的回答内容（包含思考和结果）
      * @param {number} index - 回答索引
-     * @returns 回答内容
+     * @returns {{thinking: string, result: string}} 回答内容，thinking为思考内容HTML，result为结果内容HTML
      */
     this.getAnswer = function(index) {
-        const el = this.elementAnswer(index);
-        return el ? el.textContent.trim() : '';
+        const answerEl = this.elementAnswer(index);
+        if (!answerEl) {
+            return { thinking: '', result: '' };
+        }
+
+        // 获取思考内容
+        let thinkingHtml = '';
+        if (this.selectors.answer_thinking) {
+            const thinkingEl = answerEl.querySelector(this.selectors.answer_thinking);
+            if (thinkingEl) {
+                thinkingHtml = thinkingEl.innerHTML.trim();
+            }
+        }
+
+        // 获取结果内容
+        let resultHtml = '';
+        if (this.selectors.answer_result) {
+            const resultEl = answerEl.querySelector(this.selectors.answer_result);
+            if (resultEl) {
+                resultHtml = resultEl.innerHTML.trim();
+            }
+        } else {
+            // 如果没有定义answer_result选择器，使用整个回答元素
+            resultHtml = answerEl.innerHTML.trim();
+        }
+
+        return { thinking: thinkingHtml, result: resultHtml };
     };
 
     /**
@@ -462,20 +491,19 @@ function GenericPageDriver() {
                     // Monitor for new answers
                     const currentAnswerCount = this.elementAnswers().length;
                     if (currentAnswerCount > lastAnswerCount) {
-                        mutation.addedNodes.forEach(node => {
-                            if (node.nodeType === 1) {
-                                // Check if the added node or its descendants match the answer selector
-                                const matchedAnswer = node.matches && node.matches(this.selectors.answers) ? node : node.querySelector && node.querySelector(this.selectors.answers);
+                        // 获取最新的答案元素（索引为 currentAnswerCount - 1）
+                        const allAnswers = this.elementAnswers();
+                        const newAnswerIndex = currentAnswerCount - 1;
+                        const newAnswer = allAnswers[newAnswerIndex];
 
-                                if (matchedAnswer) {
-                                    const allAnswers = Array.from(this.util.$$(this.selectors.answers));
-                                    const newAnswerIndex = allAnswers.indexOf(matchedAnswer);
-                                    if (newAnswerIndex >= 0) {
-                                        this.onAnswer(newAnswerIndex, matchedAnswer);
-                                    }
-                                }
-                            }
-                        });
+                        if (newAnswer) {
+                            // 不立即触发 onAnswer，只监听内容变化
+                            // 等内容稳定后（防抖）再触发一次 onAnswer
+                            this.startMonitoringAnswerContent(newAnswer, newAnswerIndex);
+                        } else {
+                            console.error('[PageDriver] 无法获取新答案元素，索引:', newAnswerIndex, '总数:', currentAnswerCount);
+                        }
+
                         lastAnswerCount = currentAnswerCount;
                     }
                 }
@@ -544,6 +572,41 @@ function GenericPageDriver() {
         }
     };
 
+    /**
+     * @description 监听答案元素的内容变化，用于处理流式输出的AI回复。
+     * @param {HTMLElement} answerElement - 要监听的答案元素。
+     * @param {number} answerIndex - 答案的索引。
+     */
+    this.startMonitoringAnswerContent = function(answerElement, answerIndex) {
+        // 清除之前的监听器
+        if (this.lastAnswerContentObserver) {
+            this.lastAnswerContentObserver.disconnect();
+        }
+
+        this.lastAnswerContentObserver = new MutationObserver(() => {
+            // 使用防抖，避免频繁触发回调
+            if (this.lastAnswerDebounceTimer) {
+                clearTimeout(this.lastAnswerDebounceTimer);
+            }
+            this.lastAnswerDebounceTimer = setTimeout(() => {
+                // 重新获取答案元素，确保元素仍然存在
+                const currentAnswers = this.elementAnswers();
+                if (answerIndex < currentAnswers.length) {
+                    const currentAnswer = currentAnswers[answerIndex];
+                    // 触发 onAnswer 回调，传递更新后的内容
+                    this.onAnswer(answerIndex, currentAnswer);
+                }
+            }, 500); // 500ms 防抖延迟
+        });
+
+        // 监听答案元素的内容变化（子节点、文本内容等）
+        this.lastAnswerContentObserver.observe(answerElement, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
+    };
+
     this.stopMonitoring = function() {
         if (this.observer) {
             this.observer.disconnect();
@@ -552,6 +615,12 @@ function GenericPageDriver() {
             this.currentModelVersionObserver.disconnect();
         }
         this.optionObservers.forEach(observer => observer.disconnect());
+        if (this.lastAnswerContentObserver) {
+            this.lastAnswerContentObserver.disconnect();
+        }
+        if (this.lastAnswerDebounceTimer) {
+            clearTimeout(this.lastAnswerDebounceTimer);
+        }
         if (this.newSessionButtonListener && this.elementNewSessionButton()) {
             this.elementNewSessionButton().removeEventListener('click', this.newSessionButtonListener);
         }
@@ -567,6 +636,8 @@ function KimiPageDriver() {
         sendButton: 'div.chat-action > div.chat-editor > div.chat-editor-action div.send-button-container > div.send-button',
         questions: 'div.chat-content-item.chat-content-item-user div.segment-content div.segment-content-box',
         answers: 'div.chat-content-item.chat-content-item-assistant div.segment-content div.segment-content-box',
+        answer_thinking: '.toolcall-container.thinking-container, .container-block .block-item .toolcall-container',
+        answer_result: '.markdown-container',
         conversationArea: '#app div.main div.layout-content-main div.chat-content-container',
         chatTitle: '#app div.main div.layout-header header.chat-header-content h2',
         historyItems: '.sidebar div.history-part ul li',
@@ -575,7 +646,7 @@ function KimiPageDriver() {
         longThoughtOption: 'body div.toolkit-popover > div.toolkit-container div.toolkit-item:nth-child(2) > div.search-switch > label > input',
         modelVersionList: 'body div.models-popover div.models-container div.model-item div.model-name > span.name',
         currentModelVersion: '#app div.main div.chat-action > div.chat-editor > div.chat-editor-action div.current-model span.name',
-        
+
         modelVersionButton: 'div.current-model',
         optionButton: 'div.toolkit-trigger-btn'
     };

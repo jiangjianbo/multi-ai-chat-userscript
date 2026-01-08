@@ -222,6 +222,83 @@ function SyncChatWindow() {
             transform: translateY(-50%);
             pointer-events: none; /* 确保点击穿透到 model-name */
         }
+
+        /* 思考内容样式 */
+        .answer-thinking {
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            overflow: hidden;
+        }
+        .answer-thinking.collapsed .thinking-content {
+            display: none;
+        }
+        .thinking-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            user-select: none;
+            background-color: #f0f0f0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .thinking-toggle:hover {
+            background-color: #e8e8e8;
+        }
+        .thinking-icon {
+            font-size: 16px;
+        }
+        .thinking-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+        }
+        .thinking-content {
+            padding: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #555;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .answer-result {
+            line-height: 1.6;
+        }
+
+        /* 折叠按钮状态样式 */
+        /* 禁用状态 */
+        .title-button.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none; /* 禁止点击 */
+        }
+        /* 半折叠状态视觉提示（可用状态） */
+        .title-button.partial-state {
+            border: 2px solid #ffc107; /* 黄色边框表示半折叠状态 */
+            background-color: #fffbe6; /* 浅黄色背景 */
+        }
+        .title-button.partial-state:hover {
+            background-color: #ffe082; /* 鼠标悬停时深一点 */
+            border-color: #ffb300;
+        }
+
+        /* 索引 tooltip 样式 */
+        .index-tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            display: none;
+            max-width: 300px;
+        }
         `;
         return styles;
     }

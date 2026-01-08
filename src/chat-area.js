@@ -12,6 +12,9 @@ function ChatArea(mainController, id, url, container, i18n) {
     this.i18n = i18n;
     this.element = null;
     this.hideTimeout = null;
+    this.indexTooltipTimer = null;
+    this.indexTooltipElement = null;
+    this.currentHoverIndex = null;
     this.pinned = false;
     this.eventHandlers = {
         onEvtClose: (chatArea) => {},
@@ -58,21 +61,21 @@ function ChatArea(mainController, id, url, container, i18n) {
     /**
      * 渲染问答内容
      * @param {object} data 初始化渲染问答内容，结构为{id, providerName, params:{webAccess,longThought, models}, conversation:{type, content}[], pinned}
-     * @returns 
+     * @returns
      */
     this.render = function(data) {
         console.debug(`Rendering ChatArea ${data.id} with provider ${data.providerName}, data = ${JSON.stringify(data)}`);
-        
-        const providers = driverFactory.getProviders().map((m, i) => 
+
+        const providers = driverFactory.getProviders().map((m, i) =>
             `<div class="model-option" data-value="${m}">${m}</div>`
         ).join('');
-        const versions = (data.params.models || []).map((m, i) => 
+        const versions = (data.params.models || []).map((m, i) =>
             `<option>${m}</option>`
         ).join('');
 
         const answers = (data.conversation||[]).filter(msg => msg.type === 'answer');
-        
-        const indexHtml = answers.map((ans, i) => 
+
+        const indexHtml = answers.map((ans, i) =>
             `<div class="index-item"><a href="#answer-${data.id}-${i}">${i + 1}</a></div>`
         ).join('');
 
@@ -82,7 +85,7 @@ function ChatArea(mainController, id, url, container, i18n) {
                 const answerIndex = answers.indexOf(msg);
                 id = `id="answer-${data.id}-${answerIndex}"`;
             }
-            return `<div class="message-bubble ${msg.type}" ${id}><div class="bubble-content">${msg.content}</div></div>`;
+            return `<div class="message-bubble ${msg.type}" ${id}><div class="bubble-content">${this.renderMessageContent(msg)}</div></div>`;
         }).join('');
 
         const overlayHtml = this.url ? '' : `
@@ -143,6 +146,68 @@ function ChatArea(mainController, id, url, container, i18n) {
                 <button title="Send" data-lang-key="sendButtonTitle">&#10148;</button>
             </div>
         `;
+    };
+
+    /**
+     * 渲染消息内容（处理JSON格式或纯HTML格式）
+     * @param {object} msg 消息对象 {type, content}
+     * @returns {string} HTML内容
+     */
+    this.renderMessageContent = function(msg) {
+        const longThought = this.getLongThought();
+
+        if (msg.type === 'answer') {
+            // content可能是JSON格式{thinking, result}或纯HTML格式（向后兼容）
+            let answerData;
+            if (typeof msg.content === 'object' && msg.content !== null) {
+                // JSON格式 {thinking: 'xxx', result: 'xxx'}
+                answerData = msg.content;
+            } else {
+                // 纯HTML格式（向后兼容旧代码），尝试解析
+                answerData = this.parseAnswerContent(msg.content);
+            }
+
+            let html = '';
+            if (answerData.thinking && longThought) {
+                html += `
+                    <div class="answer-thinking collapsed">
+                        <div class="thinking-toggle" onclick="this.parentElement.classList.toggle('collapsed')">
+                            <span class="thinking-icon">💭</span>
+                            <span class="thinking-title">Thinking</span>
+                        </div>
+                        <div class="thinking-content">${answerData.thinking}</div>
+                    </div>
+                `;
+            }
+            html += `<div class="answer-result">${answerData.result}</div>`;
+            return html;
+        } else {
+            // question类型，直接返回content
+            return msg.content;
+        }
+    };
+
+    /**
+     * 解析纯HTML格式的回答内容（向后兼容）
+     * @param {string} content HTML内容
+     * @returns {{thinking: string, result: string}}
+     */
+    this.parseAnswerContent = function(content) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+
+        const thinkingElement = tempDiv.querySelector('[class*="thinking"]') ||
+                               tempDiv.querySelector('.toolcall-container') ||
+                               tempDiv.querySelector('.thinking-container');
+
+        const resultElement = tempDiv.querySelector('[class*="markdown"]') ||
+                             tempDiv.querySelector('[class*="result"]') ||
+                             tempDiv.querySelector('.markdown-container');
+
+        return {
+            thinking: thinkingElement ? thinkingElement.innerHTML : '',
+            result: resultElement ? resultElement.innerHTML : content
+        };
     };
 
     this.cacheDOMElements = function() {
@@ -223,15 +288,39 @@ function ChatArea(mainController, id, url, container, i18n) {
         this.element.querySelector('.expand-all').addEventListener('click', () => this.expandAll());
         this.element.querySelector('.collapse-all').addEventListener('click', () => this.collapseAll());
 
-        // 关键：索引链接点击事件处理，阻止默认跳转行为，只让对话内容区域滚动
-        this.element.querySelectorAll('.chat-area-index .index-item a').forEach(anchor => {
-            anchor.addEventListener('click', (e) => {
+        // 关键：索引链接点击事件处理（使用事件委托，支持动态添加的索引）
+        this.element.querySelector('.chat-area-index').addEventListener('click', (e) => {
+            const anchor = e.target.closest('a');
+            if (anchor) {
                 e.preventDefault();
-                const targetElement = this.element.querySelector(anchor.getAttribute('href'));
+                const targetId = anchor.getAttribute('href');
+                const targetElement = this.element.querySelector(targetId);
                 if (targetElement && this.conversationArea) {
                     this.conversationArea.scrollTop = targetElement.offsetTop - this.conversationArea.offsetTop - 20;
                 }
-            });
+            }
+        });
+
+        // 索引栏鼠标悬浮显示问题预览
+        this.element.querySelector('.chat-area-index').addEventListener('mouseenter', (e) => {
+            const indexItem = e.target.closest('.index-item');
+            if (indexItem) {
+                const anchor = indexItem.querySelector('a');
+                if (anchor) {
+                    const href = anchor.getAttribute('href');
+                    // 从 href 中提取索引（格式：#answer-{id}-{index}）
+                    const match = href.match(/#answer-.*-(\d+)$/);
+                    if (match) {
+                        const answerIndex = parseInt(match[1]);
+                        this.showIndexTooltip(indexItem, answerIndex);
+                    }
+                }
+            }
+        }, true);
+
+        // 索引栏鼠标离开隐藏 tooltip
+        this.element.querySelector('.chat-area-index').addEventListener('mouseleave', (e) => {
+            this.hideIndexTooltip();
         });
 
         this.element.querySelector('.export-button').addEventListener('click', () => {
@@ -317,9 +406,97 @@ function ChatArea(mainController, id, url, container, i18n) {
         this.modelDropdown.classList.remove('visible');
         this.paramsDropdown.classList.remove('visible');
     };
-    
-    this.expandAll = () => this.answerBubbles.forEach(b => b.classList.remove('collapsed'));
-    this.collapseAll = () => this.answerBubbles.forEach(b => b.classList.add('collapsed'));
+
+    // 折叠状态枚举
+    this.CollapseState = {
+        FULLY_COLLAPSED: 'fully_collapsed',   // 全折叠
+        PARTIAL: 'partial',                     // 半折叠/半展开（问题和答案展开，思考折叠）
+        FULLY_EXPANDED: 'fully_expanded'        // 全展开
+    };
+
+    // 当前折叠状态
+    this.collapseState = this.CollapseState.FULLY_EXPANDED;
+
+    /**
+     * @description 更新展开/折叠按钮的状态显示
+     */
+    this.updateCollapseButtons = function() {
+        const expandBtn = this.element.querySelector('.expand-all');
+        const collapseBtn = this.element.querySelector('.collapse-all');
+
+        // 移除所有状态类
+        expandBtn.classList.remove('partial-state', 'disabled');
+        collapseBtn.classList.remove('partial-state', 'disabled');
+
+        // 根据折叠状态设置按钮禁用
+        if (this.collapseState === this.CollapseState.FULLY_EXPANDED) {
+            // 全展开状态：展开按钮禁用
+            expandBtn.classList.add('disabled');
+        } else if (this.collapseState === this.CollapseState.FULLY_COLLAPSED) {
+            // 全折叠状态：折叠按钮禁用
+            collapseBtn.classList.add('disabled');
+        }
+        // 半折叠状态：两个按钮都可用，添加视觉提示
+        else if (this.collapseState === this.CollapseState.PARTIAL) {
+            expandBtn.classList.add('partial-state');
+            collapseBtn.classList.add('partial-state');
+        }
+    };
+
+    this.expandAll = function() {
+        // 全展开状态下，展开按钮禁用，不执行操作
+        if (this.collapseState === this.CollapseState.FULLY_EXPANDED) {
+            return;
+        }
+
+        const longThought = this.getLongThought();
+
+        if (!longThought) {
+            // 长思考模式关闭：从全折叠到全展开
+            this.answerBubbles.forEach(b => b.classList.remove('collapsed'));
+            this.collapseState = this.CollapseState.FULLY_EXPANDED;
+        } else {
+            // 长思考模式开启
+            if (this.collapseState === this.CollapseState.FULLY_COLLAPSED) {
+                // 从全折叠到半折叠：展开问题和答案，思考保持折叠
+                this.answerBubbles.forEach(b => b.classList.remove('collapsed'));
+                this.element.querySelectorAll('.answer-thinking').forEach(el => el.classList.add('collapsed'));
+                this.collapseState = this.CollapseState.PARTIAL;
+            } else if (this.collapseState === this.CollapseState.PARTIAL) {
+                // 从半折叠到全展开：展开思考
+                this.element.querySelectorAll('.answer-thinking').forEach(el => el.classList.remove('collapsed'));
+                this.collapseState = this.CollapseState.FULLY_EXPANDED;
+            }
+        }
+        this.updateCollapseButtons();
+    };
+
+    this.collapseAll = function() {
+        // 全折叠状态下，折叠按钮禁用，不执行操作
+        if (this.collapseState === this.CollapseState.FULLY_COLLAPSED) {
+            return;
+        }
+
+        const longThought = this.getLongThought();
+
+        if (!longThought) {
+            // 长思考模式关闭：从全展开到全折叠
+            this.answerBubbles.forEach(b => b.classList.add('collapsed'));
+            this.collapseState = this.CollapseState.FULLY_COLLAPSED;
+        } else {
+            // 长思考模式开启
+            if (this.collapseState === this.CollapseState.FULLY_EXPANDED) {
+                // 从全展开到半折叠：折叠思考
+                this.element.querySelectorAll('.answer-thinking').forEach(el => el.classList.add('collapsed'));
+                this.collapseState = this.CollapseState.PARTIAL;
+            } else if (this.collapseState === this.CollapseState.PARTIAL) {
+                // 从半折叠到全折叠：折叠问题和答案
+                this.answerBubbles.forEach(b => b.classList.add('collapsed'));
+                this.collapseState = this.CollapseState.FULLY_COLLAPSED;
+            }
+        }
+        this.updateCollapseButtons();
+    };
 
     this.showInput = function() {
         clearTimeout(this.hideTimeout);
@@ -348,9 +525,22 @@ function ChatArea(mainController, id, url, container, i18n) {
         if (!this.inputArea.contains(event.relatedTarget)) this.undockInput();
     };
 
-    this.addMessage = function(content, type) {
+    /**
+     * 添加消息
+     * @param {string} content html内容
+     * @param {string} type 取值question或answer
+     * @param {number|null} index 可选的消息索引，如果为null则自动计算
+     */
+    this.addMessage = function(content, type, index = null) {
+        // 验证索引范围
+        if (index !== null && index !== undefined) {
+            if (index < 0 || index > 1000) {
+                throw new Error(`Index ${index} out of range. Valid range is 0-1000.`);
+            }
+        }
+
         const answers = Array.from(this.answerBubbles);
-        const answerIndex = answers.length;
+        const answerIndex = index !== null && index !== undefined ? index : answers.length;
         const id = `answer-${this.id}-${answerIndex}`;
         const messageJson = {
             tag: 'div', '@class': `message-bubble ${type}`, '@id': (type === 'answer' ? id : ''),
@@ -365,6 +555,9 @@ function ChatArea(mainController, id, url, container, i18n) {
             ]};
             this.element.querySelector('.chat-area-index').appendChild(utils.toHtml(indexJson));
             this.answerBubbles = this.element.querySelectorAll('.message-bubble.answer');
+
+            // 处理思考和结果结构
+            this.updateAnswerContent(messageElement, content);
         }
     };
 
@@ -398,6 +591,28 @@ function ChatArea(mainController, id, url, container, i18n) {
 
     this.setLongThought = function(value) {
         this.element.querySelector(`#long-thought-${this.id}`).checked = value;
+
+        // 更新思考内容的显示
+        const thinkingElements = this.element.querySelectorAll('.answer-thinking');
+        if (value) {
+            // 长思考模式开启，显示思考内容（折叠状态）
+            thinkingElements.forEach(el => {
+                el.style.display = '';
+                el.classList.add('collapsed');
+            });
+            // 如果之前是全展开或全折叠，切换到半折叠
+            if (this.collapseState === this.CollapseState.FULLY_EXPANDED) {
+                this.collapseState = this.CollapseState.PARTIAL;
+            } else if (this.collapseState === this.CollapseState.FULLY_COLLAPSED) {
+                this.collapseState = this.CollapseState.PARTIAL;
+            }
+        } else {
+            // 长思考模式关闭，隐藏思考内容
+            thinkingElements.forEach(el => el.style.display = 'none');
+            // 切换到全展开状态
+            this.collapseState = this.CollapseState.FULLY_EXPANDED;
+        }
+        this.updateCollapseButtons();
     };
 
     this.updateTitle = function(title) {
@@ -420,14 +635,71 @@ function ChatArea(mainController, id, url, container, i18n) {
         this.addMessage(content, 'question');
     };
 
-    this.addAnswer = function(content) {
-        this.addMessage(content, 'answer');
+    this.addAnswer = function(content, index = null, thinking = null) {
+        this.addMessage(content, 'answer', index, thinking);
     };
 
     this.handleAnswer = function(data) {
-        if (data && data.content) {
-            this.addAnswer(data.content);
+        if (data && data.content !== undefined) {
+            const index = data.index;
+            const content = data.content;
+
+            // 检查是否已经存在该索引的答案
+            const existingAnswerId = `answer-${this.id}-${index}`;
+            const existingAnswer = this.conversationArea.querySelector(`#${existingAnswerId}`);
+
+            if (existingAnswer) {
+                // 更新已有答案的内容
+                this.updateAnswerContent(existingAnswer, content);
+            } else {
+                // 添加新答案
+                this.addAnswer(content, index);
+            }
         }
+    };
+
+    /**
+     * @description 更新答案内容（包含思考和结果）
+     * @param {HTMLElement} answerElement - 答案元素
+     * @param {string|{thinking: string, result: string}} content - 答案内容（JSON格式或HTML）
+     */
+    this.updateAnswerContent = function(answerElement, content) {
+        const bubbleContent = answerElement.querySelector('.bubble-content');
+        if (!bubbleContent) return;
+
+        const longThought = this.getLongThought();
+
+        // content可能是JSON格式{thinking, result}或纯HTML格式（向后兼容）
+        let answerData;
+        if (typeof content === 'object' && content !== null) {
+            // JSON格式 {thinking: 'xxx', result: 'xxx'}
+            answerData = content;
+        } else {
+            // 纯HTML格式（向后兼容旧代码），尝试解析
+            answerData = this.parseAnswerContent(content);
+        }
+
+        // 构建新的内容结构
+        let newContent = '';
+
+        if (answerData.thinking && longThought) {
+            // 有思考内容且长思考模式开启
+            newContent = `
+                <div class="answer-thinking collapsed">
+                    <div class="thinking-toggle" onclick="this.parentElement.classList.toggle('collapsed')">
+                        <span class="thinking-icon">💭</span>
+                        <span class="thinking-title">Thinking</span>
+                    </div>
+                    <div class="thinking-content">${answerData.thinking}</div>
+                </div>
+                <div class="answer-result">${answerData.result}</div>
+            `;
+        } else {
+            // 只有结果内容
+            newContent = `<div class="answer-result">${answerData.result}</div>`;
+        }
+
+        bubbleContent.innerHTML = newContent;
     };
 
     this.updateModelVersion = function(version) {
@@ -455,6 +727,103 @@ function ChatArea(mainController, id, url, container, i18n) {
         this.element.querySelector('.chat-area-index').innerHTML = '';
         this.answerBubbles = this.element.querySelectorAll('.message-bubble.answer');
         console.log(`ChatArea ${this.id}: Started new session.`);
+    };
+
+    /**
+     * @description 显示索引 tooltip，显示对应位置问题的前 15 个字
+     * @param {HTMLElement} indexItem - 索引元素
+     * @param {number} answerIndex - 答案索引
+     */
+    this.showIndexTooltip = function(indexItem, answerIndex) {
+        // 如果是同一个索引，直接显示，不需要等待
+        if (this.currentHoverIndex === answerIndex && this.indexTooltipElement) {
+            this.updateTooltipPosition(indexItem);
+            return;
+        }
+
+        // 清除之前的定时器
+        if (this.indexTooltipTimer) {
+            clearTimeout(this.indexTooltipTimer);
+            this.indexTooltipTimer = null;
+        }
+
+        // 如果是切换到不同的索引，立即显示
+        if (this.currentHoverIndex !== null && this.currentHoverIndex !== answerIndex) {
+            this.displayTooltip(indexItem, answerIndex);
+            this.currentHoverIndex = answerIndex;
+            return;
+        }
+
+        // 第一次悬浮，等待 2 秒后显示
+        this.indexTooltipTimer = setTimeout(() => {
+            this.displayTooltip(indexItem, answerIndex);
+            this.currentHoverIndex = answerIndex;
+        }, 2000);
+    };
+
+    /**
+     * @description 实际显示 tooltip 的方法
+     * @param {HTMLElement} indexItem - 索引元素
+     * @param {number} answerIndex - 答案索引
+     */
+    this.displayTooltip = function(indexItem, answerIndex) {
+        // 获取对应的问题元素（问题在答案之前，所以问题索引和答案索引相同）
+        const questions = this.conversationArea.querySelectorAll('.message-bubble.question');
+        const questionElement = questions[answerIndex];
+
+        if (!questionElement) return;
+
+        // 获取问题文本并截取前 15 个字
+        const questionText = questionElement.textContent.trim();
+        const previewText = questionText.length > 15 ? questionText.substring(0, 15) + '...' : questionText;
+
+        // 创建或更新 tooltip
+        if (!this.indexTooltipElement) {
+            this.indexTooltipElement = document.createElement('div');
+            this.indexTooltipElement.className = 'index-tooltip';
+            this.element.appendChild(this.indexTooltipElement);
+        }
+
+        this.indexTooltipElement.textContent = previewText;
+        this.indexTooltipElement.style.display = 'block';
+        this.updateTooltipPosition(indexItem);
+    };
+
+    /**
+     * @description 更新 tooltip 位置
+     * @param {HTMLElement} indexItem - 索引元素
+     */
+    this.updateTooltipPosition = function(indexItem) {
+        if (!this.indexTooltipElement) return;
+
+        const indexRect = indexItem.getBoundingClientRect();
+        const chatAreaRect = this.element.getBoundingClientRect();
+
+        // 计算 tooltip 相对于 chat-area-container 的位置
+        const left = indexRect.right - chatAreaRect.left + 10;
+        const top = indexRect.top - chatAreaRect.top;
+
+        this.indexTooltipElement.style.left = `${left}px`;
+        this.indexTooltipElement.style.top = `${top}px`;
+    };
+
+    /**
+     * @description 隐藏索引 tooltip
+     */
+    this.hideIndexTooltip = function() {
+        // 清除定时器
+        if (this.indexTooltipTimer) {
+            clearTimeout(this.indexTooltipTimer);
+            this.indexTooltipTimer = null;
+        }
+
+        // 隐藏 tooltip
+        if (this.indexTooltipElement) {
+            this.indexTooltipElement.style.display = 'none';
+        }
+
+        // 重置当前悬浮索引
+        this.currentHoverIndex = null;
     };
 }
 
