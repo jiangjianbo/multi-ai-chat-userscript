@@ -1,0 +1,56 @@
+{{#*inline "type-link"}}`{{#each types}}{{this}}{{#unless @last}} | {{/unless}}{{/each}}`{{/inline}}
+
+{{#*inline "param-table"}}
+{{#if params}}
+  **Parameters**
+{{#each params}}
+    - **(param)** {{name}} *{{>type-link types=type.names}}*{{#if defaultvalue}} = `{{defaultvalue}}`{{/if}} - {{description}}
+{{/each}}
+{{/if}}
+{{/inline}}
+
+{{#*inline "returns-block"}}
+{{#if returns}}
+  **Returns**
+{{#each returns}}
+    - *{{>type-link types=type.names}}* - {{description}}
+{{/each}}
+{{/if}}
+{{/inline}}
+
+{{#*inline "properties-block"}}
+{{#if properties}}
+  **Properties**
+
+{{#each properties}}
+    - **{{name}}** *{{>type-link types=type.names}}*{{#if defaultvalue}} = `{{defaultvalue}}`{{/if}} - {{description}}
+{{/each}}
+
+{{/if}}
+{{/inline}}
+
+{{#each this}}
+  {{#if (eq kind "class")}}
+    {{#with this as |classDoc|}}
+### {{classDoc.name}}
+{{#if classDoc.description}}{{classDoc.description}}{{/if}}
+
+    {{#each (filter ../this kind="constructor" memberof=classDoc.name)}}
+      {{>param-table params=params}}
+    {{/each}}
+
+    {{#with (filter ../this kind="member" memberof=classDoc.name) as |properties|}}
+    {{>properties-block properties=properties}}
+    {{/with}}
+
+      **Methods**
+
+    {{#each (filter ../this kind="function" memberof=classDoc.name)}}
+        - **{{name}}()**{{#if description}} - {{description}}{{/if}}
+    {{>param-table params=params}}
+    {{>returns-block returns=returns}}
+    {{/each}}
+
+    {{/with}}
+  {{/if}}
+{{/each}}
