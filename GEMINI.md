@@ -57,6 +57,7 @@
 ### 语言特定规范
 
 **JavaScript (Userscript)**
+
 ```javascript 
 /**
  * @description 描述这个类的作用
@@ -106,6 +107,7 @@ function MyClass(args) {
 - `tests/`: 存放jest测试用例的代码
 - `userscript.meta.js`: 油猴脚本的元数据，定义了脚本名称、匹配的网址、权限等。
 - `prompt.md`: 存放值得记录的对话历史，主要是用户侧的输入文字，便于复盘。
+- `dist/jsdoc/`：对应每个`src`下的源代码的类定义，如果需要知道一个类的功能接口，优先检查这里的文档，只有文档不存在的时候才去阅读源码
 
 ## 忽略文件
 - `node_modules/`

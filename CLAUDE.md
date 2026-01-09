@@ -170,6 +170,7 @@ function MyClass(args) {
 - `src/main-window-initializer.js`: 主窗口js代码构造器，编译时候会单独编译到输出文件中，然后输出文件内容替换到主窗口html的标记位置，让主窗口可以以独立和无依赖的方式运行脚本
 - `src/chat-area.js`: 单个 AI 对话面板
 - `src/page-driver.js`: 页面驱动基类
+- `src/*-page-driver.js`: 针对特定AI提供商的页面驱动基类
 - `src/driver-factory.js`: AI 提供商驱动映射工厂
 - `src/message.js`: 消息通信基类
 - `src/message-client.js`: 语义化消息客户端
@@ -192,6 +193,7 @@ function MyClass(args) {
 - `GEMINI.md`: AI 助手配置和开发规范
 - `userscript.meta.js`: Tampermonkey 元数据
 - `research/`: 各种技术预研、仿真等相关的文件，研究成果可以平滑迁移到正式代码中
+- `dist/jsdoc/`：对应每个`src`下的源代码的类定义，如果需要知道一个类的功能接口，优先检查这里的文档，只有文档不存在的时候才去阅读源码
 
 ## localStorage
 

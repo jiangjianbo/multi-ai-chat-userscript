@@ -61,7 +61,7 @@ function ChatArea(mainController, id, url, container, i18n) {
     /**
      * 渲染问答内容
      * @param {object} data 初始化渲染问答内容，结构为{id, providerName, params:{webAccess,longThought, models}, conversation:{type, content}[], pinned}
-     * @returns
+     * @returns {string} 渲染好的HTML字符串
      */
     this.render = function(data) {
         console.debug(`Rendering ChatArea ${data.id} with provider ${data.providerName}, data = ${JSON.stringify(data)}`);

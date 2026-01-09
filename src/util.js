@@ -295,7 +295,7 @@ function Util() {
     /**
      * 将特殊字符转换为 HTML 实体，防止 XSS 攻击
      * @param {string} unsafe 呆html的字符串
-     * @returns 
+     * @returns {string} 转义后的HTML字符串
      */
     this.escapeHtml = function(unsafe) {
         return unsafe
@@ -389,7 +389,7 @@ function Util() {
 
     /**
      * 返回依赖库的源代码
-     * @returns 返回依赖库的源代码
+     * @returns {string} 返回依赖库的源代码
      */
     this.safeString = function(str) {
         return str

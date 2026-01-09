@@ -303,7 +303,7 @@ function GenericPageDriver() {
 
     /**
      * 获取当前的所有对话内容
-     * @returns 对话内容数组[{type, content}]
+     * @returns {Array<{type: string, content: string}>} 对话内容数组
      */
     this.getConversations = function(){
         const conversations = [];
