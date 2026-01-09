@@ -1,22 +1,26 @@
 
 /**
  * @description 封装 BroadcastChannel 实现跨窗口通信。
- * @param {string} channelName - 通信频道的名称。
  */
-function Message(channelName) {
-    if (!channelName) {
-        throw new Error('channelName is required for Message module.');
+class Message {
+    /**
+     * @param {string} channelName - 通信频道的名称。
+     */
+    constructor(channelName) {
+        if (!channelName) {
+            throw new Error('channelName is required for Message module.');
+        }
+        this.channel = new BroadcastChannel(channelName);
+        this.listeners = new Map(); // Map<receiverId, Map<type, Set<function>>>
     }
-    this.channel = new BroadcastChannel(channelName);
-    this.listeners = new Map(); // Map<receiverId, Map<type, Set<function>>>
 
     /**
      * @description 处理来自 BroadcastChannel 的消息。
      * @param {MessageEvent} event - 消息事件。
      */
-    this.handleMessage = function(event) {
+    handleMessage(event) {
         console.debug(`receive message ${JSON.stringify(event?.data)}`);
-        
+
         const { type, data } = event.data;
         if (!type) return;
 
@@ -51,18 +55,14 @@ function Message(channelName) {
                 }
             });
         }
-    };
-
-    // 绑定 handleMessage 的 this 上下文
-    this.handleMessage = this.handleMessage.bind(this);
-    this.channel.addEventListener('message', this.handleMessage);
+    }
 
     /**
      * @description 广播消息。
      * @param {string} type - 消息类型 (e.g., 'chat', 'create')。
      * @param {object} data - 附带的数据。
      */
-    this.send = function(type, data) {
+    send(type, data) {
         try {
             console.debug(`send type = ${type}, data = ${JSON.stringify(data)}`);
 
@@ -70,14 +70,14 @@ function Message(channelName) {
         } catch (e) {
             console.error(`Error posting message: ${e}`);
         }
-    };
+    }
 
     /**
      * @description 注册一个监听器对象。
      * @param {string} receiverId - 对象的接收id。
      * @param {object} listener - 包含 onMsg* 方法的对象。
      */
-    this.register = function(receiverId, listener) {
+    register(receiverId, listener) {
         if (!receiverId || !listener) {
             console.warn('Message.register: receiverId and listener are required.');
             return;
@@ -97,26 +97,26 @@ function Message(channelName) {
                 receiverListeners.get(type).add(listener[methodName].bind(listener)); // Bind to listener instance
             }
         }
-    };
+    }
 
     /**
      * @description 注销一个监听器对象。
      * @param {string} receiverId - 对象的接收id。
      */
-    this.unregister = function(receiverId) {
+    unregister(receiverId) {
         if (receiverId) {
             this.listeners.delete(receiverId);
         }
-    };
+    }
 
     /**
      * @description 关闭并清理通信频道。
      */
-    this.close = function() {
+    close() {
         this.channel.removeEventListener('message', this.handleMessage);
         this.channel.close();
         this.listeners.clear();
-    };
+    }
 }
 
 module.exports = Message;

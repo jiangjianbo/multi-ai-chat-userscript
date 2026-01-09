@@ -8,29 +8,31 @@ const ChatArea = require('./chat-area')
 const MainWindowController = require('./main-window-controller')
 const resources = require('./lang');
 
-function MainWindowInitializer() {
-    console.log("Main window initializer loading ...");
+class MainWindowInitializer {
+    constructor() {
+        console.log("Main window initializer loading ...");
 
-    // 加入错误处理
-    window.onerror = function (msg, src, line, col, err) {
-        console.error('Global error caught:\\n' + (err && err.stack || msg));
-        return true;   // 阻止默认处理
-    };
-    window.addEventListener('unhandledrejection', e => {
-        console.error('Unhandled rejection:\\n' + e.reason);
-    });
+        // 加入错误处理
+        window.onerror = (msg, src, line, col, err) => {
+            console.error('Global error caught:\\n' + (err && err.stack || msg));
+            return true;   // 阻止默认处理
+        };
+        window.addEventListener('unhandledrejection', e => {
+            console.error('Unhandled rejection:\\n' + e.reason);
+        });
 
-    const util = new Util(); 
-    const storage = new Storage();
-    const defaultConfig = { channelName: 'multi-ai-chat' };
-    const config = new Config(storage, defaultConfig);
-    const i18n = new I18n(config, resources);
-    const message = new Message(config.get('channelName'));
+        this.util = new Util();
+        this.storage = new Storage();
+        this.defaultConfig = { channelName: 'multi-ai-chat' };
+        this.config = new Config(this.storage, this.defaultConfig);
+        this.i18n = new I18n(this.config, resources);
+        this.message = new Message(this.config.get('channelName'));
 
-    const mainWindowController = new MainWindowController(window.mainWindowName, message, config, i18n);
-    mainWindowController.init();
+        this.mainWindowController = new MainWindowController(window.mainWindowName, this.message, this.config, this.i18n);
+        this.mainWindowController.init();
 
-    console.log("Main window initializer loaded.");
+        console.log("Main window initializer loaded.");
+    }
 }
 
-MainWindowInitializer();
+new MainWindowInitializer();

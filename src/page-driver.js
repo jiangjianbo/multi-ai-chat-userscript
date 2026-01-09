@@ -7,55 +7,58 @@ const Util = require('./util');
  * @property {function} onChatTitle - 回调函数，当会话标题更改时调用。
  * @property {function} onOption - 回调函数，当选项更改时调用。
  */
-function GenericPageDriver() {
-    this.util = new Util();
+class GenericPageDriver {
 
-    this.selectors = {
-        promptInput: 'textarea',
-        sendButton: 'button[type="submit"]',
-        questions: '.question',
-        answers: '.answer',
-        answer_thinking: '', // 每个答案的思考内容元素
-        answer_result: '', // 每个答案的最终输出结果元素
-        conversationArea: '#conversation',
-        chatTitle: 'h1',
-        historyItems: '.history-item',
-        answerCollapsedClass: 'collapsed',
-        newSessionButton: 'button.new-session',
-        webAccessOption: 'input#web-access',
-        longThoughtOption: 'input#long-thought',
-        modelVersionList: 'select.model-version',
-        currentModelVersion: 'span.current-model'
-    }; // 应由具体驱动覆盖
-    this.onAnswer = (index, element) => {};
-    this.onChatTitle = (title) => {};
-    this.onOption = (key, value) => {};
-    this.onQuestion = (index, element) => {};
-    this.onModelVersionChange = (version) => {};
-    this.onNewSession = () => {};
+    constructor() {
+        this.util = new Util();
 
-    this.className = this.util.getFunctionName(this);
-    this.observer = null;
-    this.currentModelVersionObserver = null;
-    this.optionObservers = [];
-    this.newSessionButtonListener = null;
-    this.providerName = null;
-    this.lastAnswerContentObserver = null;
-    this.lastAnswerDebounceTimer = null;
+        this.selectors = {
+            promptInput: 'textarea',
+            sendButton: 'button[type="submit"]',
+            questions: '.question',
+            answers: '.answer',
+            answer_thinking: '', // 每个答案的思考内容元素
+            answer_result: '', // 每个答案的最终输出结果元素
+            conversationArea: '#conversation',
+            chatTitle: 'h1',
+            historyItems: '.history-item',
+            answerCollapsedClass: 'collapsed',
+            newSessionButton: 'button.new-session',
+            webAccessOption: 'input#web-access',
+            longThoughtOption: 'input#long-thought',
+            modelVersionList: 'select.model-version',
+            currentModelVersion: 'span.current-model'
+        }; // 应由具体驱动覆盖
+        this.onAnswer = (index, element) => {};
+        this.onChatTitle = (title) => {};
+        this.onOption = (key, value) => {};
+        this.onQuestion = (index, element) => {};
+        this.onModelVersionChange = (version) => {};
+        this.onNewSession = () => {};
+
+        this.className = this.util.getFunctionName(this);
+        this.observer = null;
+        this.currentModelVersionObserver = null;
+        this.optionObservers = [];
+        this.newSessionButtonListener = null;
+        this.providerName = null;
+        this.lastAnswerContentObserver = null;
+        this.lastAnswerDebounceTimer = null;
+    }
 
     /**
      * @description 异步初始化方法，可用于预加载或缓存元素。
      */
-    this.init = async function() {
+    async init() {
         // Base implementation is empty. Should be overridden by specific drivers if needed.
-    };
+    }
 
     /**
      * 返回当前驱动的提供商代号
      */
-    this.getProviderName = function() {
+    getProviderName() {
         return this.providerName;
-    },
+    }
 
     // --- DOM Element Accessors ---
 
@@ -63,132 +66,132 @@ function GenericPageDriver() {
      * 获取提示输入框对应的元素。
      * @returns {HTMLElement|null}  提示输入框元素。
      */
-    this.elementPromptInput = function() {
+    elementPromptInput() {
         return this.util.$(this.selectors.promptInput);
-    };
+    }
 
     /**
      * 获取发送按钮对应的元素。
      * @returns {HTMLElement|null} 发送按钮元素。
      */
-    this.elementSendButton = function() {
+    elementSendButton() {
         return this.util.$(this.selectors.sendButton);
-    };
+    }
 
     /**
      * 获取对话区域对应的元素
      * @returns {HTMLElement|null} 对话区域元素。
      */
-    this.elementConversationArea = function() {
+    elementConversationArea() {
         return this.util.$(this.selectors.conversationArea);
-    };
+    }
 
     /**
      * 获取历史记录区域对应的元素
      * @returns {HTMLElement|null} 历史记录区域元素。
      */
-    this.elementHistoryArea = function() {
+    elementHistoryArea() {
         return this.util.$(this.selectors.historyArea);
-    };
+    }
 
     /**
      * 获取所用户所问问题元素列表。 
      * @returns {NodeListOf<HTMLElement>} 用户问题元素列表。
      */
-    this.elementQuestions = function() {
+    elementQuestions() {
         return this.util.$$(this.selectors.questions);
-    };
+    }
 
     /**
      * 获取回答元素列表。
      * @returns {NodeListOf<HTMLElement>} 回答元素列表。
      */
-    this.elementAnswers = function() {
+    elementAnswers() {
         return this.util.$$(this.selectors.answers);
-    };
+    }
 
     /**
      * 获取历史记录项元素列表。
      * @returns {NodeListOf<HTMLElement>} 历史记录项元素列表。
      */
-    this.elementHistoryItems = function() {
+    elementHistoryItems() {
         return this.util.$$(this.selectors.historyItems);
-    };
+    }
 
     /**
      * 获取指定索引的问题元素。
      * @param {Int} index - 问题的索引下标
      * @returns 问题元素
      */
-    this.elementQuestion = function(index) {
+    elementQuestion(index) {
         return this.elementQuestions()[index] || null;
-    };
+    }
 
     /**
      * 获取指定索引的回答元素。
      * @param {Int} index - 回答的索引下标 
      * @returns 回答元素
      */
-    this.elementAnswer = function(index) {
+    elementAnswer(index) {
         return this.elementAnswers()[index] || null;
-    };
+    }
 
     /**
      * 获取会话标题元素。
      * @returns {HTMLElement|null} 会话标题元素。
      */
-    this.elementChatTitle = function() {
+    elementChatTitle() {
         return this.util.$(this.selectors.chatTitle);
-    };
+    }
 
     /**
      * 获取指定索引的历史记录项元素。
      * @param {Int} index - 历史记录项的索引下标 
      * @returns 历史记录项元素
      */
-    this.elementHistoryItem = function(index) {
+    elementHistoryItem(index) {
         return this.elementHistoryItems()[index] || null;
-    };
+    }
 
     /**
      * 获取新会话按钮元素。
      * @returns {HTMLElement|null} 新会话按钮元素。
      */
-    this.elementNewSessionButton = function() {
+    elementNewSessionButton() {
         return this.util.$(this.selectors.newSessionButton);
-    };
+    }
 
     /**
      * 获取网页访问选项元素。
      * @returns {HTMLElement|null} 网页访问选项元素。
      */
-    this.elementWebAccessOption = function() {
+    elementWebAccessOption() {
         return this.util.$(this.selectors.webAccessOption);
-    };
+    }
 
     /**
      * 获取长思选项元素。
      * @returns {HTMLElement|null} 长思选项元素。
      */
-    this.elementLongThoughtOption = function() {
+    elementLongThoughtOption() {
         return this.util.$(this.selectors.longThoughtOption);
-    };
+    }
 
     /**
      * 获取模型版本列表元素。
      * @returns {HTMLElement|null} 模型版本列表元素。
      */
-    this.elementModelVersionList = function() {
+    elementModelVersionList() {
         return this.util.$(this.selectors.modelVersionList);
-    };
+    }
 
     /**
      * 获取当前模型版本元素。
      * @returns {HTMLElement|null} 当前模型版本元素。
      */
-    this.elementCurrentModelVersion = function() {
+    elementCurrentModelVersion() {
         return this.util.$(this.selectors.currentModelVersion);
-    };
+    }
 
     // --- DOM Data Getters ---
 
@@ -196,32 +199,32 @@ function GenericPageDriver() {
      * 获取提示词输入框中的文字
      * @returns {string} 提示输入框元素。
      */
-    this.getPromptInput = function() {
+    getPromptInput() {
         return this.util.getText(this.elementPromptInput());
-    };
+    }
 
     /**
      * 获取会话轮数
      * @returns {number} 会话轮数
      */
-    this.getConversationCount = function() {
+    getConversationCount() {
         return this.elementQuestions().length;
-    };
+    }
 
     /**
      * 获取历史记录数量
      * @returns {number} 历史记录数量
      */
-    this.getHistoryCount = function() {
+    getHistoryCount() {
         return this.elementHistoryItems().length;
-    };
+    }
 
     /**
      * 获取指定索引的历史记录项数据
      * @param {number} index - 历史记录索引
      * @returns 历史纪录项数据
      */
-    this.getHistory = function(index) {
+    getHistory(index) {
         const el = this.elementHistoryItem(index);
         if (!el) return null;
         return {
@@ -235,63 +238,63 @@ function GenericPageDriver() {
      * @param {number} index - 问题索引
      * @returns 问题内容
      */
-    this.getQuestion = function(index) {
+    getQuestion(index) {
         const el = this.elementQuestion(index);
         return el ? el.textContent.trim() : '';
-    };
+    }
 
     /**
      * 获取指定索引的回答内容（仅结果部分，不包含思考）
      * @param {number} index - 回答索引
      * @returns 回答内容
      */
-    this.getAnswer = function(index) {
+    getAnswer(index) {
         const el = this.elementAnswerResult(index);
         return el ? el.innerHTML.trim() : '';
-    };
+    }
 
     /**
      * 获取指定索引的回答完整内容（包含思考和结果）
      * @param {number} index - 回答索引
      * @returns 回答完整HTML内容
      */
-    this.getAnswerFull = function(index) {
+    getAnswerFull(index) {
         const el = this.elementAnswer(index);
         return el ? el.innerHTML : '';
-    };
+    }
 
     /**
      * 获取指定索引的回答思考内容
      * @param {number} index - 回答索引
      * @returns 回答思考内容HTML
      */
-    this.getAnswerThinking = function(index) {
+    getAnswerThinking(index) {
         const answerEl = this.elementAnswer(index);
         if (!answerEl) return '';
 
         const thinkingEl = answerEl.querySelector(this.selectors.answer_thinking);
         return thinkingEl ? thinkingEl.innerHTML : '';
-    };
+    }
 
     /**
      * 获取指定索引的回答结果内容
      * @param {number} index - 回答索引
      * @returns 回答结果内容HTML
      */
-    this.getAnswerResult = function(index) {
+    getAnswerResult(index) {
         const answerEl = this.elementAnswer(index);
         if (!answerEl) return '';
 
         const resultEl = answerEl.querySelector(this.selectors.answer_result);
         return resultEl ? resultEl.innerHTML : '';
-    };
+    }
 
     /**
      * 获取指定索引的回答结果元素
      * @param {number} index - 回答索引
      * @returns 回答结果元素
      */
-    this.elementAnswerResult = function(index) {
+    elementAnswerResult(index) {
         const answerEl = this.elementAnswer(index);
         if (!answerEl) return null;
 
@@ -299,13 +302,13 @@ function GenericPageDriver() {
             return answerEl.querySelector(this.selectors.answer_result);
         }
         return answerEl;
-    };
+    }
 
     /**
      * 获取当前的所有对话内容
      * @returns {Array<{type: string, content: string}>} 对话内容数组
      */
-    this.getConversations = function(){
+    getConversations(){
         const conversations = [];
         const count = this.getConversationCount();
 
@@ -321,68 +324,68 @@ function GenericPageDriver() {
             });
         }
         return conversations;
-    },
+    }
 
     /**
      * 获取网页访问选项状态
      * @returns {boolean|null} 网页访问选项状态
      */
-    this.getWebAccessOption = function() {
+    getWebAccessOption() {
         const el = this.elementWebAccessOption();
         return this.util.getBoolean(el)
-    };
+    }
 
     /**
      * 获取长思考选项值
      * @returns {boolean|null} 长思选项状态
      */
-    this.getLongThoughtOption = function() {
+    getLongThoughtOption() {
         const el = this.elementLongThoughtOption();
         return this.util.getBoolean(el)
-    };
+    }
 
     /**
      * 获取模型版本列表
      * @returns {Array<string>} 模型版本列表
      */
-    this.getModelVersionList = function() {
+    getModelVersionList() {
         return Array.from(this.elementModelVersionList(), node => node.textContent);
-    };
+    }
 
     /**
      * 获取当前模型版本
      * @returns {string} 当前模型版本
      */
-    this.getCurrentModelVersion = function() {
+    getCurrentModelVersion() {
         return this.util.getText(this.elementCurrentModelVersion());
-    };
+    }
 
     /**
      * 获取会话标题
      * @returns {string} 会话标题
      */
-    this.getChatTitle = function() {
+    getChatTitle() {
         const el = this.elementChatTitle();
         return this.util.getText(el, '');
-    };
+    }
 
     /**
      * 获取所有选项的键值对
      * @returns {object} 选项键值对
      */
-    this.getOptions = function() {
+    getOptions() {
         // 此方法需要具体驱动实现复杂的逻辑
         return {
             webAccess: this.getWebAccessOption(),
             longThought: this.getLongThoughtOption()
         };
-    };
+    }
 
-    this.getAnswerStatus = function(index) {
+    getAnswerStatus(index) {
         // 假设折叠状态由一个特定的 class 或 attribute 表示
         const answer = this.elementAnswer(index);
         return answer ? answer.classList.contains(this.selectors.answerCollapsedClass) : false;
-    };
+    }
 
     // --- DOM 操作方法 ---
 
@@ -390,7 +393,7 @@ function GenericPageDriver() {
      * 填充消息到提示词输入框
      * @param {string} message 要发送的消息
      */
-    this.setPrompt = function(message) {
+    setPrompt(message) {
         const input = this.util.$(this.selectors.promptInput);
         if (input) {
             const editorType = this.util.detectEditorType(input);
@@ -421,12 +424,12 @@ function GenericPageDriver() {
         } else {
             console.error('Prompt input not found');
         }
-    };
+    }
 
     /**
      * 发送当前提示词输入框的内容
      */
-    this.send = async function() {
+    async send() {
         // 等待一小段时间，确保编辑器处理完内容
         await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -463,17 +466,17 @@ function GenericPageDriver() {
                 console.error('Prompt input not found for Enter key simulation.');
             }
         }
-    };
+    }
 
-    this.addAttachment = function(file) {
+    addAttachment(file) {
         console.warn('addAttachment() is not implemented. This may be restricted by browser security.');
-    };
+    }
 
-    this.setOption = function(key, value) {
+    setOption(key, value) {
         console.warn('setOption() is not implemented in the generic driver.');
-    };
+    }
 
-    this.setAnswerStatus = function(index, collapsed) {
+    setAnswerStatus(index, collapsed) {
         const answer = this.elementAnswer(index);
         if (!answer || !this.selectors.answerCollapsedClass) return;
         if (collapsed) {
@@ -481,19 +484,19 @@ function GenericPageDriver() {
         } else {
             answer.classList.remove(this.selectors.answerCollapsedClass);
         }
-    };
+    }
 
-    this.setModelVersion = function(version) {
+    setModelVersion(version) {
         console.warn(`setModelVersion() is not implemented in the generic driver. Attempted to set version: ${version}`);
-    };
+    }
 
-    this.newSession = function() {
+    newSession() {
         console.warn('newSession() is not implemented in the generic driver.');
-    };
+    }
 
     // --- 事件监控 ---
 
-    this.startMonitoring = async function() {
+    async startMonitoring() {
         let lastQuestionCount = this.getConversationCount();
         let lastAnswerCount = this.elementAnswers().length;
         let lastChatTitle = this.getChatTitle();
@@ -597,14 +600,14 @@ function GenericPageDriver() {
             this.newSessionButtonListener = () => this.onNewSession();
             newSessionButton.addEventListener('click', this.newSessionButtonListener);
         }
-    };
+    }
 
     /**
      * @description 监听答案元素的内容变化，用于处理流式输出的AI回复。
      * @param {HTMLElement} answerElement - 要监听的答案元素。
      * @param {number} answerIndex - 答案的索引。
      */
-    this.startMonitoringAnswerContent = function(answerElement, answerIndex) {
+    startMonitoringAnswerContent(answerElement, answerIndex) {
         // 清除之前的监听器
         if (this.lastAnswerContentObserver) {
             this.lastAnswerContentObserver.disconnect();
@@ -632,9 +635,9 @@ function GenericPageDriver() {
             subtree: true,
             characterData: true
         });
-    };
+    }
 
-    this.stopMonitoring = function() {
+    stopMonitoring() {
         if (this.observer) {
             this.observer.disconnect();
         }
@@ -651,136 +654,9 @@ function GenericPageDriver() {
         if (this.newSessionButtonListener && this.elementNewSessionButton()) {
             this.elementNewSessionButton().removeEventListener('click', this.newSessionButtonListener);
         }
-    };
+    }
 }
-// --- 具体驱动实现 ---
-
-function KimiPageDriver() {
-    GenericPageDriver.call(this);
-    const kimiSelectors = {
-        // ... Kimi.ai 对应的选择器 (占位)
-        promptInput: 'div.chat-action > div.chat-editor > div.chat-input div.chat-input-editor',
-        sendButton: 'div.chat-action > div.chat-editor > div.chat-editor-action div.send-button-container > div.send-button',
-        questions: 'div.chat-content-item.chat-content-item-user div.segment-content div.segment-content-box',
-        answers: 'div.chat-content-item.chat-content-item-assistant div.segment-content div.segment-content-box',
-        answer_thinking: '.toolcall-container.thinking-container, .container-block .block-item .toolcall-container',
-        answer_result: '.markdown-container',
-        conversationArea: '#app div.main div.layout-content-main div.chat-content-container',
-        chatTitle: '#app div.main div.layout-header header.chat-header-content h2',
-        historyItems: '.sidebar div.history-part ul li',
-        newSessionButton: '#app aside div.sidebar-nav a.new-chat-btn',
-        webAccessOption: 'body div.toolkit-popover > div.toolkit-container div.toolkit-item:nth-child(1) > div.search-switch > label > input',
-        longThoughtOption: 'body div.toolkit-popover > div.toolkit-container div.toolkit-item:nth-child(2) > div.search-switch > label > input',
-        modelVersionList: 'body div.models-popover div.models-container div.model-item div.model-name > span.name',
-        currentModelVersion: '#app div.main div.chat-action > div.chat-editor > div.chat-editor-action div.current-model span.name',
-
-        modelVersionButton: 'div.current-model',
-        optionButton: 'div.toolkit-trigger-btn'
-    };
-    this.selectors = Object.assign({}, this.selectors, kimiSelectors);
-    
-    this.optionButton = this.util.$(this.selectors.optionButton);
-    this.modelVersionButton = this.util.$(this.selectors.modelVersionButton);
-
-    this.cachedWebAccess = null;
-    this.cachedLongThought = null;
-    this.cachedVersions = null;
-
-    this.providerName = 'Kimi';
-
-    /**
-     * @description Initializes the Kimi driver by performing async operations to cache elements.
-     */
-    this.init = async function() {
-        // Initial caching for WebAccess and LongThought options
-        if (this.optionButton) {
-            await this.util.clickAndGet(this.optionButton, () => {
-                this.cachedWebAccess = this.util.getBoolean(this.util.$(this.selectors.webAccessOption));
-                this.cachedLongThought = this.util.getBoolean(this.util.$(this.selectors.longThoughtOption));
-            });
-
-            // Add event listener to refresh cache on subsequent clicks
-            this.optionButton.addEventListener('click', async () => {
-                // A short delay to allow the popover to open
-                await new Promise(resolve => setTimeout(resolve, 200));
-                this.cachedWebAccess = this.util.getBoolean(this.util.$(this.selectors.webAccessOption));
-                this.cachedLongThought = this.util.getBoolean(this.util.$(this.selectors.longThoughtOption));
-            });
-        }
-
-        // Initial caching for Model Versions
-        if (this.modelVersionButton) {
-            await this.util.clickAndGet(this.modelVersionButton, () => {
-                this.cachedVersions = Array.from(this.util.$(this.selectors.modelVersionList), node => node.textContent);
-            });
-        }
-    };
-
-    this.getWebAccessOption = function() {
-        if (this.cachedWebAccess === null) {
-            console.warn('KimiPageDriver not initialized. Call init() before using getters.');
-        }
-        return this.cachedWebAccess;
-    };
-
-    this.getLongThoughtOption = function() {
-        if (this.cachedLongThought === null) {
-            console.warn('KimiPageDriver not initialized. Call init() before using getters.');
-        }
-        return this.cachedLongThought;
-    };
-
-    this.getModelVersionList = function() {
-        if (this.cachedVersions === null) {
-            console.warn('KimiPageDriver not initialized. Call init() before using getters.');
-        }
-        return this.cachedVersions;
-    };
-}
-//KimiPageDriver.prototype = Object.create(GenericPageDriver.prototype);
-
-function GeminiPageDriver() {
-    GenericPageDriver.call(this);
-    const geminiSelectors = {
-        // ... Gemini 对应的选择器 (占位)
-        promptInput: 'input-container div.input-area rich-textarea',
-        sendButton: '',
-        questions: 'div#chat-history div.conversation-container div.query-content',
-        answers: 'div#chat-history div.response-content message-content',
-        conversationArea: 'div#chat-history',
-        chatTitle: '',
-        historyItems: 'div.conversation-title',
-        newSessionButton: 'side-nav-action-button button',
-        webAccessOption: '',
-        longThoughtOption: '',
-        modelVersionList: 'div.mat-mdc-menu-panel div.mat-mdc-menu-content > button.mat-mdc-menu-item span.mat-mdc-menu-item-text div.title-and-description > span.mode-desc.gds-label-m-alt',
-        currentModelVersion: 'bard-mode-switcher button.mdc-button > span.mdc-button__label > div > span',
-
-        modelVersionButton: 'bard-mode-switcher button.mdc-button',
-        optionButton: '' //'toolbox-drawer div.toolbox-drawer-button-container button'
-    };
-    this.selectors = Object.assign({}, this.selectors, geminiSelectors);
-
-    this.providerName = 'Gemini';
-}
-//GeminiPageDriver.prototype = Object.create(GenericPageDriver.prototype);
-
-function ChatGPTPageDriver() {
-    GenericPageDriver.call(this);
-    const chatGPTSelectors = {
-        // ... ChatGPT 对应的选择器 (占位)
-    };
-    this.selectors = Object.assign({}, this.selectors, chatGPTSelectors);
-    this.providerName = 'ChatGPT';
-}
-//ChatGPTPageDriver.prototype = Object.create(GenericPageDriver.prototype);
-
-
-// --- 驱动工厂 ---
 
 module.exports = {
-    GenericPageDriver,
-    KimiPageDriver,
-    GeminiPageDriver,
-    ChatGPTPageDriver
+    GenericPageDriver
 };

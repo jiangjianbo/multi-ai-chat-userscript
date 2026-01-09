@@ -10,26 +10,28 @@ const MessageClient = require('./message-client');
  * @param {I18n} i18n
  * @param {Util} util
  */
-function PageController(message, config, i18n, util) {
-    const driverFactory = new DriverFactory();
+class PageController {
+    constructor(message, config, i18n, util) {
+        this.driverFactory = new DriverFactory();
 
-    this.message = message;
-    this.msgClient = new MessageClient(message);
-    this.config = config;
-    this.i18n = i18n;
-    this.util = util;
+        this.message = message;
+        this.msgClient = new MessageClient(message);
+        this.config = config;
+        this.i18n = i18n;
+        this.util = util;
 
-    this.driver = null;
-    this.syncChatWindow = null;
-    // 为每个页面实例生成一个唯一的ID
-    this.pageId = 'page-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+        this.driver = null;
+        this.syncChatWindow = null;
+        // 为每个页面实例生成一个唯一的ID
+        this.pageId = 'page-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+    }
 
     /**
      * @description 初始化，注入UI，选择驱动。
      */
-    this.init = async function() {
+    async init() {
         const hostname = window.location.hostname;
-        this.driver = driverFactory.createDriver(hostname);
+        this.driver = this.driverFactory.createDriver(hostname);
         const initialized = this.driver.init();
         
         this.syncChatWindow = new SyncChatWindow();
@@ -50,9 +52,9 @@ function PageController(message, config, i18n, util) {
         // 开始监控页面变化
         await initialized; // 等待初始化完成
         this.driver.startMonitoring();
-    };
+    }
 
-    this.injectUI = function() {
+    injectUI() {
         // Inject sync button
         const syncButton = this.util.toHtml({
             tag: 'button',
@@ -66,12 +68,12 @@ function PageController(message, config, i18n, util) {
 
         // Wait for conversation area to be available, then inject enhancements
         this.waitForConversationArea();
-    };
+    }
 
     /**
      * @description 等待对话区域加载完成后注入 UI 增强功能
      */
-    this.waitForConversationArea = function() {
+    waitForConversationArea() {
         const checkAndInject = () => {
             const conversationArea = this.driver.elementConversationArea();
             if (conversationArea) {
@@ -81,12 +83,12 @@ function PageController(message, config, i18n, util) {
             }
         };
         checkAndInject();
-    };
+    }
 
     /**
      * @description 注入对话增强 UI（索引、展开/折叠按钮等）
      */
-    this.injectConversationEnhancements = function() {
+    injectConversationEnhancements() {
         const conversationArea = this.driver.elementConversationArea();
         if (!conversationArea) return;
 
@@ -107,12 +109,12 @@ function PageController(message, config, i18n, util) {
 
         // Inject hover toolbars for answers
         this.injectAnswerToolbars();
-    };
+    }
 
     /**
      * @description 注入 UI 增强功能的 CSS 样式
      */
-    this.injectStyles = function() {
+    injectStyles() {
         if (document.getElementById('multi-ai-enhancement-styles')) return;
 
         const styles = `
@@ -131,12 +133,12 @@ function PageController(message, config, i18n, util) {
         styleElement.id = 'multi-ai-enhancement-styles';
         styleElement.textContent = styles;
         document.head.appendChild(styleElement);
-    };
+    }
 
     /**
      * @description 注入工具栏（全部展开/折叠按钮）
      */
-    this.injectToolbar = function() {
+    injectToolbar() {
         const conversationArea = this.driver.elementConversationArea();
         if (!conversationArea || conversationArea.querySelector('.multi-ai-toolbar')) return;
 
@@ -188,12 +190,12 @@ function PageController(message, config, i18n, util) {
         // Add event listeners
         toolbar.querySelector('.multi-ai-expand-all').addEventListener('click', () => this.expandAllAnswers());
         toolbar.querySelector('.multi-ai-collapse-all').addEventListener('click', () => this.collapseAllAnswers());
-    };
+    }
 
     /**
      * @description 注入对话索引（垂直悬浮的数字索引）
      */
-    this.injectConversationIndex = function() {
+    injectConversationIndex() {
         const conversationArea = this.driver.elementConversationArea();
         if (!conversationArea || conversationArea.querySelector('.multi-ai-conversation-index')) return;
 
@@ -232,12 +234,12 @@ function PageController(message, config, i18n, util) {
 
         observer.observe(conversationArea, { childList: true, subtree: true });
         this.conversationIndexObserver = observer;
-    };
+    }
 
     /**
      * @description 更新对话索引
      */
-    this.updateConversationIndex = function() {
+    updateConversationIndex() {
         const indexContainer = document.querySelector('.multi-ai-conversation-index');
         if (!indexContainer) return;
 
@@ -348,12 +350,12 @@ function PageController(message, config, i18n, util) {
         while (indexContainer.children.length > newCount) {
             indexContainer.removeChild(indexContainer.lastChild);
         }
-    };
+    }
 
     /**
      * @description 注入单个答案的悬浮工具条
      */
-    this.injectAnswerToolbars = function() {
+    injectAnswerToolbars() {
         const answers = this.driver.elementAnswers();
         answers.forEach((answer, index) => {
             // Check if toolbar already exists
@@ -430,12 +432,12 @@ function PageController(message, config, i18n, util) {
                 this.collapseAnswer(index);
             });
         });
-    };
+    }
 
     /**
      * @description 滚动到指定答案并展开
      */
-    this.scrollToAnswer = function(index) {
+    scrollToAnswer(index) {
         const answer = this.driver.elementAnswer(index);
         if (!answer) return;
 
@@ -444,51 +446,51 @@ function PageController(message, config, i18n, util) {
 
         // Scroll to answer
         answer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    };
+    }
 
     /**
      * @description 展开所有答案
      */
-    this.expandAllAnswers = function() {
+    expandAllAnswers() {
         const answers = this.driver.elementAnswers();
         answers.forEach((_, index) => {
             this.expandAnswer(index);
         });
-    };
+    }
 
     /**
      * @description 折叠所有答案
      */
-    this.collapseAllAnswers = function() {
+    collapseAllAnswers() {
         const answers = this.driver.elementAnswers();
         answers.forEach((_, index) => {
             this.collapseAnswer(index);
         });
-    };
+    }
 
     /**
      * @description 展开单个答案
      */
-    this.expandAnswer = function(index) {
+    expandAnswer(index) {
         const answer = this.driver.elementAnswer(index);
         if (!answer) return;
 
         answer.classList.remove('multi-ai-answer-collapsed');
         this.driver.setAnswerStatus(index, false);
-    };
+    }
 
     /**
      * @description 折叠单个答案
      */
-    this.collapseAnswer = function(index) {
+    collapseAnswer(index) {
         const answer = this.driver.elementAnswer(index);
         if (!answer) return;
 
         answer.classList.add('multi-ai-answer-collapsed');
         this.driver.setAnswerStatus(index, true);
-    };
+    }
 
-    this.handleSyncButtonClick = async function() {
+    async handleSyncButtonClick() {
         await this.syncChatWindow.checkAndCreateWindow();
 
         // 初始化数据，结构为{id, providerName, url, pinned, params:{webAccess,longThought, models}, conversation:[{type, content}]}.
@@ -507,12 +509,12 @@ function PageController(message, config, i18n, util) {
                 conversation: this.driver.getConversations()
             });
         }, 500);
-    };
+    }
 
     /**
      * @description 处理来自主窗口的提示词消息（发送给特定 ChatArea）
      */
-    this.onMsgPrompt = function(data) {
+    onMsgPrompt(data) {
         // 检查 receiverId 是否匹配当前页面
         if (data.receiverId && data.receiverId !== this.pageId) {
             return;
@@ -521,12 +523,12 @@ function PageController(message, config, i18n, util) {
             this.driver.setPrompt(data.text);
             this.driver.send();
         }
-    };
+    }
 
     /**
      * @description 处理来自主窗口的聊天消息。
      */
-    this.onMsgChat = function(data) {
+    onMsgChat(data) {
         // 如果消息包含id，则只响应特定页面的请求
         if (data.id && data.id !== this.pageId) {
             return;
@@ -537,23 +539,23 @@ function PageController(message, config, i18n, util) {
             this.driver.setPrompt(content);
             this.driver.send();
         }
-    };
+    }
     
     /**
      * @description 处理来自主窗口的创建新会话的指令。
      */
-    this.onMsgNewSession = function(data) {
+    onMsgNewSession(data) {
         // 如果消息包含id，则只响应特定页面的请求
         if (data.id && data.id !== this.pageId) {
             return;
         }
         this.driver.newSession();
-    };
+    }
 
     /**
      * @description 处理来自主窗口的设置选项的指令。
      */
-    this.onMsgSetOption = function(data) {
+    onMsgSetOption(data) {
         // 如果消息包含id，则只响应特定页面的请求
         if (data.id && data.id !== this.pageId) {
             return;
@@ -561,12 +563,12 @@ function PageController(message, config, i18n, util) {
         if (data.key && data.value !== undefined) {
             this.driver.setOption(data.key, data.value);
         }
-    };
+    }
 
     /**
      * @description 处理来自主窗口的设置模型版本的指令。
      */
-    this.onMsgSetModelVersion = function(data) {
+    onMsgSetModelVersion(data) {
         // 如果消息包含id，则只响应特定页面的请求
         if (data.id && data.id !== this.pageId) {
             return;
@@ -574,12 +576,12 @@ function PageController(message, config, i18n, util) {
         if (data.version) {
             this.driver.setModelVersion(data.version);
         }
-    };
+    }
 
     /**
      * @description 处理来自主窗口的设置答案状态的指令。
      */
-    this.onMsgSetAnswerStatus = function(data) {
+    onMsgSetAnswerStatus(data) {
         // 如果消息包含id，则只响应特定页面的请求
         if (data.id && data.id !== this.pageId) {
             return;
@@ -587,33 +589,33 @@ function PageController(message, config, i18n, util) {
         if (data.index !== undefined && data.collapsed !== undefined) {
             this.driver.setAnswerStatus(data.index, data.collapsed);
         }
-    };
+    }
 
     // --- Driver Event Handlers ---
 
-    this.handleDriverAnswer = function(index, element) {
+    handleDriverAnswer(index, element) {
         this.msgClient.answer(this.pageId, index, element.innerHTML);
-    };
+    }
 
-    this.handleDriverChatTitle = function(title) {
+    handleDriverChatTitle(title) {
         this.msgClient.titleChange(this.pageId, title);
-    };
+    }
 
-    this.handleDriverOption = function(key, value) {
+    handleDriverOption(key, value) {
         this.msgClient.optionChange(this.pageId, key, value);
-    };
+    }
 
-    this.handleDriverQuestion = function(index, element) {
+    handleDriverQuestion(index, element) {
         this.msgClient.question(this.pageId, index, this.util.getText(element));
-    };
+    }
 
-    this.handleDriverModelVersionChange = function(version) {
+    handleDriverModelVersionChange(version) {
         this.msgClient.modelVersionChange(this.pageId, version);
-    };
+    }
 
-    this.handleDriverNewSession = function() {
+    handleDriverNewSession() {
         this.msgClient.newSession(this.pageId);
-    };
+    }
 }
 
 module.exports = PageController;

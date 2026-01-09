@@ -1,25 +1,30 @@
 const { KimiPageDriver, GeminiPageDriver, ChatGPTPageDriver, GenericPageDriver } = require('./page-driver');
 
-function DriverFactory() {
-    const urlMap = {
-        'kimi.ai': {name:'Kimi', url:'https://www.kimi.com'},
-        'www.kimi.com': {name:'Kimi', url:'https://www.kimi.com'},
-        'gemini.google.com': {name: 'Gemini', url:'https://gemini.google.com/app'},
-        'chat.openai.com': {name:'ChatGPT', url:'https://chat.openai.com'},
-    };
+/**
+ * 驱动工厂，用于创建指定域名的页面驱动实例。
+ */
+class DriverFactory {
+    constructor() {
+        this.urlMap = {
+            'kimi.ai': {name:'Kimi', url:'https://www.kimi.com'},
+            'www.kimi.com': {name:'Kimi', url:'https://www.kimi.com'},
+            'gemini.google.com': {name: 'Gemini', url:'https://gemini.google.com/app'},
+            'chat.openai.com': {name:'ChatGPT', url:'https://chat.openai.com'},
+        };
 
-    const driverMap = {
-        'Kimi': KimiPageDriver,
-        'Gemini': GeminiPageDriver,
-        'ChatGPT': ChatGPTPageDriver,
-    };
+        this.driverMap = {
+            'Kimi': KimiPageDriver,
+            'Gemini': GeminiPageDriver,
+            'ChatGPT': ChatGPTPageDriver,
+        };
+    }
 
     /**
      * 获取所有支持的AI提供商名称列表。
      * @returns {Array<string>} 支持的AI提供商列表
      */
-    this.getProviders = function() {
-        return Object.keys(driverMap);
+    getProviders() {
+        return Object.keys(this.driverMap);
     }
 
     /**
@@ -27,8 +32,8 @@ function DriverFactory() {
      * @param {string} providerName AI提供商名字
      * @returns {string} 对应的网址
      */
-    this.getProviderUrl = function(providerName) {
-        return Object.values(urlMap).find(v => v.name === providerName)?.url || '';
+    getProviderUrl(providerName) {
+        return Object.values(this.urlMap).find(v => v.name === providerName)?.url || '';
     }
 
     /**
@@ -36,10 +41,10 @@ function DriverFactory() {
      * @param {string} hostname 域名
      * @returns {GenericPageDriver} 驱动实例
      */
-    this.createDriver = function(hostname) {
-        const nameUrl = urlMap[hostname];
+    createDriver(hostname) {
+        const nameUrl = this.urlMap[hostname];
         if (nameUrl) {
-            const Driver = driverMap[nameUrl.name];
+            const Driver = this.driverMap[nameUrl.name];
             if (Driver) {
                 return new Driver();
             }

@@ -1,12 +1,12 @@
 // 根据项目规范，使用 function 定义构造函数来模拟类，并导出
-function Util() {
+class Util {
     /**
      * @description 在文档加载完成之后延迟运行。
      * @param {function} fn - 回调函数
      * @param {int} delay - 延迟的毫秒，默认5秒
      * @returns {HTMLElement} - 创建的 HTML 元素。
      */
-    this.documentReady = function(fn, delay = 5000){
+    documentReady(fn, delay = 5000){
         // 确保页面加载完成后再执行初始化
         if (document.readyState === 'complete') {
             setTimeout(fn, delay);
@@ -24,7 +24,7 @@ function Util() {
      * @param {object} json - 描述 HTML 结构的 JSON 对象。
      * @returns {HTMLElement} - 创建的 HTML 元素。
      */
-    this.toHtml = function toHtml(json) {
+    toHtml(json) {
         if (typeof json === 'string') {
             return document.createTextNode(json);
         }
@@ -100,7 +100,7 @@ function Util() {
      * @param {HTMLElement|Document} [parent=document] - 查询的父节点。
      * @returns {HTMLElement|null}
      */
-    this.$ = function(selector, parent = document) {
+    $(selector, parent = document) {
         if (selector == null || selector === '') {
             return null;
         }
@@ -113,7 +113,7 @@ function Util() {
      * @param {HTMLElement|Document} [parent=document] - 查询的父节点。
      * @returns {NodeListOf<HTMLElement>}
      */
-    this.$$ = function(selector, parent = document) {
+    $$(selector, parent = document) {
         if (selector == null || selector === '') {
             return [];
         }
@@ -125,7 +125,7 @@ function Util() {
      * @param {function} callback - a function to get the content
      * @returns {Promise<any>} - the content
      */
-    this.clickAndGet = async function(clickElement, callback) {
+    async clickAndGet(clickElement, callback) {
         clickElement.click();
         await new Promise(resolve => setTimeout(resolve, 200));
         const result = callback();
@@ -138,7 +138,7 @@ function Util() {
      * @param {HTMLElement} element - 要获取内容的HTML元素。
      * @returns {*} - 元素的内容或值，类型根据元素类型而定（例如，checkbox返回boolean，input返回string）。
      */
-    this.getText = function(element) {
+    getText(element) {
         if (!element) {
             return undefined;
         }
@@ -164,7 +164,7 @@ function Util() {
      * @param {HTMLElement} element - 要设置内容的HTML元素。
      * @param {*} value - 要设置的值，类型根据元素类型而定（例如，checkbox接受boolean，input接受string）。
      */
-    this.setText = function(element, value) {
+    setText(element, value) {
         if (!element) {
             return;
         }
@@ -191,7 +191,7 @@ function Util() {
      * @param {HTMLElement} element - 目标元素（input, textarea, 或 contenteditable 元素）
      * @param {string} text - 要输入的文本
      */
-    this.simulateType = function(element, text) {
+    simulateType(element, text) {
         if (!element) {
             console.warn('simulateType: element is null or undefined');
             return;
@@ -256,14 +256,14 @@ function Util() {
             });
             element.dispatchEvent(keyupEvent);
         });
-    };
+    }
 
     /**
      * @description 获取HTML元素的布尔值状态，主要用于checkbox或具有布尔语义的元素。
      * @param {HTMLElement} element - 要获取布尔值的HTML元素。
      * @returns {boolean|undefined} - 元素的布尔值状态，如果元素没有明确的布尔状态则返回undefined。
      */
-    this.getBoolean = function(element) {
+    getBoolean(element) {
         if (!element) {
             return undefined;
         }
@@ -285,7 +285,7 @@ function Util() {
      * @param {Function} func 对象
      * @returns {string|null} 函数名称，若无法获取则返回 null
      */
-    this.getFunctionName = function(func) {
+    getFunctionName(func) {
         if (typeof func !== 'function') {
             return null;
         }
@@ -297,7 +297,7 @@ function Util() {
      * @param {string} unsafe 呆html的字符串
      * @returns {string} 转义后的HTML字符串
      */
-    this.escapeHtml = function(unsafe) {
+    escapeHtml(unsafe) {
         return unsafe
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
@@ -311,7 +311,7 @@ function Util() {
      * @param {*} jsonObj json对象
      * @returns {string} 安全的字符串，使用JSON.parse可以还原
      */
-    this.safeJsonString = function(jsonObj) {
+    safeJsonString(jsonObj) {
         return JSON.stringify(jsonObj)
             .replace(/</g, '\\u003c')  // 转义 <
             .replace(/>/g, '\\u003e')  // 转义 >
@@ -324,7 +324,7 @@ function Util() {
      * @param {HTMLElement} element - 要检测的HTML元素
      * @returns {string} - 编辑器类型：'lexical', 'contenteditable', 'input', 'textarea', 'unknown'
      */
-    this.detectEditorType = function(element) {
+    detectEditorType(element) {
         if (!element) {
             return 'unknown';
         }
@@ -355,7 +355,7 @@ function Util() {
      * @param {HTMLElement} element - Lexical 编辑器元素
      * @param {string} text - 要设置的文本内容
      */
-    this.setLexicalContent = function(element, text) {
+    setLexicalContent(element, text) {
         if (!element) {
             console.warn('setLexicalContent: element is null or undefined');
             return;
@@ -391,7 +391,7 @@ function Util() {
      * 返回依赖库的源代码
      * @returns {string} 返回依赖库的源代码
      */
-    this.safeString = function(str) {
+    safeString(str) {
         return str
             .replace(/\\/g, '\\\\')  // 先转义反斜杠
             .replace(/'/g, "\\'")    // 转义单引号

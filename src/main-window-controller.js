@@ -5,51 +5,56 @@ const MessageClient = require('./message-client');
 
 /**
  * @description Core controller for the main window.
- * @param {string} receiverId - 用于接收消息的唯一id
- * @param {object} message - The message bus instance.
- * @param {object} config - The configuration instance.
- * @param {object} i18n - The internationalization instance.
  */
-function MainWindowController(receiverId, message, config, i18n) {
-    this.receiverId = receiverId;
-    this.message = message;
-    this.msgClient = new MessageClient(message);
-    this.config = config;
-    this.i18n = i18n;
-    this.util = new Util();
-    this.chatAreas = new Map();
-    this.driverFactory = new DriverFactory(); // 只是用来获取提供商URL和模型列表
-    this.defaultDriverParams = null; // 默认的页面参数， webAccess, longThought等  
-    this.selectedProviders = new Map(); // K: providerName, V: chatAreaId
-    this.element = null;
-    this.chatAreaContainer = null;
-    this.layoutSwitcher = null;
-    this.eventHandlers = {
-        onEvtAllWebAccessChanged: (newValue) => {
-            this.chatAreas.forEach(area => area.setWebAccess(newValue));
-        },
-        onEvtAllLongThoughtChanged: (newValue) => {
-            this.chatAreas.forEach(area => area.setLongThought(newValue));
-        },
-        onEvtAllPrompt: (prompt) => {
-            this.msgClient.chat(prompt);
-        }
-    };
+class MainWindowController {
+    /**
+     * @param {string} receiverId - 用于接收消息的唯一id
+     * @param {object} message - The message bus instance.
+     * @param {object} config - The configuration instance.
+     * @param {object} i18n - The internationalization instance.
+     */
+    constructor(receiverId, message, config, i18n) {
+        this.receiverId = receiverId;
+        this.message = message;
+        this.msgClient = new MessageClient(message);
+        this.config = config;
+        this.i18n = i18n;
+        this.util = new Util();
+        this.chatAreas = new Map();
+        this.driverFactory = new DriverFactory(); // 只是用来获取提供商URL和模型列表
+        this.defaultDriverParams = null; // 默认的页面参数， webAccess, longThought等
+        this.selectedProviders = new Map(); // K: providerName, V: chatAreaId
+        this.element = null;
+        this.chatAreaContainer = null;
+        this.layoutSwitcher = null;
+        this.eventHandlers = {
+            onEvtAllWebAccessChanged: (newValue) => {
+                this.chatAreas.forEach(area => area.setWebAccess(newValue));
+            },
+            onEvtAllLongThoughtChanged: (newValue) => {
+                this.chatAreas.forEach(area => area.setLongThought(newValue));
+            },
+            onEvtAllPrompt: (prompt) => {
+                this.msgClient.chat(prompt);
+            }
+        };
+    }
 
-    this.setEventHandler = function(eventName, handler) {
+    setEventHandler(eventName, handler) {
         this.eventHandlers[eventName] = handler;
-    };
-    this._handleNewSession = function(chatArea, providerName) {
+    }
+
+    _handleNewSession(chatArea, providerName) {
         // Use thread message as per design document
         this.msgClient.thread(chatArea.id);
-    };
+    }
 
-    this._handleShare = function(chatArea, url) {
+    _handleShare(chatArea, url) {
         navigator.clipboard.writeText(url);
         this.msgClient.focus(chatArea.id);
-    };
+    }
 
-    this._handleParamChanged = function(chatArea, key, newValue, oldValue) {
+    _handleParamChanged(chatArea, key, newValue, oldValue) {
         if (key === 'modelVersion') {
             this.msgClient.setModelVersion(chatArea.id, newValue);
         } else if (key === 'webAccess' || key === 'longThought') {
@@ -58,28 +63,28 @@ function MainWindowController(receiverId, message, config, i18n) {
             // For other parameters, use param_changed message
             this.msgClient.sendParamChanged(chatArea.id, key, newValue, oldValue);
         }
-    };
+    }
 
-    this._handleProviderChanged = function(chatArea, newProvider, oldProvider) {
+    _handleProviderChanged(chatArea, newProvider, oldProvider) {
         const newUrl = this.driverFactory.getProviderUrl(newProvider);
         this.msgClient.changeProvider(chatArea.id, newUrl);
         chatArea.url = newUrl;
-    };
+    }
 
-    this._handlePromptSend = function(chatArea, text) {
+    _handlePromptSend(chatArea, text) {
         this.msgClient.prompt(chatArea.id, text);
-    };
+    }
 
-    this._handleExport = function(chatArea) {
+    _handleExport(chatArea) {
         this.msgClient.export(chatArea.id);
-    };
+    }
 
 
     /**
      * @description Switches the application language and updates all UI elements with `data-lang-key`.
      * @param {string} newLang - The new language code (e.g., 'en', 'zh').
      */
-    this.switchLanguage = function(newLang, rootElement, forceUpdate = false) {
+    switchLanguage(newLang, rootElement, forceUpdate = false) {
         if (!forceUpdate && this.i18n.getCurrentLang() === newLang) {
             return;
         }
@@ -101,24 +106,24 @@ function MainWindowController(receiverId, message, config, i18n) {
         });
         // Close the language dropdown after switching
         this.langDropdown.style.display = 'none';
-    };
+    }
 
     /**
      * @description Initializes the controller, renders the layout, and registers listeners.
      */
-    this.init = function() {
+    init() {
         this.cacheDOMElements();
         this.initEventListeners();
         this.initMessageListeners();
         this.updateLayout(); // Initial layout update
         this.updateNewChatButtonState();
-        this.switchLanguage(this.i18n.getCurrentLang(), this.element, true);    
-    };
+        this.switchLanguage(this.i18n.getCurrentLang(), this.element, true);
+    }
 
     /**
      * @description Caches frequently accessed DOM elements.
      */
-    this.cacheDOMElements = function() {
+    cacheDOMElements() {
         this.element = document.querySelector('.main-window');
         this.chatAreaContainer = this.element.querySelector('.content-area');
         this.layoutSwitcher = this.element.querySelector('#layout-switcher');
@@ -130,12 +135,12 @@ function MainWindowController(receiverId, message, config, i18n) {
         this.settingsButton = document.getElementById('settings-button');
         this.settingsMenu = document.getElementById('settings-menu');
         this.newChatButton = document.getElementById('new-chat-button');
-    };
+    }
 
     /**
      * @description Initializes global event listeners.
      */
-    this.initEventListeners = function() {
+    initEventListeners() {
         // Layout Switcher
         this.layoutSwitcher.addEventListener('click', (e) => {
             if (e.target.matches('.layout-button')) {
@@ -199,9 +204,9 @@ function MainWindowController(receiverId, message, config, i18n) {
             this.eventHandlers.onEvtAllLongThoughtChanged(e.target.checked);
         });
 
-        this.closeAllDropdowns = function() {
+        this.closeAllDropdowns = () => {
             this.chatAreas.forEach(area => area.closeDropdowns());
-        }
+        };
 
         // Global click to close dropdowns
         document.addEventListener('click', (e) => {
@@ -252,7 +257,7 @@ function MainWindowController(receiverId, message, config, i18n) {
      * @description Sets the layout for the chat areas.
      * @param {string} layout - The layout to apply (e.g., '1', '2', '4', '6').
      */
-    this.setLayout = function(layout) {
+    setLayout(layout) {
         if (layout > 4) {
             layout = '6'; // Max 6
         } else if (layout > 2) {
@@ -273,13 +278,13 @@ function MainWindowController(receiverId, message, config, i18n) {
         }
     };
 
-    this.updateNewChatButtonState = function() {
+    updateNewChatButtonState() {
         const layout = parseInt(this.chatAreaContainer.dataset.layout, 10);
         const numAreas = this.chatAreas.size;
         this.newChatButton.disabled = numAreas >= layout;
     };
 
-    this.updateLayout = function() {
+    updateLayout() {
         const layout = parseInt(this.chatAreaContainer.dataset.layout, 10);
         const allAreas = Array.from(this.chatAreas.values());
 
@@ -304,15 +309,15 @@ function MainWindowController(receiverId, message, config, i18n) {
     /**
      * @description Initializes message listeners for communication with page drivers.
      */
-    this.initMessageListeners = function() {
+    initMessageListeners() {
         this.message.register(this.receiverId, this);
-    };
+    }
 
     /**
      * @description Handles the 'create' message to add a new chat area.
      * @param {object} data - Message data {id, providerName, url, pinned, params:{webAccess,longThought, models}, conversation:[{type, content}]}.
      */
-    this.onMsgCreate = function(data) {
+    onMsgCreate(data) {
         // 这里要保存 driver相关的一些参数，检查是否初始化，如果没有初始化，则保存为默认参数
         if (!this.defaultDriverParams) {
             this.defaultDriverParams = {
@@ -331,90 +336,90 @@ function MainWindowController(receiverId, message, config, i18n) {
      * @description Handles the 'answer' message to update a chat area.
      * @param {object} data - Message data ({ id, content, ... }).
      */
-    this.onMsgAnswer = function(data) {
+    onMsgAnswer(data) {
         const chatArea = this.chatAreas.get(data.id);
         if (chatArea) {
             chatArea.handleAnswer(data);
         }
-    };
+    }
 
     /**
      * @description Handles the 'destroy' message to remove a chat area.
      * @param {object} data - Message data ({ id }).
      */
-    this.onMsgDestroy = function(data) {
+    onMsgDestroy(data) {
         this.removeChatArea(data.id);
-    };
+    }
 
     /**
      * @description Handles the 'titleChange' message to update a chat area's title.
      * @param {object} data - Message data ({ id, title }).
      */
-    this.onMsgTitleChange = function(data) {
+    onMsgTitleChange(data) {
         const chatArea = this.chatAreas.get(data.id);
         if (chatArea) {
             chatArea.updateTitle(data.title);
         }
-    };
+    }
 
     /**
      * @description Handles the 'optionChange' message to update a chat area's option.
      * @param {object} data - Message data ({ id, key, value }).
      */
-    this.onMsgOptionChange = function(data) {
+    onMsgOptionChange(data) {
         const chatArea = this.chatAreas.get(data.id);
         if (chatArea) {
             chatArea.updateOption(data.key, data.value);
         }
-    };
+    }
 
     /**
      * @description Handles the 'question' message to add a new question to a chat area.
      * @param {object} data - Message data ({ id, index, content }).
      */
-    this.onMsgQuestion = function(data) {
+    onMsgQuestion(data) {
         const chatArea = this.chatAreas.get(data.id);
         if (chatArea) {
             chatArea.addQuestion(data.content);
         }
-    };
+    }
 
     /**
      * @description Handles the 'modelVersionChange' message to update a chat area's model version.
      * @param {object} data - Message data ({ id, version }).
      */
-    this.onMsgModelVersionChange = function(data) {
+    onMsgModelVersionChange(data) {
         const chatArea = this.chatAreas.get(data.id);
         if (chatArea) {
             chatArea.updateModelVersion(data.version);
         }
-    };
+    }
 
     /**
      * @description Handles the 'newSession' message to reset a chat area for a new session.
      * @param {object} data - Message data ({ id }).
      */
-    this.onMsgNewSession = function(data) {
+    onMsgNewSession(data) {
         const chatArea = this.chatAreas.get(data.id);
         if (chatArea) {
             chatArea.newSession();
         }
-    };
+    }
 
     /**
      * @description Handles the 'thread' message to start a new session (alias for newSession).
      * @param {object} data - Message data ({ id }).
      */
-    this.onMsgThread = function(data) {
+    onMsgThread(data) {
         // Thread message is equivalent to newSession
         this.onMsgNewSession(data);
-    };
+    }
 
     /**
      * @description Adds a new ChatArea instance.
      * @param {object} data - 初始化数据，结构为{id, providerName, url, pinned, params:{webAccess,longThought, models, modelVersion}, conversation:[{type, content}]}.
      */
-    this.addChatArea = function(data) {
+    addChatArea(data) {
         console.debug(`add chatarea with ${JSON.stringify(data)}`)
 
         if (this.chatAreas.has(data.id)) {
@@ -462,7 +467,7 @@ function MainWindowController(receiverId, message, config, i18n) {
         
     };
 
-    this.updateDefaultLayout = function() {
+    updateDefaultLayout() {
         const numAreas = this.chatAreas.size;
         let layout = '1';
         if (numAreas > 4) {
@@ -473,13 +478,13 @@ function MainWindowController(receiverId, message, config, i18n) {
             layout = '2';
         }
         this.setLayout(layout);
-    };
+    }
 
     /**
      * @description Removes a ChatArea from the main window.
      * @param {string} id - The unique identifier of the ChatArea.
      */
-    this.removeChatArea = function(id) {
+    removeChatArea(id) {
         const chatArea = this.chatAreas.get(id);
         if (chatArea) {
             const providerName = chatArea.getProvider();
@@ -503,7 +508,7 @@ function MainWindowController(receiverId, message, config, i18n) {
      * @param {string} requestingChatAreaId - 请求此列表的ChatArea的ID，该ChatArea自己的选择不会被视为不可用。
      * @returns {string[]} - 不可用的AI提供商名称数组。
      */
-    this.getUnavailableProviders = function(requestingChatAreaId) {
+    getUnavailableProviders(requestingChatAreaId) {
         const unavailable = [];
         this.selectedProviders.forEach((chatAreaId, providerName) => {
             if (chatAreaId !== requestingChatAreaId) {

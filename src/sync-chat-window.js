@@ -3,30 +3,32 @@ const Util = require('./util');
 /**
  * @description The class for checking and creating the main window.
  */
-function SyncChatWindow() {
+class SyncChatWindow {
 
-    this.MULTI_AI_CHAT_MAIN_WINDOW = 'multi-ai-chat-main-window';
-    SyncChatWindow.MULTI_AI_CHAT_MAIN_WINDOW = this.MULTI_AI_CHAT_MAIN_WINDOW;
+    constructor() {
+        this.MULTI_AI_CHAT_MAIN_WINDOW = 'multi-ai-chat-main-window';
+        SyncChatWindow.MULTI_AI_CHAT_MAIN_WINDOW = this.MULTI_AI_CHAT_MAIN_WINDOW;
+    }
 
     /**
      * @description Initializes the SyncChatWindow.
      */
-    this.init = function() {
+    init() {
         // Initialization logic can be added here if needed.
-    };
+    }
 
     /**
      * @description Checks if the main window already exists.
      * @returns {boolean} - True if it exists, false otherwise.
      */
-    this.exist = function() {
+    exist() {
         // The main window is identified by its window.name.
         // A more robust implementation might involve a BroadcastChannel ping/pong.
         const win = window.top.multiAiChatMainWindow;
         return !!(win && !win.closed);
-    };
+    }
 
-    function _addStyles(doc) {
+    _addStyles(doc) {
         const styles = `
         #root {
             height: 100%;
@@ -308,7 +310,7 @@ function SyncChatWindow() {
      * @param {Document} doc - The document object of the new window.
      * @param {boolean} ignoreScriptForTesting - 这个标志仅用于测试用途，表示跳过初始化脚本生成.
      */
-    this.createWindow = function(doc, ignoreScriptForTesting = false) {
+    createWindow(doc, ignoreScriptForTesting = false) {
         doc.title = 'Multi-AI Sync Chat';
         // Inject styles
         const styles = _addStyles(doc);
@@ -418,7 +420,7 @@ debugger;
      * @description Checks for the main window and creates it if it doesn't exist.
      * @returns {Window} - The main window instance.
      */
-    this.checkAndCreateWindow = async function() {
+    async checkAndCreateWindow() {
         if (this.exist()) {
             console.log('Main window already exists. Focusing on it.');
             const win = window.top.multiAiChatMainWindow;
@@ -441,7 +443,7 @@ debugger;
             console.log('Main window created.');
         }
         return newWindow;
-    };
+    }
 }
 
 module.exports = SyncChatWindow;
