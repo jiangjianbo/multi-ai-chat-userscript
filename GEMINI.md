@@ -31,16 +31,16 @@
 
 ### 关键约束
 
-暂无
+1. 所有的输出文字优先使用中文，即使输入的提示词是其他语言，回复和输出也优先使用中文
+2. 
 
 ## 📝 开发规范
 
 ### 代码风格
 - **面向对象**:
-  - 使用 `function` 关键字定义构造函数来模拟类。
-  - 所有方法直接挂载在 `this` 上，例如 `this.myMethod = function() {};`。
+  - 使用新的js语法，例如 `class` 关键字定义类。
   - 对象的构造函数的参数设计要尽量直观明了，尽可能以独立参数形式传入。强依赖的外部对象可以作为参数。
-  - 提供 `this.init()` 方法用于初始化。
+  - 提供 `this.init()` 方法用于二次初始化。
   - 方法需包含 JSDoc 风格的注释。
 - **HTML 生成**:
   - 严禁在 JavaScript 中拼接长字符串 HTML。
@@ -61,18 +61,21 @@
 ```javascript 
 /**
  * @description 描述这个类的作用
- * @param {object} args - 构造函数参数
  */
-function MyClass(args) {
-    // 调用父类构造函数 (如果继承)
-    // ParentClass.call(this, args);
+class MyClass {
 
-    this.property = 'value';
+    /**
+     * 构造函数
+     * @param {object} args - 构造函数参数
+     */
+    constructor(args) {
+      this.property = 'value';  
+    }
 
     /**
      * @description 初始化方法
      */
-    this.init = function() {
+    init() {
         // ... 初始化逻辑
     };
 
@@ -81,7 +84,7 @@ function MyClass(args) {
      * @param {string} param1 - 参数1的描述
      * @returns {boolean} - 返回值的描述
      */
-    this.myMethod = function(param1) {
+    myMethod(param1) {
         // ... 方法实现
         return true;
     };

@@ -92,15 +92,24 @@ pnpm run research:main-window  # 仅构建主窗口研究代码
 
 ### 类定义
 
-使用 `function` 构造函数，而非 `class` 语法：
+使用最新语法编写代码，例如 `class` 定义类：
 ```javascript
-function MyClass(args) {
-    this.property = 'value';
+/**
+ * 这是一个类
+ */
+class MyClass {
+
+    /**
+     * @param {string} args - 参数描述
+     */
+    constructor(args) {
+        this.property = 'value';
+    }
 
     /**
      * @description 初始化方法
      */
-    this.init = function() {
+    init() {
         // 初始化逻辑
     };
 
@@ -109,7 +118,7 @@ function MyClass(args) {
      * @param {string} param1 - 参数描述
      * @returns {boolean} 返回值描述
      */
-    this.myMethod = function(param1) {
+    myMethod(param1) {
         return true;
     };
 }
@@ -208,3 +217,4 @@ Key: `multi_ai_sync_config`
 - 阿拉伯语需要 RTL 支持
 - 主窗口通过 `window.name === 'multi-ai-chat-main-window'` 标识
 - 所有模块都有对应的设计文档（`design/*.md`）
+- 所有模块都有对应的同名jsdoc文档（`dist/jsdoc/*.md`）
