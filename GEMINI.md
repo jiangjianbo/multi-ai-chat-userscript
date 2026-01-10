@@ -58,7 +58,7 @@
 
 **JavaScript (Userscript)**
 
-```javascript 
+```javascript
 /**
  * @description 描述这个类的作用
  */
@@ -69,7 +69,7 @@ class MyClass {
      * @param {object} args - 构造函数参数
      */
     constructor(args) {
-      this.property = 'value';  
+      this.property = 'value';
     }
 
     /**
@@ -82,13 +82,35 @@ class MyClass {
     /**
      * @description 描述这个方法的作用
      * @param {string} param1 - 参数1的描述
+     * @param {number|undefined} optionalParam - 可选参数（支持联合类型）
      * @returns {boolean} - 返回值的描述
+     * @throws {Error} - 可能抛出的异常描述
      */
-    myMethod(param1) {
+    myMethod(param1, optionalParam) {
         // ... 方法实现
         return true;
     };
 }
+```
+
+**JSDoc 标签说明：**
+- `@description` - 类/方法的描述
+- `@param {type} name - description` - 参数定义
+- `@returns {type} - description` - 返回值定义
+- `@throws {type} - description` - 异常定义（可选）
+
+**类型定义支持联合类型**：`{string|number}`、`{null|undefined}`、`{Error|TypeError}` 等，多个类型用 `|` 分隔。
+
+**生成的文档格式**：执行 `pnpm run build` 后，在 `dist/jsdoc/` 目录生成 Markdown 格式的 API 文档：
+```markdown
+### MyClass
+- new MyClass(args : object) - 描述这个类的作用
+  * args : object - 构造函数参数
+- myMethod(param1 : string, optionalParam : number|undefined) → boolean - 描述这个方法的作用
+  * param1 : string - 参数1的描述
+  * optionalParam : number|undefined - 可选参数（支持联合类型）
+  * return : boolean - 返回值的描述
+  * throw : Error - 可能抛出的异常描述
 ```
 
 ## 🤖 AI 助手配置

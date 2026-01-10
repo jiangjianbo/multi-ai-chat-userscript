@@ -131,6 +131,47 @@ class MyClass {
 - 常量: `UPPER_SNAKE_CASE`
 - 所有方法必须包含 JSDoc 注释
 
+### JSDoc 注释格式
+
+JSDoc 注释用于生成 API 文档（位于 `dist/jsdoc/` 目录）。
+
+**基本格式：**
+```javascript
+/**
+ * @description 方法描述
+ * @param {string} paramName - 参数描述
+ * @param {number|string} unionParam - 支持联合类型用 | 分隔
+ * @returns {boolean} 返回值描述
+ * @throws {Error} 可能抛出的异常描述
+ */
+myMethod(paramName, unionParam) {
+    return true;
+}
+```
+
+**支持的 JSDoc 标签：**
+- `@description` - 方法/类的描述
+- `@param {type} name - description` - 参数定义
+- `@returns {type} - description` - 返回值定义
+- `@throws {type} - description` - 异常定义（可选）
+
+**类型定义支持：**
+- 单一类型：`{string}`、`{number}`、`{boolean}`、`{object}`
+- 联合类型：`{string|number}`、`{null|undefined}`、`{Error|TypeError}`
+- 泛型/任意类型：`{*}`、`{Array}`、`{object}`
+
+**生成的 Markdown 格式（dist/jsdoc/*.md）：**
+```markdown
+### ClassName
+- new ClassName(param : string) - 类描述
+  * param : string - 参数描述
+- methodName(param : string, optional : number|undefined) → boolean - 方法描述
+  * param : string - 参数描述
+  * optional : number|undefined - 可选参数描述
+  * return : boolean - 返回值描述
+  * throw : Error - 异常描述
+```
+
 ### HTML 生成
 
 - **推荐**: 使用 `util.toHtml(json)` 将 JSON 结构转换为 HTML
