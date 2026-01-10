@@ -1,7 +1,10 @@
 const Util = require('./util');
 const { GenericPageDriver } = require('./page-driver');
+const { DriverFactory, registerDriver } = require('./driver-factory');
 
-
+/**
+ * ChatGPT 页面驱动
+ */
 class ChatGPTPageDriver extends GenericPageDriver {
     constructor() {
         super();
@@ -14,6 +17,7 @@ class ChatGPTPageDriver extends GenericPageDriver {
     }
 }
 
+registerDriver(ChatGPTPageDriver, 'ChatGPT', 'https://chat.openai.com', ['chat.openai.com']);
 
 
 module.exports = {

@@ -7,6 +7,14 @@ const I18n = require('../src/i18n');
 const RECEIVER_ID = 'test-receiver-id';
 
 // Mocks
+jest.mock('../src/driver-factory', () => ({
+    DriverFactory: jest.fn().mockImplementation(() => ({
+        getProviders: jest.fn(() => ['Kimi', 'Gemini', 'ChatGPT']),
+        getProviderUrl: jest.fn((name) => `https://example.com/${name.toLowerCase()}`),
+    })),
+    registerDriver: jest.fn(),
+}));
+
 jest.mock('../src/chat-area', () => {
     return jest.fn().mockImplementation((mainController, id, url, container, i18n) => ({
         id: id,

@@ -84,10 +84,10 @@ class Util {
         if (childNodes) {
             if (Array.isArray(childNodes)) {
                 childNodes.forEach(childJson => {
-                    element.appendChild(toHtml(childJson));
+                    element.appendChild(this.toHtml(childJson));
                 });
             } else {
-                element.appendChild(toHtml(childNodes));
+                element.appendChild(this.toHtml(childNodes));
             }
         }
 
@@ -120,6 +120,61 @@ class Util {
         return parent.querySelectorAll(selector);
     }
     
+    /**
+     * 遍历对象的所有成员，包括自有属性和继承属性
+     * @param {object} obj 需要遍历的目标对象或Map
+     * @param {function(obj, name, value)} callback 回调函数，参数为对象、属性名、属性值 
+     * @returns 如果callback返回false或抛出异常则中断遍历
+     */
+    forEachMember(obj, callback) {
+        const seenKeys = new Set();
+
+        function iterate(currentObj) {
+            // 遍历对象及其原型链上的所有自有属性
+            while (currentObj != null && !seenKeys.has(currentObj)) {
+                seenKeys.add(currentObj);
+
+                const keys = Reflect.ownKeys(currentObj);
+                for (const key of keys) {
+                    if (seenKeys.has(key)) continue;
+
+                    try {
+                        const value = obj[key];
+                        if (callback(obj, key, value) === false) {
+                            return true;
+                        }
+                    } catch (e) {
+                        // 如果回调抛出异常，中断迭代
+                        return true;
+                    }
+                }
+
+                currentObj = Object.getPrototypeOf(currentObj);
+            }
+
+            return false;
+        }
+
+        // 遍历对象及其原型链
+        if (iterate(obj)) return;
+
+        // 特殊处理 Map 对象，遍历其键值对
+        if (obj instanceof Map) {
+            for (const [key, value] of obj.entries()) {
+                if (seenKeys.has(key)) continue;
+
+                try {
+                    if (callback(obj, key, value) === false) {
+                        return;
+                    }
+                } catch (e) {
+                    // 如果回调抛出异常，中断迭代
+                    return;
+                }
+            }
+        }
+    }
+
     /**
      * @description 模拟点击元素，然后在两次点击之间调用某个函数回调
      * @param {function} callback - a function to get the content

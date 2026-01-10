@@ -6,6 +6,11 @@ const Config = require('./config');
 const I18n = require('./i18n');
 const Storage = require('./storage');
 
+// 导入所有驱动模块，触发它们的注册代码
+require('./kimi-page-driver');
+require('./gemini-page-driver');
+require('./chatgpt-page-driver');
+
 /**
  * @description The entry point of the userscript.
  * It determines whether the current page is the main window or a target chat page,

@@ -1,6 +1,6 @@
 const { GenericPageDriver } = require('../src/page-driver');
 const { KimiPageDriver } = require('../src/kimi-page-driver');
-const DriverFactory = require('../src/driver-factory');
+const { DriverFactory } = require('../src/driver-factory');
 
 const driverFactory = new DriverFactory();
 
@@ -171,11 +171,9 @@ describe('PageDriver Module', () => {
     describe('driverFactory', () => {
         test('should return a specific driver for a known hostname', () => {
             const kimiDriver = driverFactory.createDriver('kimi.ai');
-            // 注意：由于源代码中 driver-factory.js 从 page-driver.js 导入 KimiPageDriver
-            // 但 page-driver.js 只导出 GenericPageDriver，所以这里返回的是 GenericPageDriver
-            // 这是一个源代码的 bug，但测试需要适应这个行为
+            // 驱动注册生效了，现在正确返回 KimiPageDriver
             expect(kimiDriver).toBeInstanceOf(GenericPageDriver);
-            expect(kimiDriver.constructor.name).toBe('GenericPageDriver');
+            expect(kimiDriver.constructor.name).toBe('KimiPageDriver');
         });
 
         test('should return GenericPageDriver for an unknown hostname', () => {

@@ -1,4 +1,4 @@
-const DriverFactory = require('./driver-factory');
+const {DriverFactory} = require('./driver-factory');
 const { GenericPageDriver } = require('./page-driver');
 const SyncChatWindow = require('./sync-chat-window');
 const MessageClient = require('./message-client');
@@ -38,7 +38,7 @@ class PageController {
 
         this.injectUI();
 
-        // 注册消息监听器
+        // 注册所有onMsg*消息监听器
         this.message.register(this.pageId, this);
 
         // 设置驱动的回调

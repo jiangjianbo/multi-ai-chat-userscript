@@ -313,7 +313,7 @@ class SyncChatWindow {
     createWindow(doc, ignoreScriptForTesting = false) {
         doc.title = 'Multi-AI Sync Chat';
         // Inject styles
-        const styles = _addStyles(doc);
+        const styles = this._addStyles(doc);
 
         const htmlSrc = `
 <div class="main-window">

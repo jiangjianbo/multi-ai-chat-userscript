@@ -1,6 +1,6 @@
 const ChatArea = require('./chat-area');
 const Util = require('./util');
-const DriverFactory = require('./driver-factory');
+const {DriverFactory} = require('./driver-factory');
 const MessageClient = require('./message-client');
 
 /**
@@ -27,6 +27,8 @@ class MainWindowController {
         this.element = null;
         this.chatAreaContainer = null;
         this.layoutSwitcher = null;
+
+        // 各种全局事件处理函数，已经有默认的处理了，一般不用挂接
         this.eventHandlers = {
             onEvtAllWebAccessChanged: (newValue) => {
                 this.chatAreas.forEach(area => area.setWebAccess(newValue));
@@ -40,8 +42,16 @@ class MainWindowController {
         };
     }
 
+    /**
+     * @description 挂接特定的事件处理函数.
+     * @param {string} eventName - 事件名称
+     * @param {function} handler - 处理函数
+     * @return {function} - 返回旧的处理函数，便于调用原来事件处理能力
+     */
     setEventHandler(eventName, handler) {
+        const oldHandler = this.eventHandlers[eventName];
         this.eventHandlers[eventName] = handler;
+        return oldHandler;
     }
 
     _handleNewSession(chatArea, providerName) {
@@ -138,7 +148,7 @@ class MainWindowController {
     }
 
     /**
-     * @description Initializes global event listeners.
+     * @description 挂接界面元素的操作事件，包括布局切换、发送消息、语言切换、关闭窗口等。
      */
     initEventListeners() {
         // Layout Switcher
@@ -224,7 +234,6 @@ class MainWindowController {
         });
 
         this.newChatButton.addEventListener('click', () => {
-            debugger;
             try {
                 const newId = `chat-area-${Date.now()}`;
                 const webAccess = this.settingsMenu.querySelector('#web-access').checked;
@@ -307,7 +316,7 @@ class MainWindowController {
     };
 
     /**
-     * @description Initializes message listeners for communication with page drivers.
+     * @description 注册所有onMsg*消息处理函数。
      */
     initMessageListeners() {
         this.message.register(this.receiverId, this);

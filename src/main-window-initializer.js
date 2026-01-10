@@ -3,11 +3,19 @@ const Storage = require('./storage')
 const Config = require('./config')
 const I18n = require('./i18n')
 const Message = require('./message')
-const DriverFactory = require('./driver-factory')
+const {DriverFactory} = require('./driver-factory')
 const ChatArea = require('./chat-area')
 const MainWindowController = require('./main-window-controller')
 const resources = require('./lang');
 
+// 导入所有驱动模块，触发它们的注册代码
+require('./kimi-page-driver');
+require('./gemini-page-driver');
+require('./chatgpt-page-driver');
+
+/**
+ * 主窗口使用的完整代码和依赖全部放在这里，并且会在编译时候嵌入到主窗口的代码中，实现完整的页面功能。
+ */
 class MainWindowInitializer {
     constructor() {
         console.log("Main window initializer loading ...");
@@ -32,7 +40,9 @@ class MainWindowInitializer {
         this.mainWindowController.init();
 
         console.log("Main window initializer loaded.");
+        debugger;
     }
 }
 
+// 因为嵌入在html中，所以直接 new 即可。
 new MainWindowInitializer();

@@ -1,3 +1,4 @@
+const Util = require('./util');
 
 /**
  * @description 封装 BroadcastChannel 实现跨窗口通信。
@@ -12,6 +13,12 @@ class Message {
         }
         this.channel = new BroadcastChannel(channelName);
         this.listeners = new Map(); // Map<receiverId, Map<type, Set<function>>>
+
+        // 绑定 handleMessage 的 this 上下文
+        this.handleMessage = this.handleMessage.bind(this);
+        this.channel.addEventListener('message', this.handleMessage);
+
+        this.util = new Util();
     }
 
     /**
@@ -40,6 +47,8 @@ class Message {
                         }
                     });
                 }
+            } else {
+                console.debug(`No listeners for receiverId '${targetReceiverId}'.`);
             }
         } else { // Broadcast message to all relevant listeners
             this.listeners.forEach(receiverListeners => {
@@ -52,6 +61,8 @@ class Message {
                             console.error(`Error in broadcast message handler for type '${type}':`, e);
                         }
                     });
+                }else {
+                    console.debug(`No listeners for message type '${type}' in receiver.`);
                 }
             });
         }
@@ -83,12 +94,15 @@ class Message {
             return;
         }
 
+        console.debug(`Registering listener for receiverId '${receiverId}' --> ${listener}.`);
         if (!this.listeners.has(receiverId)) {
             this.listeners.set(receiverId, new Map()); // Map<type, Set<function>>
         }
         const receiverListeners = this.listeners.get(receiverId);
 
-        for (const methodName in listener) {
+        this.util.forEachMember(listener, (obj, methodName, methodValue) => {
+            console.trace(`Checking method ${methodName} in listener for registration.`);
+            
             if (typeof listener[methodName] === 'function' && methodName.startsWith('onMsg')) {
                 const type = methodName.substring(5).charAt(0).toLowerCase() + methodName.substring(6);
                 if (!receiverListeners.has(type)) {
@@ -96,7 +110,7 @@ class Message {
                 }
                 receiverListeners.get(type).add(listener[methodName].bind(listener)); // Bind to listener instance
             }
-        }
+        });
     }
 
     /**

@@ -1,9 +1,12 @@
 
 const Util = require('./util');
 const { GenericPageDriver } = require('./page-driver');
+const { DriverFactory, registerDriver } = require('./driver-factory');
 
-
-class GeminiPageDriver extends GeminiPageDriver {
+/**
+ * Gemini 页面驱动
+ */
+class GeminiPageDriver extends GenericPageDriver {
 
     constructor() {
         super();
@@ -31,6 +34,7 @@ class GeminiPageDriver extends GeminiPageDriver {
     }
 }
 
+registerDriver(GeminiPageDriver, 'Gemini', 'https://gemini.google.com/app', ['gemini.google.com']);
 
 module.exports = {
     GeminiPageDriver

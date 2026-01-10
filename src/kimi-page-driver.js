@@ -1,7 +1,10 @@
 const Util = require('./util');
 const { GenericPageDriver } = require('./page-driver');
+const { DriverFactory, registerDriver } = require('./driver-factory');
 
-
+/**
+ * Kimi.ai 页面驱动
+ */
 class KimiPageDriver extends GenericPageDriver {
 
     constructor() {
@@ -12,7 +15,7 @@ class KimiPageDriver extends GenericPageDriver {
             sendButton: 'div.chat-action > div.chat-editor > div.chat-editor-action div.send-button-container > div.send-button',
             questions: 'div.chat-content-item.chat-content-item-user div.segment-content div.segment-content-box',
             answers: 'div.chat-content-item.chat-content-item-assistant div.segment-content div.segment-content-box',
-            answer_thinking: '.toolcall-container.thinking-container, .container-block .block-item .toolcall-container',
+            answer_thinking: '.container-block .block-item',
             answer_result: '.markdown-container',
             conversationArea: '#app div.main div.layout-content-main div.chat-content-container',
             chatTitle: '#app div.main div.layout-header header.chat-header-content h2',
@@ -87,6 +90,7 @@ class KimiPageDriver extends GenericPageDriver {
     }
 }
 
+registerDriver(KimiPageDriver, 'Kimi', 'https://kimi.ai/chat', ['kimi.ai', 'www.kimi.com']);
 
 module.exports = {
     KimiPageDriver

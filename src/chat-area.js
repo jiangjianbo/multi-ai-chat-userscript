@@ -1,4 +1,4 @@
-const DriverFactory = require('./driver-factory');
+const {DriverFactory} = require('./driver-factory');
 const Util = require('./util');
 
 /**
@@ -29,6 +29,7 @@ class ChatArea {
         this.indexTooltipElement = null;
         this.currentHoverIndex = null;
         this.pinned = false;
+        // 此处为各种事件的默认空处理函数，提供外部挂接
         this.eventHandlers = {
             onEvtClose: (chatArea) => {},
             onEvtNewSession: (chatArea, providerName) => { },

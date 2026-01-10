@@ -1,3 +1,12 @@
+// Mock driver-factory 模块（必须在 require 之前）
+jest.mock('../src/driver-factory', () => ({
+    DriverFactory: jest.fn().mockImplementation(() => ({
+        getProviders: jest.fn(() => ['Kimi', 'Gemini']),
+        getProviderUrl: jest.fn(),
+    })),
+    registerDriver: jest.fn(),
+}));
+
 const ChatArea = require('../src/chat-area');
 const { toHtml } = require('./test-utils');
 

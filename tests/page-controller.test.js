@@ -1,10 +1,15 @@
 const PageController = require('../src/page-controller');
-const DriverFactory = require('../src/driver-factory');
+const { DriverFactory } = require('../src/driver-factory');
 const SyncChatWindow = require('../src/sync-chat-window');
 const MessageClient = require('../src/message-client');
 
 // Mocks
-jest.mock('../src/driver-factory');
+jest.mock('../src/driver-factory', () => ({
+    DriverFactory: jest.fn().mockImplementation(() => ({
+        createDriver: jest.fn(),
+    })),
+    registerDriver: jest.fn(),
+}));
 jest.mock('../src/sync-chat-window');
 jest.mock('../src/message-client');
 
@@ -44,7 +49,7 @@ describe('PageController', () => {
             getAnswerStatus: jest.fn(() => false),
             elementAnswer: jest.fn(() => null),
         };
-        
+
         // Configure the factory mock to return our driver
         DriverFactory.mockImplementation(() => ({
             createDriver: () => mockDriver,

@@ -320,7 +320,7 @@ class GenericPageDriver {
             // 使用getAnswerFull获取完整内容（包含思考和结果）
             conversations.push({
                 type: 'answer',
-                content: this.getAnswerFull(i)
+                content: this.getAnswer(i)
             });
         }
         return conversations;

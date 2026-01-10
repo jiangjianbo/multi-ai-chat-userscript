@@ -1,5 +1,5 @@
 /**
- * @description A client for sending semantic messages.
+ * @description 讲消息封装成语义化的函数调用，通过这个和message.js通信。避免到处组装消息结构。
  */
 class MessageClient {
     /**
