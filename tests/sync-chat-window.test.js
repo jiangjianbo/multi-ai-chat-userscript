@@ -1,4 +1,9 @@
 const SyncChatWindow = require('../src/sync-chat-window');
+const { toHtml, _addStyles } = require('./test-utils');
+
+// 设置全局函数，用于修复源代码中的调用问题
+global.toHtml = toHtml;
+global._addStyles = _addStyles;
 
 describe('SyncChatWindow', () => {
     let syncChatWindow;

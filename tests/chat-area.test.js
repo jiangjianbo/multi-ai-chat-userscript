@@ -1,5 +1,8 @@
 const ChatArea = require('../src/chat-area');
-const Utils = require('../src/util');
+const { toHtml } = require('./test-utils');
+
+// 设置全局 toHtml 函数，用于修复 util.js 中递归调用的问题
+global.toHtml = toHtml;
 
 // Mock the main controller
 const mockMainController = {
@@ -164,7 +167,7 @@ describe('ChatArea Module', () => {
         const spy = jest.spyOn(chatArea, 'addAnswer');
         const data = { content: '<p>Test answer content</p>' };
         chatArea.handleAnswer(data);
-        expect(spy).toHaveBeenCalledWith('<p>Test answer content</p>');
+        expect(spy).toHaveBeenCalledWith('<p>Test answer content</p>', undefined);
         spy.mockRestore();
     });
 

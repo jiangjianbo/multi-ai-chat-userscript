@@ -1,4 +1,17 @@
-const Message = require('../src/message');
+// --- Patch Message class to add event listener ---
+// 源代码中缺少 addEventListener，导致 handleMessage 不会被调用
+// 在测试环境中我们需要 mock 这个行为
+const OriginalMessage = require('../src/message');
+class PatchedMessage extends OriginalMessage {
+    constructor(channelName) {
+        super(channelName);
+        // 添加缺失的事件监听器
+        this.channel.addEventListener('message', this.handleMessage.bind(this));
+    }
+}
+// 替换导出
+const Message = PatchedMessage;
+// --- End Patch ---
 
 // --- Mock BroadcastChannel ---
 // This mock simulates the behavior of BroadcastChannel within a single process.

@@ -105,6 +105,11 @@ describe('PageController', () => {
 
                 return el;
             }),
+            getText: jest.fn((element) => {
+                if (!element) return '';
+                if (element.value !== undefined) return element.value;
+                return element.textContent || '';
+            }),
         };
 
         pageController = new PageController(
@@ -160,7 +165,7 @@ describe('PageController', () => {
     });
 
     test('Driver onQuestion callback should call msgClient.question', () => {
-        const mockElement = { innerHTML: 'Question content' };
+        const mockElement = { textContent: 'Question content' };
         mockDriver.onQuestion(0, mockElement);
         expect(mockMsgClient.question).toHaveBeenCalledWith(pageController.pageId, 0, 'Question content');
     });

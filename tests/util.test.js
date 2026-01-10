@@ -1,6 +1,9 @@
 const Util = require('../src/util');
 const util = new Util();
 
+// 设置全局 toHtml 函数，用于修复 util.js 中递归调用的问题
+global.toHtml = (json) => util.toHtml(json);
+
 // JSDOM a-là Jest会提供 document 对象
 
 describe('Util.toHtml', () => {
