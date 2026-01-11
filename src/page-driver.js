@@ -1,6 +1,7 @@
 const Util = require('./util');
 const TurndownServiceModule = require('turndown');
 const TurndownService = TurndownServiceModule.default || TurndownServiceModule;
+const { PageProxy } = require('./page-proxy');
 
 
 const turndownService = new TurndownService();
@@ -27,6 +28,7 @@ class GenericPageDriver {
 
     constructor() {
         this.util = new Util();
+        this.pageProxy = new PageProxy(); // 添加 PageProxy 实例
 
         this.selectors = {
             promptInput: 'textarea',
@@ -601,7 +603,8 @@ class GenericPageDriver {
         const newSessionButton = this.elementNewSessionButton();
         if (newSessionButton) {
             this.newSessionButtonListener = () => this.onNewSession();
-            newSessionButton.addEventListener('click', this.newSessionButtonListener);
+            // 使用 PageProxy 托管事件监听器
+            this.pageProxy.addEventListener(newSessionButton, 'click', this.newSessionButtonListener);
         }
     }
 
@@ -619,9 +622,10 @@ class GenericPageDriver {
         this.lastAnswerContentObserver = new MutationObserver(() => {
             // 使用防抖，避免频繁触发回调
             if (this.lastAnswerDebounceTimer) {
-                clearTimeout(this.lastAnswerDebounceTimer);
+                this.pageProxy.clearTimeout(this.lastAnswerDebounceTimer);
             }
-            this.lastAnswerDebounceTimer = setTimeout(() => {
+            // 使用 PageProxy 托管 setTimeout
+            this.lastAnswerDebounceTimer = this.pageProxy.setTimeout(() => {
                 // 重新获取答案元素，确保元素仍然存在
                 const currentAnswers = this.elementAnswers();
                 if (answerIndex < currentAnswers.length) {
@@ -651,12 +655,8 @@ class GenericPageDriver {
         if (this.lastAnswerContentObserver) {
             this.lastAnswerContentObserver.disconnect();
         }
-        if (this.lastAnswerDebounceTimer) {
-            clearTimeout(this.lastAnswerDebounceTimer);
-        }
-        if (this.newSessionButtonListener && this.elementNewSessionButton()) {
-            this.elementNewSessionButton().removeEventListener('click', this.newSessionButtonListener);
-        }
+        // 使用 PageProxy 清理所有托管的资源（事件监听器、定时器等）
+        this.pageProxy.cleanup();
     }
 }
 

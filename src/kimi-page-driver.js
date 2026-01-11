@@ -31,7 +31,7 @@ class KimiPageDriver extends GenericPageDriver {
             optionButton: 'div.toolkit-trigger-btn'
         };
         this.selectors = Object.assign({}, this.selectors, kimiSelectors);
-        
+
         this.optionButton = this.util.$(this.selectors.optionButton);
         this.modelVersionButton = this.util.$(this.selectors.modelVersionButton);
 
@@ -52,13 +52,14 @@ class KimiPageDriver extends GenericPageDriver {
                 this.cachedLongThought = this.util.getBoolean(this.util.$(this.selectors.longThoughtOption));
             });
 
-            // Add event listener to refresh cache on subsequent clicks
-            this.optionButton.addEventListener('click', async () => {
+            // 使用 PageProxy 托管事件监听器
+            this.optionButtonCacheHandler = async () => {
                 // A short delay to allow the popover to open
                 await new Promise(resolve => setTimeout(resolve, 200));
                 this.cachedWebAccess = this.util.getBoolean(this.util.$(this.selectors.webAccessOption));
                 this.cachedLongThought = this.util.getBoolean(this.util.$(this.selectors.longThoughtOption));
-            });
+            };
+            this.pageProxy.addEventListener(this.optionButton, 'click', this.optionButtonCacheHandler);
         }
 
         // Initial caching for Model Versions

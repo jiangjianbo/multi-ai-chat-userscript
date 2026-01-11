@@ -2,6 +2,7 @@ const {DriverFactory} = require('./driver-factory');
 const { GenericPageDriver } = require('./page-driver');
 const SyncChatWindow = require('./sync-chat-window');
 const MessageClient = require('./message-client');
+const { PageProxy } = require('./page-proxy');
 
 /**
  * @description 在原生AI页面运行的核心控制器。
@@ -19,6 +20,7 @@ class PageController {
         this.config = config;
         this.i18n = i18n;
         this.util = util;
+        this.pageProxy = new PageProxy(); // 添加 PageProxy 实例
 
         this.driver = null;
         this.syncChatWindow = null;
@@ -33,7 +35,7 @@ class PageController {
         const hostname = window.location.hostname;
         this.driver = this.driverFactory.createDriver(hostname);
         const initialized = this.driver.init();
-        
+
         this.syncChatWindow = new SyncChatWindow();
 
         this.injectUI();
@@ -52,6 +54,9 @@ class PageController {
         // 开始监控页面变化
         await initialized; // 等待初始化完成
         this.driver.startMonitoring();
+
+        // 设置清理处理器，确保在页面卸载时清理所有资源
+        this.setupCleanupHandlers();
     }
 
     injectUI() {
@@ -63,7 +68,8 @@ class PageController {
             text: this.i18n.getText('sync_chat_button_label')
         });
 
-        syncButton.addEventListener('click', this.handleSyncButtonClick.bind(this));
+        // 使用 PageProxy 托管事件监听器
+        this.pageProxy.addEventListener(syncButton, 'click', this.handleSyncButtonClick.bind(this));
         document.body.appendChild(syncButton);
 
         // Wait for conversation area to be available, then inject enhancements
@@ -226,14 +232,17 @@ class PageController {
         // Update index when conversation changes
         this.updateConversationIndex();
 
-        // Monitor for new answers
-        const observer = new MutationObserver(() => {
+        // 使用 PageProxy 托管 MutationObserver 监听新答案
+        const observerCallback = () => {
             this.updateConversationIndex();
             this.injectAnswerToolbars();
-        });
+        };
 
-        observer.observe(conversationArea, { childList: true, subtree: true });
-        this.conversationIndexObserver = observer;
+        this.conversationIndexObserver = this.pageProxy.observe(
+            conversationArea,
+            { childList: true, subtree: true },
+            observerCallback
+        );
     }
 
     /**
@@ -616,6 +625,40 @@ class PageController {
 
     handleDriverNewSession() {
         this.msgClient.newSession(this.pageId);
+    }
+
+    /**
+     * @description 清理所有资源
+     */
+    cleanup() {
+        // 清理 PageProxy 托管的所有资源
+        this.pageProxy.cleanup();
+
+        // 清理 driver 的资源
+        if (this.driver) {
+            this.driver.stopMonitoring();
+        }
+
+        // 注销消息监听器
+        this.message.unregister(this.pageId);
+    }
+
+    /**
+     * @description 设置页面卸载时的清理
+     */
+    setupCleanupHandlers() {
+        // 监听页面卸载事件，确保资源被正确清理
+        this.pageProxy.addEventListener(window, 'beforeunload', () => {
+            this.cleanup();
+        });
+
+        // 监听页面隐藏事件（SPA 导航时可能触发）
+        this.pageProxy.addEventListener(document, 'visibilitychange', () => {
+            if (document.hidden) {
+                // 页面被隐藏时清理资源
+                this.cleanup();
+            }
+        });
     }
 }
 
