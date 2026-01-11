@@ -268,17 +268,8 @@ class GenericPageDriver {
         const el = this.elementAnswer(index);
         if (!el) return {};
 
-        const thinkingEl = el.querySelector(this.selectors.answer_thinking);
-        let resultEl = null;
-        // 处理 answer_result 可能是数组的情况，返回第一个匹配的元素
-        if (Array.isArray(this.selectors.answer_result)) {
-            for (const selector of this.selectors.answer_result) {
-                resultEl = el.querySelector(selector);
-                if (resultEl) break;
-            }
-        } else {
-            resultEl = el.querySelector(this.selectors.answer_result);
-        }
+        const thinkingEl = this.util.$(this.selectors.answer_thinking, el);
+        let resultEl = this.util.$(this.selectors.answer_result, el);
         
         return { 
             thinking: thinkingEl ? htmlToMarkdown(thinkingEl.innerHTML) : '', 
@@ -503,7 +494,7 @@ class GenericPageDriver {
     }
 
     newSession() {
-        console.warn('newSession() is not implemented in the generic driver.');
+        this.elementNewSessionButton()?.click();
     }
 
     // --- 事件监控 ---

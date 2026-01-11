@@ -29,6 +29,10 @@ class ChatArea {
         this.url = url;
         this.container = container;
         this.i18n = i18n;
+        
+        // 点击新会话时候设置该标志，然后发出thread事件给原生窗口，
+        // 原生窗口会返回new_session事件，检查到该标志后复用当前chatArea
+        this.readyForReUse = false; 
 
         this.driverFactory = new DriverFactory();
         this.utils = new Util();
@@ -57,6 +61,22 @@ class ChatArea {
             FULLY_EXPANDED: 'fully_expanded'
         };
         this.collapseState = this.CollapseState.FULLY_EXPANDED;
+    }
+
+    /**
+     * 获取可重用标志
+     * @returns 可重用标志
+     */
+    getReadyForReUse() {
+        return this.readyForReUse;
+    }
+
+    /**
+     * 设置可重用标志
+     * @param {boolean} value - 可重用标志值
+     */
+    setReadyForReUse(value) {
+        this.readyForReUse = value;
     }
 
     setEventHandler(eventName, handler) {
@@ -613,6 +633,21 @@ class ChatArea {
         this.element.querySelector('.chat-area-index').innerHTML = '';
         this.answerBubbles = this.element.querySelectorAll('.message-bubble.answer');
         console.log(`ChatArea ${this.id}: Started new session.`);
+    }
+
+    /**
+     * @description 清理所有问答内容和索引
+     */
+    clearAllMessages() {
+        this.conversationArea.innerHTML = '';
+        const indexArea = this.element.querySelector('.chat-area-index');
+        if (indexArea) {
+            indexArea.innerHTML = '';
+        }
+        this.answerBubbles = this.element.querySelectorAll('.message-bubble.answer');
+        this.collapseState = this.CollapseState.FULLY_EXPANDED;
+        this.updateCollapseButtons();
+        console.log(`ChatArea ${this.id}: Cleared all messages.`);
     }
 
     /**

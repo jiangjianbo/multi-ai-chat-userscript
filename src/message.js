@@ -104,7 +104,7 @@ class Message {
             console.trace(`Checking method ${methodName} in listener for registration.`);
             
             if (typeof listener[methodName] === 'function' && methodName.startsWith('onMsg')) {
-                const type = methodName.substring(5).charAt(0).toLowerCase() + methodName.substring(6);
+                const type = this.util.camelToDash(methodName.substring(5), '_');
                 if (!receiverListeners.has(type)) {
                     receiverListeners.set(type, new Set());
                 }

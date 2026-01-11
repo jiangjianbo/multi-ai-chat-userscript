@@ -104,7 +104,20 @@ class Util {
         if (selector == null || selector === '') {
             return null;
         }
-        return parent.querySelector(selector);
+
+        // 处理 selector 可能是数组的情况，返回第一个匹配的元素
+        if (Array.isArray(selector)) {
+            if (selector.length === 0) {
+                return null;
+            }
+
+            for (const item of selector) {
+                const resultEl = parent.querySelector(item);
+                if (resultEl) break;
+            }
+        } else {
+            return parent.querySelector(selector);
+        }
     }
 
     /**
@@ -117,7 +130,23 @@ class Util {
         if (selector == null || selector === '') {
             return [];
         }
-        return parent.querySelectorAll(selector);
+
+        // 处理 selector 可能是数组的情况，返回第一个匹配的元素
+        if (Array.isArray(selector)) {
+            if (selector.length === 0) {
+                return [];
+            }
+
+            const result = [];
+            for (const item of selector) {
+                const resultEl = parent.querySelectorAll(item);
+                // 合并 NodeList 到结果数组
+                result.push(...resultEl);
+            }
+            return result;
+        } else {
+            return parent.querySelectorAll(selector);
+        }
     }
     
     /**
@@ -455,6 +484,16 @@ class Util {
             .replace(/\r/g, '\\r')   // 转义回车符
             .replace(/\t/g, '\\t');  // 转义制表符
         ;
+    }
+
+    /**
+     * 将驼峰格式字符串转换为划线分割格式
+     * @param {string} str 需要改变的驼峰格式字符串，例如UserName或userName
+     * @param {string} dash 分割符，默认是'-'
+     * @returns 返回划线分割的格式
+     */
+    camelToDash(str, dash = '-') {
+        return str.replace(/([a-z])([A-Z])/g, '$1'+dash+'$2').toLowerCase();
     }
 }
 

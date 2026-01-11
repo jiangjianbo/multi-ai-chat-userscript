@@ -544,11 +544,12 @@ class PageController {
     /**
      * @description 处理来自主窗口的创建新会话的指令。
      */
-    onMsgNewSession(data) {
+    onMsgThread(data) {
         // 如果消息包含id，则只响应特定页面的请求
         if (data.id && data.id !== this.pageId) {
             return;
         }
+        // 点击原生页面的新会话按钮
         this.driver.newSession();
     }
 

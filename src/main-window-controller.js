@@ -55,7 +55,10 @@ class MainWindowController {
     }
 
     _handleNewSession(chatArea, providerName) {
-        // Use thread message as per design document
+        // 设置复用标志
+        chatArea.setReadyForReUse(true);
+        chatArea.clearAllMessages();
+        // 发送 thread 消息给原生窗口，原生窗口会返回 new_session 事件
         this.msgClient.thread(chatArea.id);
     }
 
@@ -431,39 +434,53 @@ class MainWindowController {
     addChatArea(data) {
         console.debug(`add chatarea with ${JSON.stringify(data)}`)
 
+        let reuse = false;
+        let chatArea = null;
+
         if (this.chatAreas.has(data.id)) {
-            console.warn(`ChatArea with id ${data.id} already exists.`);
-            return;
+            chatArea = this.chatAreas.get(data.id);
+            if (chatArea.getReadyForReUse()) {
+                console.log(`Reusing existing ChatArea with id ${data.id}.`);
+                chatArea.setReadyForReUse(false);
+                reuse = true;
+            } else {
+                console.warn(`ChatArea with id ${data.id} already exists.`);
+                return;
+            }
         }
 
-        const container = this.util.toHtml({ tag: 'div', '@class': 'chat-area-container'});
-        this.chatAreaContainer.appendChild(container);
+        if (!reuse) {
+            const container = this.util.toHtml({ tag: 'div', '@class': 'chat-area-container'});
+            this.chatAreaContainer.appendChild(container);
 
-        const chatArea = new ChatArea(this, data.id, data.url, container, this.i18n);
-        chatArea.init(data);
-        this.switchLanguage(this.i18n.getCurrentLang(), chatArea.element, true);
+            chatArea = new ChatArea(this, data.id, data.url, container, this.i18n);
+            chatArea.init(data);
+            this.switchLanguage(this.i18n.getCurrentLang(), chatArea.element, true);
 
-        chatArea.setEventHandler('onEvtNewSession', this._handleNewSession.bind(this));
-        chatArea.setEventHandler('onEvtShare', this._handleShare.bind(this));
-        chatArea.setEventHandler('onEvtParamChanged', this._handleParamChanged.bind(this));
-        chatArea.setEventHandler('onEvtProviderChanged', (ca, newProvider, oldProvider) => {
-            if (oldProvider && this.selectedProviders.get(oldProvider) === ca.id) {
-                this.selectedProviders.delete(oldProvider);
+            chatArea.setEventHandler('onEvtNewSession', this._handleNewSession.bind(this));
+            chatArea.setEventHandler('onEvtShare', this._handleShare.bind(this));
+            chatArea.setEventHandler('onEvtParamChanged', this._handleParamChanged.bind(this));
+            chatArea.setEventHandler('onEvtProviderChanged', (ca, newProvider, oldProvider) => {
+                if (oldProvider && this.selectedProviders.get(oldProvider) === ca.id) {
+                    this.selectedProviders.delete(oldProvider);
+                }
+                if (newProvider) {
+                    this.selectedProviders.set(newProvider, ca.id);
+                }
+            });
+            chatArea.setEventHandler('onEvtPromptSend', this._handlePromptSend.bind(this));
+            chatArea.setEventHandler('onEvtExport', this._handleExport.bind(this));
+
+            this.chatAreas.set(data.id, chatArea);
+            this.updateDefaultLayout();
+            this.updateNewChatButtonState();
+            console.log(`Added ChatArea: ${data.id}`);
+
+            if (data.providerName && data.providerName !== 'New Chat') {
+                this.selectedProviders.set(data.providerName, data.id);
             }
-            if (newProvider) {
-                this.selectedProviders.set(newProvider, ca.id);
-            }
-        });
-        chatArea.setEventHandler('onEvtPromptSend', this._handlePromptSend.bind(this));
-        chatArea.setEventHandler('onEvtExport', this._handleExport.bind(this));
-
-        this.chatAreas.set(data.id, chatArea);
-        this.updateDefaultLayout();
-        this.updateNewChatButtonState();
-        console.log(`Added ChatArea: ${data.id}`);
-
-        if (data.providerName && data.providerName !== 'New Chat') {
-            this.selectedProviders.set(data.providerName, data.id);
+            // 将chatArea注册到消息系统中
+            this.message.register(chatArea.id, this);
         }
 
         data.conversations?.forEach(item => {
@@ -509,6 +526,9 @@ class MainWindowController {
             this.updateDefaultLayout();
             this.updateNewChatButtonState();
             console.log(`Removed ChatArea: ${id}`);
+
+            // 从消息系统中注销chatArea
+            this.message.unregister(id);
         }
     };
 
