@@ -15,8 +15,9 @@ class KimiPageDriver extends GenericPageDriver {
             sendButton: 'div.chat-action > div.chat-editor > div.chat-editor-action div.send-button-container > div.send-button',
             questions: 'div.chat-content-item.chat-content-item-user div.segment-content div.segment-content-box',
             answers: 'div.chat-content-item.chat-content-item-assistant div.segment-content div.segment-content-box',
-            answer_thinking: '.container-block .block-item',
-            answer_result: '.markdown-container',
+            answer_thinking: '.thinking-container .markdown-container',
+            // 获取带有子元素 div.markdown-container 的 div.container-block 后面紧跟的 div.markdown-container
+            answer_result: ['.container-block + .markdown-container', '.markdown-container'],
             conversationArea: '#app div.main div.layout-content-main div.chat-content-container',
             chatTitle: '#app div.main div.layout-header header.chat-header-content h2',
             historyItems: '.sidebar div.history-part ul li',

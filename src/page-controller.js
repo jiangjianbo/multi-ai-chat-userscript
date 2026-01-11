@@ -594,7 +594,7 @@ class PageController {
     // --- Driver Event Handlers ---
 
     handleDriverAnswer(index, element) {
-        this.msgClient.answer(this.pageId, index, element.innerHTML);
+        this.msgClient.answer(this.pageId, index, this.driver.getAnswer(index));
     }
 
     handleDriverChatTitle(title) {

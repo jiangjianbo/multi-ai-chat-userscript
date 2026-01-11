@@ -1,4 +1,20 @@
 const Util = require('./util');
+const TurndownServiceModule = require('turndown');
+const TurndownService = TurndownServiceModule.default || TurndownServiceModule;
+
+
+const turndownService = new TurndownService();
+
+/**
+ * 将html转化为markdown格式，并且做一些内容修正
+ * @param {string} html 传入的html内容
+ * @returns 对应的markdown格式内容
+ */
+function htmlToMarkdown(html) {
+    let text = turndownService.turndown(html);
+    text = text.replace(/(\S)((\\n|\n)\s*)+([，。])/g, '$1$4'); // 为kimi处理\n    \n    。\n的参考文学位置空白的异常情况
+    return text;
+}
 
 /**
  * @description 页面驱动的抽象基类。
@@ -244,49 +260,45 @@ class GenericPageDriver {
     }
 
     /**
-     * 获取指定索引的回答内容（仅结果部分，不包含思考）
+     * 获取指定索引的回答内容（包含思考和结果）
      * @param {number} index - 回答索引
-     * @returns 回答内容
+     * @returns {{thinking: string, result: string}} 回答内容
      */
     getAnswer(index) {
-        const el = this.elementAnswerResult(index);
-        return el ? el.innerHTML.trim() : '';
-    }
-
-    /**
-     * 获取指定索引的回答完整内容（包含思考和结果）
-     * @param {number} index - 回答索引
-     * @returns 回答完整HTML内容
-     */
-    getAnswerFull(index) {
         const el = this.elementAnswer(index);
-        return el ? el.innerHTML : '';
+        if (!el) return {};
+
+        const thinkingEl = el.querySelector(this.selectors.answer_thinking);
+        let resultEl = null;
+        // 处理 answer_result 可能是数组的情况，返回第一个匹配的元素
+        if (Array.isArray(this.selectors.answer_result)) {
+            for (const selector of this.selectors.answer_result) {
+                resultEl = el.querySelector(selector);
+                if (resultEl) break;
+            }
+        } else {
+            resultEl = el.querySelector(this.selectors.answer_result);
+        }
+        
+        return { 
+            thinking: thinkingEl ? htmlToMarkdown(thinkingEl.innerHTML) : '', 
+            result: resultEl ? htmlToMarkdown(resultEl.innerHTML) : '' 
+        };
     }
 
     /**
-     * 获取指定索引的回答思考内容
+     * 获取指定索引的回答思考元素
      * @param {number} index - 回答索引
-     * @returns 回答思考内容HTML
+     * @returns 回答思考元素
      */
-    getAnswerThinking(index) {
+    elementAnswerThinking(index) {
         const answerEl = this.elementAnswer(index);
-        if (!answerEl) return '';
+        if (!answerEl) return null;
 
-        const thinkingEl = answerEl.querySelector(this.selectors.answer_thinking);
-        return thinkingEl ? thinkingEl.innerHTML : '';
-    }
-
-    /**
-     * 获取指定索引的回答结果内容
-     * @param {number} index - 回答索引
-     * @returns 回答结果内容HTML
-     */
-    getAnswerResult(index) {
-        const answerEl = this.elementAnswer(index);
-        if (!answerEl) return '';
-
-        const resultEl = answerEl.querySelector(this.selectors.answer_result);
-        return resultEl ? resultEl.innerHTML : '';
+        if (this.selectors.answer_thinking) {
+            return answerEl.querySelector(this.selectors.answer_thinking);
+        }
+        return answerEl;
     }
 
     /**

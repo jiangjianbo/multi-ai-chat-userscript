@@ -1,5 +1,15 @@
 const {DriverFactory} = require('./driver-factory');
 const Util = require('./util');
+const markedModule = require('marked');
+const marked = markedModule.default || markedModule;
+
+// 配置 marked 选项
+marked.use({
+    breaks: true,      // 支持 GitHub 风格的换行
+    gfm: true,         // 启用 GitHub 风格的 Markdown
+    headerIds: false,  // 不生成 header id，避免冲突
+    mangle: false      // 不混淆 email 地址
+});
 
 /**
  * @class ChatArea
@@ -102,13 +112,16 @@ class ChatArea {
             `<div class="index-item"><a href="#answer-${data.id}-${i}">${i + 1}</a></div>`
         ).join('');
 
+        const longThought = data.params.longThought;
+
         const conversationHtml = (data.conversation||[]).map(msg => {
             let id = '';
             if (msg.type === 'answer') {
                 const answerIndex = answers.indexOf(msg);
                 id = `id="answer-${data.id}-${answerIndex}"`;
             }
-            return `<div class="message-bubble ${msg.type}" ${id}><div class="bubble-content">${msg.content}</div></div>`;
+            const formattedContent = this._formatMessageContent(msg.content, msg.type, longThought);
+            return `<div class="message-bubble ${msg.type}" ${id}><div class="bubble-content">${formattedContent}</div></div>`;
         }).join('');
 
         const overlayHtml = this.url ? '' : `
@@ -565,39 +578,17 @@ class ChatArea {
     }
 
     /**
-     * Updates the answer content, potentially splitting it into "thinking" and "result" sections.
-     * @param {HTMLElement} answerElement - The answer element to update.
-     * @param {string} content - The full HTML content of the answer.
+     * @description 更新回答内容，支持 thinking 和 result 的分离显示。
+     * @param {HTMLElement} answerElement - 要更新的回答元素。
+     * @param {string|object} content - 回答的完整 HTML 内容，或包含 thinking/result 的对象。
      */
     updateAnswerContent(answerElement, content) {
         const bubbleContent = answerElement.querySelector('.bubble-content');
         if (!bubbleContent) return;
 
         const longThought = this.getLongThought();
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
-
-        const thinkingElement = tempDiv.querySelector('[class*="thinking"], .toolcall-container, .thinking-container');
-        const resultElement = tempDiv.querySelector('[class*="markdown"], [class*="result"], .markdown-container');
-
-        let newContent = '';
-        if (thinkingElement && longThought) {
-            newContent = `
-                <div class="answer-thinking collapsed">
-                    <div class="thinking-toggle" onclick="this.parentElement.classList.toggle('collapsed')">
-                        <span class="thinking-icon">💭</span>
-                        <span class="thinking-title">Thinking</span>
-                    </div>
-                    <div class="thinking-content">${thinkingElement.innerHTML}</div>
-                </div>
-                <div class="answer-result">${resultElement ? resultElement.innerHTML : content}</div>
-            `;
-        } else if (resultElement) {
-            newContent = `<div class="answer-result">${resultElement.innerHTML}</div>`;
-        } else {
-            newContent = content;
-        }
-        bubbleContent.innerHTML = newContent;
+        const formattedContent = this._formatMessageContent(content, 'answer', longThought);
+        bubbleContent.innerHTML = formattedContent;
     }
 
     updateModelVersion(version) {
@@ -701,6 +692,41 @@ class ChatArea {
             this.indexTooltipElement.style.display = 'none';
         }
         this.currentHoverIndex = null;
+    }
+
+    /**
+     * @description 格式化消息内容，支持 thinking 和 result 的分离显示，并将 markdown 转换为 HTML。
+     * @param {string|{thinking:string, result:string}} content - 消息内容，可以是字符串或包含 thinking/result 的对象
+     * @param {string} type - 消息类型 ('question' 或 'answer')
+     * @param {boolean} longThought - 是否启用长思考模式
+     * @returns {string} 格式化后的 HTML 内容
+     * @private
+     */
+    _formatMessageContent(content, type, longThought) {
+        // 对于 question 类型，直接返回内容（假设 question 是纯文本或 HTML）
+        if (type === 'question') {
+            return content;
+        }
+
+        // 使用 marked 将 markdown 转换为 HTML
+        const thinkingHtml = content.thinking ? marked.parse(String(content.thinking)) : '';
+        const resultHtml = content.result ? marked.parse(String(content.result)) : '';
+
+        // 根据 longThought 决定如何显示
+        if (content.thinking && longThought) {
+            return `
+                <div class="answer-thinking collapsed">
+                    <div class="thinking-toggle" onclick="this.parentElement.classList.toggle('collapsed')">
+                        <span class="thinking-icon">💭</span>
+                        <span class="thinking-title">Thinking</span>
+                    </div>
+                    <div class="thinking-content">${thinkingHtml}</div>
+                </div>
+                <div class="answer-result">${resultHtml}</div>
+            `;
+        } else {
+            return `<div class="answer-result">${resultHtml}</div>`;
+        }
     }
 }
 
