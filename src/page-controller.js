@@ -14,9 +14,11 @@ const { PageProxy } = require('./page-proxy');
 class PageController {
     constructor(message, config, i18n, util) {
         this.driverFactory = new DriverFactory();
+        // 为每个页面实例生成一个唯一的ID
+        this.pageId = this.util.generateUniqueId('page-');
 
         this.message = message;
-        this.msgClient = new MessageClient(message);
+        this.msgClient = new MessageClient(message, this.pageId);
         this.config = config;
         this.i18n = i18n;
         this.util = util;
@@ -24,8 +26,9 @@ class PageController {
 
         this.driver = null;
         this.syncChatWindow = null;
-        // 为每个页面实例生成一个唯一的ID
-        this.pageId = 'page-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+
+        // 注册所有onMsg
+        this.message.register(this.pageId, this);
     }
 
     /**

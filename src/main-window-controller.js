@@ -8,15 +8,15 @@ const MessageClient = require('./message-client');
  */
 class MainWindowController {
     /**
-     * @param {string} receiverId - 用于接收消息的唯一id
+     * @param {string} mainWinId - 用于接收消息的唯一id
      * @param {object} message - The message bus instance.
      * @param {object} config - The configuration instance.
      * @param {object} i18n - The internationalization instance.
      */
-    constructor(receiverId, message, config, i18n) {
-        this.receiverId = receiverId;
+    constructor(mainWinId, message, config, i18n) {
+        this.mainWinId = mainWinId;
         this.message = message;
-        this.msgClient = new MessageClient(message);
+        this.msgClient = new MessageClient(message, mainWinId);
         this.config = config;
         this.i18n = i18n;
         this.util = new Util();
@@ -59,7 +59,7 @@ class MainWindowController {
         chatArea.setReadyForReUse(true);
         chatArea.clearAllMessages();
         // 发送 thread 消息给原生窗口，原生窗口会返回 new_session 事件
-        this.msgClient.thread(chatArea.id);
+        this.msgClient.thread(chatArea.pageId);
     }
 
     _handleShare(chatArea, url) {
@@ -322,7 +322,7 @@ class MainWindowController {
      * @description 注册所有onMsg*消息处理函数。
      */
     initMessageListeners() {
-        this.message.register(this.receiverId, this);
+        this.message.register(this.mainWinId, this);
     }
 
     /**
@@ -414,7 +414,7 @@ class MainWindowController {
     onMsgNewSession(data) {
         const chatArea = this.chatAreas.get(data.id);
         if (chatArea) {
-            chatArea.newSession();
+            chatArea.clearAndNewSession();
         }
     }
 
@@ -436,12 +436,18 @@ class MainWindowController {
 
         let reuse = false;
         let chatArea = null;
+        // 将page-xxx开头的 page id 修改为area-xxx开头的area id
+        if (data.id.startsWith('page-') == false) 
+            throw new Error('ChatArea id must start with "page-".');
 
-        if (this.chatAreas.has(data.id)) {
-            chatArea = this.chatAreas.get(data.id);
+        const areaId = data.id.replace('page-', 'area-');
+
+        if (this.chatAreas.has(areaId)) {
+            chatArea = this.chatAreas.get(areaId);
             if (chatArea.getReadyForReUse()) {
                 console.log(`Reusing existing ChatArea with id ${data.id}.`);
                 chatArea.setReadyForReUse(false);
+                chatArea.connectPage(data.id); // 重新关联页面id
                 reuse = true;
             } else {
                 console.warn(`ChatArea with id ${data.id} already exists.`);

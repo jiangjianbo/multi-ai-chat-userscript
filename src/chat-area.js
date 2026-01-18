@@ -18,14 +18,19 @@ marked.use({
 class ChatArea {
     /**
      * @param {object} mainController - The main window controller instance.
-     * @param {string} id - The unique ID for this chat area.
+     * @param {string} pageId - The unique ID for this chat area.
      * @param {string} url - The URL of the AI provider.
      * @param {HTMLElement} container - The container element for this chat area.
      * @param {I18n} i18n - The internationalization instance.
      */
-    constructor(mainController, id, url, container, i18n) {
+    constructor(mainController, pageId, url, container, i18n) {
+        this.driverFactory = new DriverFactory();
+        this.utils = new Util();
+        
         this.mainController = mainController;
-        this.id = id;
+        this.pageId = pageId; // 关联的页面ID
+        // 使用随机的id标识每个chatArea实例，这些id会通过事件消息和pageId最终关联
+        this.id = this.utils.generateUniqueId('chat-area-');    
         this.url = url;
         this.container = container;
         this.i18n = i18n;
@@ -34,9 +39,6 @@ class ChatArea {
         // 原生窗口会返回new_session事件，检查到该标志后复用当前chatArea
         this.readyForReUse = false; 
 
-        this.driverFactory = new DriverFactory();
-        this.utils = new Util();
-        
         this.element = null;
         this.hideTimeout = null;
         this.indexTooltipTimer = null;
@@ -61,6 +63,14 @@ class ChatArea {
             FULLY_EXPANDED: 'fully_expanded'
         };
         this.collapseState = this.CollapseState.FULLY_EXPANDED;
+    }
+
+    /**
+     * 将chatarea和页面关联起来，可以相互通讯
+     * @param {string} pageId 关联的页面id
+     */
+    connectPage(pageId) {
+        this.pageId = pageId;
     }
 
     /**
@@ -628,7 +638,7 @@ class ChatArea {
         console.log(`ChatArea ${this.id}: Model version updated to ${version}`);
     }
 
-    newSession() {
+    clearAndNewSession() {
         this.conversationArea.innerHTML = '';
         this.element.querySelector('.chat-area-index').innerHTML = '';
         this.answerBubbles = this.element.querySelectorAll('.message-bubble.answer');

@@ -1,5 +1,18 @@
+let __util_unique_id_counter = 0;
+
 // 根据项目规范，使用 function 定义构造函数来模拟类，并导出
 class Util {
+
+    /**
+     * 创建时间相关的唯一id
+     * @param {string} prefix 前缀
+     * @returns 返回唯一id
+     */
+    generateUniqueId(prefix = 'id-') {
+        const uniquePart = Date.now() + '-' + (++__util_unique_id_counter) + '-' + Math.random().toString(36).substring(2, 9);
+        return `${prefix}${uniquePart}`;
+    }
+
     /**
      * @description 在文档加载完成之后延迟运行。
      * @param {function} fn - 回调函数
@@ -113,7 +126,7 @@ class Util {
 
             for (const item of selector) {
                 const resultEl = parent.querySelector(item);
-                if (resultEl) break;
+                if (resultEl) return resultEl;
             }
         } else {
             return parent.querySelector(selector);

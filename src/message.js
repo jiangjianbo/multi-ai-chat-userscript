@@ -101,10 +101,9 @@ class Message {
         const receiverListeners = this.listeners.get(receiverId);
 
         this.util.forEachMember(listener, (obj, methodName, methodValue) => {
-            console.trace(`Checking method ${methodName} in listener for registration.`);
-            
             if (typeof listener[methodName] === 'function' && methodName.startsWith('onMsg')) {
                 const type = this.util.camelToDash(methodName.substring(5), '_');
+                console.debug(`Checking method ${methodName} in listener for ${type} registration.`);
                 if (!receiverListeners.has(type)) {
                     receiverListeners.set(type, new Set());
                 }
