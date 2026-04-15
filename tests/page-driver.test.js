@@ -14,9 +14,9 @@ const setupDOM = () => {
         </div>
         <div id="conversation">
             <div class="question">Question 1</div>
-            <div class="answer">Answer 1</div>
+            <div class="answer"><div class="result">Answer 1</div></div>
             <div class="question">Question 2</div>
-            <div class="answer collapsed">Answer 2</div>
+            <div class="answer collapsed"><div class="result">Answer 2</div></div>
         </div>
         <div id="options">
             <select id="model-selector">
@@ -45,6 +45,8 @@ class TestPageDriver extends GenericPageDriver {
             modelSelector: '#model-selector',
             longThinkSwitch: '#long-think-switch',
             answerCollapsedClass: 'collapsed',
+            answer_thinking: '.thinking',
+            answer_result: '.result',
         });
     }
 
@@ -93,7 +95,7 @@ describe('PageDriver Module', () => {
             expect(driver.elementAnswer(1).textContent).toBe('Answer 2');
 
             expect(driver.getQuestion(0)).toBe('Question 1');
-            expect(driver.getAnswer(1)).toBe('Answer 2');
+            expect(driver.getAnswer(1)).toEqual({ thinking: '', result: 'Answer 2' });
         });
 
         test('4. should get options', () => {

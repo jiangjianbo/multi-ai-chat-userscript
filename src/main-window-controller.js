@@ -64,32 +64,32 @@ class MainWindowController {
 
     _handleShare(chatArea, url) {
         navigator.clipboard.writeText(url);
-        this.msgClient.focus(chatArea.id);
+        this.msgClient.focus(chatArea.pageId);
     }
 
     _handleParamChanged(chatArea, key, newValue, oldValue) {
         if (key === 'modelVersion') {
-            this.msgClient.setModelVersion(chatArea.id, newValue);
+            this.msgClient.setModelVersion(chatArea.pageId, newValue);
         } else if (key === 'webAccess' || key === 'longThought') {
-            this.msgClient.setOption(chatArea.id, key, newValue);
+            this.msgClient.setOption(chatArea.pageId, key, newValue);
         } else {
             // For other parameters, use param_changed message
-            this.msgClient.sendParamChanged(chatArea.id, key, newValue, oldValue);
+            this.msgClient.sendParamChanged(chatArea.pageId, key, newValue, oldValue);
         }
     }
 
     _handleProviderChanged(chatArea, newProvider, oldProvider) {
         const newUrl = this.driverFactory.getProviderUrl(newProvider);
-        this.msgClient.changeProvider(chatArea.id, newUrl);
+        this.msgClient.changeProvider(chatArea.pageId, newUrl);
         chatArea.url = newUrl;
     }
 
     _handlePromptSend(chatArea, text) {
-        this.msgClient.prompt(chatArea.id, text);
+        this.msgClient.prompt(chatArea.pageId, text);
     }
 
     _handleExport(chatArea) {
-        this.msgClient.export(chatArea.id);
+        this.msgClient.export(chatArea.pageId);
     }
 
 
@@ -349,7 +349,7 @@ class MainWindowController {
      * @param {object} data - Message data ({ id, content, ... }).
      */
     onMsgAnswer(data) {
-        const chatArea = this.chatAreas.get(data.id);
+        const chatArea = this.chatAreas.get(data.senderId);
         if (chatArea) {
             chatArea.handleAnswer(data);
         }
@@ -360,7 +360,7 @@ class MainWindowController {
      * @param {object} data - Message data ({ id }).
      */
     onMsgDestroy(data) {
-        this.removeChatArea(data.id);
+        this.removeChatArea(data.senderId);
     }
 
     /**
@@ -368,7 +368,7 @@ class MainWindowController {
      * @param {object} data - Message data ({ id, title }).
      */
     onMsgTitleChange(data) {
-        const chatArea = this.chatAreas.get(data.id);
+        const chatArea = this.chatAreas.get(data.senderId);
         if (chatArea) {
             chatArea.updateTitle(data.title);
         }
@@ -379,7 +379,7 @@ class MainWindowController {
      * @param {object} data - Message data ({ id, key, value }).
      */
     onMsgOptionChange(data) {
-        const chatArea = this.chatAreas.get(data.id);
+        const chatArea = this.chatAreas.get(data.senderId);
         if (chatArea) {
             chatArea.updateOption(data.key, data.value);
         }
@@ -390,7 +390,7 @@ class MainWindowController {
      * @param {object} data - Message data ({ id, index, content }).
      */
     onMsgQuestion(data) {
-        const chatArea = this.chatAreas.get(data.id);
+        const chatArea = this.chatAreas.get(data.senderId);
         if (chatArea) {
             chatArea.addQuestion(data.content);
         }
@@ -401,7 +401,7 @@ class MainWindowController {
      * @param {object} data - Message data ({ id, version }).
      */
     onMsgModelVersionChange(data) {
-        const chatArea = this.chatAreas.get(data.id);
+        const chatArea = this.chatAreas.get(data.senderId);
         if (chatArea) {
             chatArea.updateModelVersion(data.version);
         }
@@ -412,7 +412,7 @@ class MainWindowController {
      * @param {object} data - Message data ({ id }).
      */
     onMsgNewSession(data) {
-        const chatArea = this.chatAreas.get(data.id);
+        const chatArea = this.chatAreas.get(data.senderId || data.receiverId);
         if (chatArea) {
             chatArea.clearAndNewSession();
         }
@@ -427,6 +427,8 @@ class MainWindowController {
         this.onMsgNewSession(data);
     }
 
+
+
     /**
      * @description Adds a new ChatArea instance.
      * @param {object} data - 初始化数据，结构为{id, providerName, url, pinned, params:{webAccess,longThought, models, modelVersion}, conversation:[{type, content}]}.
@@ -436,14 +438,12 @@ class MainWindowController {
 
         let reuse = false;
         let chatArea = null;
-        // 将page-xxx开头的 page id 修改为area-xxx开头的area id
-        if (data.id.startsWith('page-') == false) 
+        // 验证page id格式
+        if (data.id.startsWith('page-') == false)
             throw new Error('ChatArea id must start with "page-".');
 
-        const areaId = data.id.replace('page-', 'area-');
-
-        if (this.chatAreas.has(areaId)) {
-            chatArea = this.chatAreas.get(areaId);
+        if (this.chatAreas.has(data.id)) {
+            chatArea = this.chatAreas.get(data.id);
             if (chatArea.getReadyForReUse()) {
                 console.log(`Reusing existing ChatArea with id ${data.id}.`);
                 chatArea.setReadyForReUse(false);
@@ -485,8 +485,6 @@ class MainWindowController {
             if (data.providerName && data.providerName !== 'New Chat') {
                 this.selectedProviders.set(data.providerName, data.id);
             }
-            // 将chatArea注册到消息系统中
-            this.message.register(chatArea.id, this);
         }
 
         data.conversations?.forEach(item => {
@@ -532,9 +530,6 @@ class MainWindowController {
             this.updateDefaultLayout();
             this.updateNewChatButtonState();
             console.log(`Removed ChatArea: ${id}`);
-
-            // 从消息系统中注销chatArea
-            this.message.unregister(id);
         }
     };
 

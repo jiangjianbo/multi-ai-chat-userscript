@@ -16,8 +16,9 @@ jest.mock('../src/driver-factory', () => ({
 }));
 
 jest.mock('../src/chat-area', () => {
-    return jest.fn().mockImplementation((mainController, id, url, container, i18n) => ({
-        id: id,
+    return jest.fn().mockImplementation((mainController, pageId, url, container, i18n) => ({
+        id: `chat-area-${pageId}`,
+        pageId: pageId,
         container: container, // Pass container to the mock instance
         init: jest.fn(),
         handleAnswer: jest.fn(),
@@ -28,7 +29,12 @@ jest.mock('../src/chat-area', () => {
         updateTitle: jest.fn(),
         updateOption: jest.fn(),
         addQuestion: jest.fn(),
+        addAnswer: jest.fn(),
         updateModelVersion: jest.fn(),
+        clearAndNewSession: jest.fn(),
+        clearAllMessages: jest.fn(),
+        setReadyForReUse: jest.fn(),
+        getReadyForReUse: jest.fn(() => false),
         newSession: jest.fn(),
         getProvider: jest.fn(() => 'MockProvider'), // 添加 getProvider mock
     }));
@@ -37,6 +43,7 @@ jest.mock('../src/chat-area', () => {
 jest.mock('../src/message', () => {
     return jest.fn().mockImplementation(() => ({
         register: jest.fn(),
+        unregister: jest.fn(),
         send: jest.fn(),
     }));
 });
@@ -130,26 +137,26 @@ describe('MainWindowController', () => {
     });
 
     test('addChatArea should create, initialize, and store a new ChatArea', () => {
-        const chatData = { id: 'test-1', url: 'http://test.com', title: 'Test', params: {} };
+        const chatData = { id: 'page-test-1', url: 'http://test.com', title: 'Test', params: {} };
         controller.addChatArea(chatData);
 
         expect(ChatArea).toHaveBeenCalledTimes(1);
-        expect(controller.chatAreas.has('test-1')).toBe(true);
-        const chatAreaInstance = controller.chatAreas.get('test-1');
+        expect(controller.chatAreas.has('page-test-1')).toBe(true);
+        const chatAreaInstance = controller.chatAreas.get('page-test-1');
         expect(chatAreaInstance.init).toHaveBeenCalledWith(chatData);
         expect(document.querySelector('.chat-area-container')).not.toBeNull();
     });
 
     test('removeChatArea should destroy the instance and remove it from the map and DOM', () => {
-        const chatData = { id: 'test-1', url: 'http://test.com', title: 'Test', params: {} };
+        const chatData = { id: 'page-test-1', url: 'http://test.com', title: 'Test', params: {} };
         controller.addChatArea(chatData);
-        expect(controller.chatAreas.has('test-1')).toBe(true);
-        const container = controller.chatAreas.get('test-1').container;
+        expect(controller.chatAreas.has('page-test-1')).toBe(true);
+        const container = controller.chatAreas.get('page-test-1').container;
         expect(container.parentElement).not.toBeNull();
 
-        controller.removeChatArea('test-1');
+        controller.removeChatArea('page-test-1');
 
-        expect(controller.chatAreas.has('test-1')).toBe(false);
+        expect(controller.chatAreas.has('page-test-1')).toBe(false);
         expect(container.parentElement).toBeNull();
     });
 
@@ -175,21 +182,21 @@ describe('MainWindowController', () => {
 
     test('onMsgCreate should call addChatArea', () => {
         const spy = jest.spyOn(controller, 'addChatArea');
-        const data = { id: 'new-chat', params: {} };
+        const data = { id: 'page-new-chat', params: {} };
         controller.onMsgCreate(data);
         expect(spy).toHaveBeenCalledWith(data);
     });
 
     test('onMsgAnswer should call handleAnswer on the correct ChatArea', () => {
-        const chatData1 = { id: 'chat-1', params: {} };
-        const chatData2 = { id: 'chat-2', params: {} };
+        const chatData1 = { id: 'page-chat-1', params: {} };
+        const chatData2 = { id: 'page-chat-2', params: {} };
         controller.addChatArea(chatData1);
         controller.addChatArea(chatData2);
 
-        const instance1 = controller.chatAreas.get('chat-1');
-        const instance2 = controller.chatAreas.get('chat-2');
+        const instance1 = controller.chatAreas.get('page-chat-1');
+        const instance2 = controller.chatAreas.get('page-chat-2');
 
-        const answer = { id: 'chat-2', content: 'This is an answer.' };
+        const answer = { senderId: 'page-chat-2', content: 'This is an answer.' };
         controller.onMsgAnswer(answer);
 
         expect(instance1.handleAnswer).not.toHaveBeenCalled();
@@ -198,125 +205,125 @@ describe('MainWindowController', () => {
 
     test('onMsgDestroy should call removeChatArea', () => {
         const spy = jest.spyOn(controller, 'removeChatArea');
-        const data = { id: 'chat-to-remove' };
+        const data = { senderId: 'page-chat-to-remove' };
         controller.onMsgDestroy(data);
-        expect(spy).toHaveBeenCalledWith(data.id);
+        expect(spy).toHaveBeenCalledWith(data.senderId);
     });
-    
+
     // ... other tests for onMsg... remain the same
 
-    test('_handleNewSession should call msgClient.thread', () => {
-        const mockChatArea = { id: 'chat-1' };
+    test('_handleNewSession should call msgClient.thread with chatArea.pageId', () => {
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1', setReadyForReUse: jest.fn(), clearAllMessages: jest.fn() };
         controller._handleNewSession(mockChatArea, 'provider-x');
-        expect(mockMsgClient.thread).toHaveBeenCalledWith('chat-1');
+        expect(mockMsgClient.thread).toHaveBeenCalledWith('page-chat-1');
     });
 
-    test('_handleShare should call msgClient.focus', () => {
+    test('_handleShare should call msgClient.focus with chatArea.pageId', () => {
         // Mock clipboard API
         Object.assign(navigator, {
             clipboard: {
                 writeText: jest.fn(),
             },
         });
-        const mockChatArea = { id: 'chat-1' };
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
         controller._handleShare(mockChatArea, 'http://share.url');
         expect(navigator.clipboard.writeText).toHaveBeenCalledWith('http://share.url');
-        expect(mockMsgClient.focus).toHaveBeenCalledWith('chat-1');
+        expect(mockMsgClient.focus).toHaveBeenCalledWith('page-chat-1');
     });
 
-    test('_handleParamChanged should call msgClient.sendParamChanged', () => {
-        const mockChatArea = { id: 'chat-1' };
+    test('_handleParamChanged should call msgClient.sendParamChanged with chatArea.pageId', () => {
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
         controller._handleParamChanged(mockChatArea, 'key', 'new', 'old');
-        expect(mockMsgClient.sendParamChanged).toHaveBeenCalledWith('chat-1', 'key', 'new', 'old');
+        expect(mockMsgClient.sendParamChanged).toHaveBeenCalledWith('page-chat-1', 'key', 'new', 'old');
     });
 
-    test('_handlePromptSend should call msgClient.prompt', () => {
-        const mockChatArea = { id: 'chat-1' };
+    test('_handlePromptSend should call msgClient.prompt with chatArea.pageId', () => {
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
         controller._handlePromptSend(mockChatArea, 'Hello AI');
-        expect(mockMsgClient.prompt).toHaveBeenCalledWith('chat-1', 'Hello AI');
+        expect(mockMsgClient.prompt).toHaveBeenCalledWith('page-chat-1', 'Hello AI');
     });
 
-    test('_handleExport should call msgClient.export', () => {
-        const mockChatArea = { id: 'chat-1' };
+    test('_handleExport should call msgClient.export with chatArea.pageId', () => {
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
         controller._handleExport(mockChatArea);
-        expect(mockMsgClient.export).toHaveBeenCalledWith('chat-1');
+        expect(mockMsgClient.export).toHaveBeenCalledWith('page-chat-1');
     });
 
     test('onMsgOptionChange should call updateOption on the correct ChatArea', () => {
-        const chatData = { id: 'chat-1', params: {} };
+        const chatData = { id: 'page-chat-1', params: {} };
         controller.addChatArea(chatData);
-        const chatAreaInstance = controller.chatAreas.get('chat-1');
+        const chatAreaInstance = controller.chatAreas.get('page-chat-1');
 
-        const optionData = { id: 'chat-1', key: 'webAccess', value: true };
+        const optionData = { senderId: 'page-chat-1', key: 'webAccess', value: true };
         controller.onMsgOptionChange(optionData);
 
         expect(chatAreaInstance.updateOption).toHaveBeenCalledWith('webAccess', true);
     });
 
     test('onMsgQuestion should call addQuestion on the correct ChatArea', () => {
-        const chatData = { id: 'chat-1', params: {} };
+        const chatData = { id: 'page-chat-1', params: {} };
         controller.addChatArea(chatData);
-        const chatAreaInstance = controller.chatAreas.get('chat-1');
+        const chatAreaInstance = controller.chatAreas.get('page-chat-1');
 
-        const questionData = { id: 'chat-1', content: 'What is AI?' };
+        const questionData = { senderId: 'page-chat-1', content: 'What is AI?' };
         controller.onMsgQuestion(questionData);
 
         expect(chatAreaInstance.addQuestion).toHaveBeenCalledWith('What is AI?');
     });
 
     test('onMsgModelVersionChange should call updateModelVersion on the correct ChatArea', () => {
-        const chatData = { id: 'chat-1', params: {} };
+        const chatData = { id: 'page-chat-1', params: {} };
         controller.addChatArea(chatData);
-        const chatAreaInstance = controller.chatAreas.get('chat-1');
+        const chatAreaInstance = controller.chatAreas.get('page-chat-1');
 
-        const versionData = { id: 'chat-1', version: 'v2.0' };
+        const versionData = { senderId: 'page-chat-1', version: 'v2.0' };
         controller.onMsgModelVersionChange(versionData);
 
         expect(chatAreaInstance.updateModelVersion).toHaveBeenCalledWith('v2.0');
     });
 
-    test('onMsgThread should call newSession on the correct ChatArea', () => {
-        const chatData = { id: 'chat-1', params: {} };
+    test('onMsgThread should call clearAndNewSession on the correct ChatArea', () => {
+        const chatData = { id: 'page-chat-1', params: {} };
         controller.addChatArea(chatData);
-        const chatAreaInstance = controller.chatAreas.get('chat-1');
+        const chatAreaInstance = controller.chatAreas.get('page-chat-1');
 
-        const threadData = { id: 'chat-1' };
+        const threadData = { senderId: 'page-chat-1' };
         controller.onMsgThread(threadData);
 
-        expect(chatAreaInstance.newSession).toHaveBeenCalled();
+        expect(chatAreaInstance.clearAndNewSession).toHaveBeenCalled();
     });
 
     test('_handleParamChanged should call msgClient.setModelVersion for modelVersion', () => {
-        const mockChatArea = { id: 'chat-1' };
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
         controller._handleParamChanged(mockChatArea, 'modelVersion', 'v2.0', 'v1.0');
-        expect(mockMsgClient.setModelVersion).toHaveBeenCalledWith('chat-1', 'v2.0');
+        expect(mockMsgClient.setModelVersion).toHaveBeenCalledWith('page-chat-1', 'v2.0');
     });
 
     test('_handleParamChanged should call msgClient.setOption for webAccess', () => {
-        const mockChatArea = { id: 'chat-1' };
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
         controller._handleParamChanged(mockChatArea, 'webAccess', true, false);
-        expect(mockMsgClient.setOption).toHaveBeenCalledWith('chat-1', 'webAccess', true);
+        expect(mockMsgClient.setOption).toHaveBeenCalledWith('page-chat-1', 'webAccess', true);
     });
 
     test('_handleParamChanged should call msgClient.setOption for longThought', () => {
-        const mockChatArea = { id: 'chat-1' };
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
         controller._handleParamChanged(mockChatArea, 'longThought', true, false);
-        expect(mockMsgClient.setOption).toHaveBeenCalledWith('chat-1', 'longThought', true);
+        expect(mockMsgClient.setOption).toHaveBeenCalledWith('page-chat-1', 'longThought', true);
     });
 
     test('_handleParamChanged should call msgClient.sendParamChanged for other parameters', () => {
-        const mockChatArea = { id: 'chat-1' };
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
         controller._handleParamChanged(mockChatArea, 'customParam', 'newValue', 'oldValue');
-        expect(mockMsgClient.sendParamChanged).toHaveBeenCalledWith('chat-1', 'customParam', 'newValue', 'oldValue');
+        expect(mockMsgClient.sendParamChanged).toHaveBeenCalledWith('page-chat-1', 'customParam', 'newValue', 'oldValue');
     });
 
     test('getUnavailableProviders should return providers used by other ChatAreas', () => {
         // Populate selectedProviders map directly (this is populated by addChatArea in real implementation)
-        controller.selectedProviders.set('ProviderA', 'chat-1');
-        controller.selectedProviders.set('ProviderB', 'chat-2');
-        controller.selectedProviders.set('ProviderC', 'chat-3');
+        controller.selectedProviders.set('ProviderA', 'page-chat-1');
+        controller.selectedProviders.set('ProviderB', 'page-chat-2');
+        controller.selectedProviders.set('ProviderC', 'page-chat-3');
 
-        const unavailable = controller.getUnavailableProviders('chat-1');
+        const unavailable = controller.getUnavailableProviders('page-chat-1');
         expect(unavailable).toEqual(expect.arrayContaining(['ProviderB', 'ProviderC']));
         expect(unavailable).not.toContain('ProviderA');
     });
@@ -327,18 +334,18 @@ describe('MainWindowController', () => {
         expect(document.querySelector('.content-area').dataset.layout).toBe('1');
 
         // Add 2 areas - should become layout 2
-        controller.addChatArea({ id: 'chat-1', params: {} });
-        controller.addChatArea({ id: 'chat-2', params: {} });
+        controller.addChatArea({ id: 'page-chat-1', params: {} });
+        controller.addChatArea({ id: 'page-chat-2', params: {} });
         expect(document.querySelector('.content-area').dataset.layout).toBe('2');
 
         // Add 2 more areas (total 4) - should become layout 4
-        controller.addChatArea({ id: 'chat-3', params: {} });
-        controller.addChatArea({ id: 'chat-4', params: {} });
+        controller.addChatArea({ id: 'page-chat-3', params: {} });
+        controller.addChatArea({ id: 'page-chat-4', params: {} });
         expect(document.querySelector('.content-area').dataset.layout).toBe('4');
 
         // Add 2 more areas (total 6) - should become layout 6
-        controller.addChatArea({ id: 'chat-5', params: {} });
-        controller.addChatArea({ id: 'chat-6', params: {} });
+        controller.addChatArea({ id: 'page-chat-5', params: {} });
+        controller.addChatArea({ id: 'page-chat-6', params: {} });
         expect(document.querySelector('.content-area').dataset.layout).toBe('6');
     });
 
@@ -353,7 +360,7 @@ describe('MainWindowController', () => {
         expect(button.disabled).toBe(false);
 
         // Layout 1, 1 area - button disabled
-        controller.chatAreas.set('chat-1', {});
+        controller.chatAreas.set('page-chat-1', {});
         controller.updateNewChatButtonState();
         expect(button.disabled).toBe(true);
 

@@ -13,6 +13,7 @@ const { PageProxy } = require('./page-proxy');
  */
 class PageController {
     constructor(message, config, i18n, util) {
+        this.util = util;
         this.driverFactory = new DriverFactory();
         // 为每个页面实例生成一个唯一的ID
         this.pageId = this.util.generateUniqueId('page-');
@@ -21,7 +22,6 @@ class PageController {
         this.msgClient = new MessageClient(message, this.pageId);
         this.config = config;
         this.i18n = i18n;
-        this.util = util;
         this.pageProxy = new PageProxy(); // 添加 PageProxy 实例
 
         this.driver = null;
@@ -634,6 +634,9 @@ class PageController {
      * @description 清理所有资源
      */
     cleanup() {
+        // 通知主窗口销毁对应的 ChatArea（在 unregister 之前发送）
+        this.msgClient.destroy(this.pageId);
+
         // 清理 PageProxy 托管的所有资源
         this.pageProxy.cleanup();
 

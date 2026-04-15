@@ -212,24 +212,24 @@ describe('MessageClient', () => {
     test('answer should send an answer message', () => {
         msgClient.answer('id1', 0, 'content');
         expect(message.send).toHaveBeenCalledWith('answer', {
-            id: 'id1',
+            senderId: 'id1',
             index: 0,
             content: 'content'
         });
     });
 
-    test('titleChange should send a titleChange message', () => {
+    test('titleChange should send a title_change message', () => {
         msgClient.titleChange('id1', 'new title');
-        expect(message.send).toHaveBeenCalledWith('titleChange', {
-            id: 'id1',
+        expect(message.send).toHaveBeenCalledWith('title_change', {
+            senderId: 'id1',
             title: 'new title'
         });
     });
 
-    test('optionChange should send an optionChange message', () => {
+    test('optionChange should send an option_change message', () => {
         msgClient.optionChange('id1', 'key1', 'value1');
-        expect(message.send).toHaveBeenCalledWith('optionChange', {
-            id: 'id1',
+        expect(message.send).toHaveBeenCalledWith('option_change', {
+            senderId: 'id1',
             key: 'key1',
             value: 'value1'
         });
@@ -238,16 +238,16 @@ describe('MessageClient', () => {
     test('question should send a question message', () => {
         msgClient.question('id1', 0, 'a question');
         expect(message.send).toHaveBeenCalledWith('question', {
-            id: 'id1',
+            senderId: 'id1',
             index: 0,
             content: 'a question'
         });
     });
 
-    test('modelVersionChange should send a modelVersionChange message', () => {
+    test('modelVersionChange should send a model_version_change message', () => {
         msgClient.modelVersionChange('id1', 'v2');
-        expect(message.send).toHaveBeenCalledWith('modelVersionChange', {
-            id: 'id1',
+        expect(message.send).toHaveBeenCalledWith('model_version_change', {
+            senderId: 'id1',
             version: 'v2'
         });
     });

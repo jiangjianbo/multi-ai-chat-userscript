@@ -187,8 +187,8 @@ class ChatArea {
                     <div class="params-selector">
                         <div class="title-button params-button" title="Parameters" data-lang-key="parametersButtonTitle">&#9881;</div>
                         <div class="custom-dropdown params-dropdown">
-                            <div class="param-item" data-param-name="webAccess"><label data-lang-key="webAccessLabel">Web Access</label><label class="toggle-switch"><input type="checkbox" id="web-access-${data.id}" ${data.params.webAccess ? 'checked' : ''}><span class="slider"></span></label></div>
-                            <div class="param-item" data-param-name="longThought"><label data-lang-key="longThoughtLabel">Long Thought</label><label class="toggle-switch"><input type="checkbox" id="long-thought-${data.id}" ${data.params.longThought ? 'checked' : ''}><span class="slider"></span></label></div>
+                            <div class="param-item" data-param-name="webAccess"><label data-lang-key="webAccessLabel">Web Access</label><label class="toggle-switch"><input type="checkbox" id="web-access-${this.id}" ${data.params.webAccess ? 'checked' : ''}><span class="slider"></span></label></div>
+                            <div class="param-item" data-param-name="longThought"><label data-lang-key="longThoughtLabel">Long Thought</label><label class="toggle-switch"><input type="checkbox" id="long-thought-${this.id}" ${data.params.longThought ? 'checked' : ''}><span class="slider"></span></label></div>
                             <hr>
                             <div class="param-item" data-param-name="modelVersion"><label data-lang-key="modelVersionLabel">Model Version</label>
                                 <select>${versions}</select>
@@ -234,7 +234,7 @@ class ChatArea {
         this.pinButton.addEventListener('click', () => this.setPin(!this.isPinned()));
         this.element.querySelector('.close-button').addEventListener('click', () => {
             this.eventHandlers.onEvtClose(this);
-            this.mainController.removeChatArea(this.id);
+            this.mainController.removeChatArea(this.pageId);
         });
         this.element.querySelector('.new-session-button').addEventListener('click', () => {
             this.eventHandlers.onEvtNewSession(this, this.getProvider());
@@ -569,6 +569,9 @@ class ChatArea {
     }
 
     updateTitle(title) {
+        if (this.providerNameDisplay && title) {
+            this.providerNameDisplay.textContent = title;
+        }
         console.log(`ChatArea ${this.id}: Title updated to ${title}`);
     }
 

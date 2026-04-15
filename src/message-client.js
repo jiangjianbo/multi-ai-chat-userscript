@@ -19,7 +19,7 @@ class MessageClient {
      * @param {*} oldValue - The old value of the parameter.
      */
     sendParamChanged(receiverId, key, newValue, oldValue) {
-        this.message.send('param_changed', { key: key, newValue: newValue, oldValue: oldValue, receiverId: receiverId, senderId });
+        this.message.send('param_changed', { key: key, newValue: newValue, oldValue: oldValue, receiverId: receiverId, senderId: this.senderId });
     }
 
     /**
@@ -28,7 +28,7 @@ class MessageClient {
      * @param {string} prompt - The prompt to sync.
      */
     syncChat(receiverId, prompt) {
-        this.message.send('sync_chat', { prompt: prompt, receiverId: receiverId, senderId });
+        this.message.send('sync_chat', { prompt: prompt, receiverId: receiverId, senderId: this.senderId });
     }
 
     /**
@@ -37,7 +37,7 @@ class MessageClient {
      * @param {string} key - The key of the parameter to get.
      */
     getParam(receiverId, key) {
-        this.message.send('get_param', { key: key, receiverId: receiverId, senderId });
+        this.message.send('get_param', { key: key, receiverId: receiverId, senderId: this.senderId });
     }
 
     /**
@@ -47,7 +47,7 @@ class MessageClient {
      * @param {*} value - The value of the parameter.
      */
     paramValue(receiverId, key, value) {
-        this.message.send('param_value', { key: key, value: value, receiverId: receiverId, senderId });
+        this.message.send('param_value', { key: key, value: value, receiverId: receiverId, senderId: this.senderId });
     }
 
     /**
@@ -55,7 +55,7 @@ class MessageClient {
      * @param {string} receiverId - The ID of the receiver.
      */
     chatStarted(receiverId) {
-        this.message.send('chat_started', { receiverId: receiverId, senderId });
+        this.message.send('chat_started', { receiverId: receiverId, senderId: this.senderId });
     }
 
     /**
@@ -64,7 +64,7 @@ class MessageClient {
      * @param {string} response - The chat response.
      */
     chatCompleted(receiverId, response) {
-        this.message.send('chat_completed', { response: response, receiverId: receiverId, senderId });
+        this.message.send('chat_completed', { response: response, receiverId: receiverId, senderId: this.senderId });
     }
 
     /**
@@ -73,7 +73,7 @@ class MessageClient {
      * @param {string} error - The error message.
      */
     chatFailed(receiverId, error) {
-        this.message.send('chat_failed', { error: error, receiverId: receiverId, senderId });
+        this.message.send('chat_failed', { error: error, receiverId: receiverId, senderId: this.senderId });
     }
 
     /**
@@ -83,7 +83,7 @@ class MessageClient {
      * @param {string} url - The URL of the chat area.
      */
     registerChatArea(receiverId, name, url) {
-        this.message.send('register_chat_area', { name: name, url: url, receiverId: receiverId, senderId });
+        this.message.send('register_chat_area', { name: name, url: url, receiverId: receiverId, senderId: this.senderId });
     }
 
     /**
@@ -108,7 +108,7 @@ class MessageClient {
      * @param {string} receiverId - The ID of the receiver.
      */
     closeWindow(receiverId) {
-        this.message.send('close_window', { receiverId: receiverId, senderId });
+        this.message.send('close_window', { receiverId: receiverId, senderId: this.senderId });
     }
 
     /**
@@ -179,7 +179,7 @@ class MessageClient {
      * @param {string} prompt - The prompt to send.
      */
     chat(prompt) {
-        this.message.send('chat', { prompt: prompt, senderId });
+        this.message.send('chat', { prompt: prompt, senderId: this.senderId });
     }
 
     /**
@@ -235,50 +235,50 @@ class MessageClient {
 
     /**
      * @description Sends an answer message.
-     * @param {string} receiverId - The ID of the chat area.
+     * @param {string} senderId - The ID of the sender (pageId).
      * @param {number} index - The index of the answer.
      * @param {string} content - The content of the answer.
      */
-    answer(receiverId, index, content) {
-        this.message.send('answer', { receiverId: receiverId, index: index, content: content });
+    answer(senderId, index, content) {
+        this.message.send('answer', { senderId: senderId, index: index, content: content });
     }
 
     /**
      * @description Sends a title change message.
-     * @param {string} receiverId - The ID of the chat area.
+     * @param {string} senderId - The ID of the sender (pageId).
      * @param {string} title - The new title.
      */
-    titleChange(receiverId, title) {
-        this.message.send('titleChange', { receiverId: receiverId, title: title });
+    titleChange(senderId, title) {
+        this.message.send('title_change', { senderId: senderId, title: title });
     }
 
     /**
      * @description Sends an option change message.
-     * @param {string} receiverId - The ID of the chat area.
+     * @param {string} senderId - The ID of the sender (pageId).
      * @param {string} key - The key of the option.
      * @param {*} value - The new value of the option.
      */
-    optionChange(receiverId, key, value) {
-        this.message.send('optionChange', { receiverId: receiverId, key: key, value: value });
+    optionChange(senderId, key, value) {
+        this.message.send('option_change', { senderId: senderId, key: key, value: value });
     }
 
     /**
      * @description Sends a question message.
-     * @param {string} receiverId - The ID of the chat area.
+     * @param {string} senderId - The ID of the sender (pageId).
      * @param {number} index - The index of the question.
      * @param {string} content - The content of the question.
      */
-    question(receiverId, index, content) {
-        this.message.send('question', { receiverId: receiverId, index: index, content: content });
+    question(senderId, index, content) {
+        this.message.send('question', { senderId: senderId, index: index, content: content });
     }
 
     /**
      * @description Sends a model version change message.
-     * @param {string} receiverId - The ID of the chat area.
+     * @param {string} senderId - The ID of the sender (pageId).
      * @param {string} version - The new model version.
      */
-    modelVersionChange(receiverId, version) {
-        this.message.send('modelVersionChange', { receiverId: receiverId, version: version });
+    modelVersionChange(senderId, version) {
+        this.message.send('model_version_change', { senderId: senderId, version: version });
     }
 
     /**
@@ -288,7 +288,7 @@ class MessageClient {
      * @param {*} value - The new value of the option.
      */
     setOption(receiverId, key, value) {
-        this.message.send('setOption', { receiverId: receiverId, key: key, value: value });
+        this.message.send('set_option', { receiverId: receiverId, key: key, value: value });
     }
 
     /**
@@ -297,7 +297,7 @@ class MessageClient {
      * @param {string} version - The model version to set.
      */
     setModelVersion(receiverId, version) {
-        this.message.send('setModelVersion', { receiverId: receiverId, version: version });
+        this.message.send('set_model_version', { receiverId: receiverId, version: version });
     }
 
     /**
@@ -307,7 +307,7 @@ class MessageClient {
      * @param {boolean} collapsed - Whether the answer should be collapsed.
      */
     setAnswerStatus(receiverId, index, collapsed) {
-        this.message.send('setAnswerStatus', { receiverId: receiverId, index: index, collapsed: collapsed });
+        this.message.send('set_answer_status', { receiverId: receiverId, index: index, collapsed: collapsed });
     }
 
     /**
@@ -316,6 +316,14 @@ class MessageClient {
      */
     thread(receiverId) {
         this.message.send('thread', { receiverId: receiverId });
+    }
+
+    /**
+     * @description Sends a destroy message to notify the main window that the page is closing.
+     * @param {string} senderId - The ID of the sender (pageId).
+     */
+    destroy(senderId) {
+        this.message.send('destroy', { senderId: senderId });
     }
 }
 

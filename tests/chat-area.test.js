@@ -7,6 +7,19 @@ jest.mock('../src/driver-factory', () => ({
     registerDriver: jest.fn(),
 }));
 
+// Mock marked ESM 模块
+jest.mock('marked', () => {
+    const mockParse = jest.fn((text) => text);
+    return {
+        default: {
+            use: jest.fn(),
+            parse: mockParse,
+        },
+        use: jest.fn(),
+        parse: mockParse,
+    };
+});
+
 const ChatArea = require('../src/chat-area');
 const { toHtml } = require('./test-utils');
 
@@ -107,7 +120,7 @@ describe('ChatArea Module', () => {
     });
 
     test('7. updateOption should update webAccess checkbox', () => {
-        const checkbox = container.querySelector(`#web-access-test-id-1`);
+        const checkbox = container.querySelector(`#web-access-${chatArea.id}`);
         expect(checkbox.checked).toBe(true); // Initial value from instanceData
 
         chatArea.updateOption('webAccess', false);
@@ -118,7 +131,7 @@ describe('ChatArea Module', () => {
     });
 
     test('8. updateOption should update longThought checkbox', () => {
-        const checkbox = container.querySelector(`#long-thought-test-id-1`);
+        const checkbox = container.querySelector(`#long-thought-${chatArea.id}`);
         expect(checkbox.checked).toBe(false); // Initial value from instanceData
 
         chatArea.updateOption('longThought', true);
@@ -195,7 +208,7 @@ describe('ChatArea Module', () => {
         expect(container.querySelector('.chat-area-conversation').children.length).toBeGreaterThan(0);
         expect(container.querySelector('.chat-area-index').children.length).toBeGreaterThan(0);
 
-        chatArea.newSession();
+        chatArea.clearAndNewSession();
 
         expect(container.querySelector('.chat-area-conversation').innerHTML).toBe('');
         expect(container.querySelector('.chat-area-index').innerHTML).toBe('');
@@ -212,7 +225,7 @@ describe('ChatArea Module', () => {
     });
 
     test('18. setWebAccess should update checkbox state', () => {
-        const checkbox = container.querySelector(`#web-access-test-id-1`);
+        const checkbox = container.querySelector(`#web-access-${chatArea.id}`);
         chatArea.setWebAccess(false);
         expect(checkbox.checked).toBe(false);
         chatArea.setWebAccess(true);
@@ -220,7 +233,7 @@ describe('ChatArea Module', () => {
     });
 
     test('19. setLongThought should update checkbox state', () => {
-        const checkbox = container.querySelector(`#long-thought-test-id-1`);
+        const checkbox = container.querySelector(`#long-thought-${chatArea.id}`);
         chatArea.setLongThought(true);
         expect(checkbox.checked).toBe(true);
         chatArea.setLongThought(false);

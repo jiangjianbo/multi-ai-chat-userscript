@@ -5,8 +5,7 @@ const OriginalMessage = require('../src/message');
 class PatchedMessage extends OriginalMessage {
     constructor(channelName) {
         super(channelName);
-        // 添加缺失的事件监听器
-        this.channel.addEventListener('message', this.handleMessage.bind(this));
+        // super() 已经绑定了 handleMessage，无需重复绑定
     }
 }
 // 替换导出
@@ -216,9 +215,9 @@ describe('Message Module', () => {
 
         message2.register('receiverType', subscriber);
 
-        message1.send('typeA', { content: 'Message for Type A' });
-        message1.send('typeB', { content: 'Message for Type B' });
-        message1.send('typeC', { content: 'Message for Type C' }); // Should not be received
+        message1.send('type_a', { content: 'Message for Type A' });
+        message1.send('type_b', { content: 'Message for Type B' });
+        message1.send('type_c', { content: 'Message for Type C' }); // Should not be received
 
         expect(subscriber.onMsgTypeA).toHaveBeenCalledTimes(1);
         expect(subscriber.onMsgTypeA).toHaveBeenCalledWith({ content: 'Message for Type A' });

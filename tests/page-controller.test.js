@@ -12,6 +12,17 @@ jest.mock('../src/driver-factory', () => ({
 }));
 jest.mock('../src/sync-chat-window');
 jest.mock('../src/message-client');
+jest.mock('../src/page-proxy', () => ({
+    PageProxy: jest.fn().mockImplementation(() => ({
+        addEventListener: jest.fn((element, event, handler) => {
+            if (element && element.addEventListener) {
+                element.addEventListener(event, handler);
+            }
+        }),
+        cleanup: jest.fn(),
+        observe: jest.fn(),
+    })),
+}));
 
 describe('PageController', () => {
     let pageController;
@@ -41,6 +52,7 @@ describe('PageController', () => {
             setModelVersion: jest.fn(),
             newSession: jest.fn(),
             setAnswerStatus: jest.fn(),
+            getAnswer: jest.fn(() => ''),
             init: jest.fn().mockResolvedValue(undefined),
             // UI enhancement related methods
             elementConversationArea: jest.fn(() => null), // Return null during init to prevent UI injection in basic tests
@@ -62,6 +74,8 @@ describe('PageController', () => {
         mockMessage = { register: jest.fn(), send: jest.fn() };
         mockMsgClient = new MessageClient();
         mockUtil = {
+            generateUniqueId: jest.fn((prefix) => `${prefix}test-id-${Date.now()}`),
+            $: jest.fn((selector, parent) => parent ? parent.querySelector(selector) : document.querySelector(selector)),
             toHtml: jest.fn((json) => {
                 if (typeof json === 'string') {
                     return document.createTextNode(json);
@@ -165,6 +179,7 @@ describe('PageController', () => {
 
     test('Driver onAnswer callback should call msgClient.answer', () => {
         const mockElement = { innerHTML: 'Answer content' };
+        mockDriver.getAnswer.mockReturnValue('Answer content');
         mockDriver.onAnswer(1, mockElement);
         expect(mockMsgClient.answer).toHaveBeenCalledWith(pageController.pageId, 1, 'Answer content');
     });
@@ -185,8 +200,8 @@ describe('PageController', () => {
         expect(mockMsgClient.newSession).toHaveBeenCalledWith(pageController.pageId);
     });
 
-    test('onMsgNewSession should call driver.newSession', () => {
-        pageController.onMsgNewSession({ id: pageController.pageId });
+    test('onMsgThread should call driver.newSession', () => {
+        pageController.onMsgThread({ receiverId: pageController.pageId });
         expect(mockDriver.newSession).toHaveBeenCalled();
     });
 
