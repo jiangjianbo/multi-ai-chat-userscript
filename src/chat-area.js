@@ -285,7 +285,7 @@ class ChatArea {
                     if (overlay) {
                         overlay.remove();
                     }
-                    this.url = this.driverFactory.getProviderUrl(newProvider);
+                    // URL 不在这里设置，等 PageController 注册时通过重新关联设置
                 }
             });
         });

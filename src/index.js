@@ -10,6 +10,7 @@ const Storage = require('./storage');
 require('./kimi-page-driver');
 require('./gemini-page-driver');
 require('./chatgpt-page-driver');
+require('./qianwen-page-driver');
 
 /**
  * @description The entry point of the userscript.

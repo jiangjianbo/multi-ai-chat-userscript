@@ -196,13 +196,32 @@ function MainWindowController( /* 依赖的基础组件 */) {
 
 ### 场景：用户在两个不同网站上发起同步
 
-1.  用户在 `kimi.ai` 上点击“同步对比”。`PageController` (Kimi) 通过`SyncChatWindow`创建主窗口，并发送 `create` 消息。`MainWindowController` 收到后，创建一个 `ChatArea` (Kimi)。
-2.  用户切换到 `chat.openai.com` 所在的 Tab，再次点击“同步对比”。
-3.  `PageController` (ChatGPT) 发现主窗口已存在，于是直接获取其句柄。
+1.  用户在 `kimi.ai` 上点击"同步对比"。`PageController` (Kimi) 通过`SyncChatWindow`创建主窗口，并发送 `create` 消息。`MainWindowController` 收到后，创建一个 `ChatArea` (Kimi)。
+2.  用户切换到 `chat.openai.com` 所在的 Tab，再次点击"同步对比"。
+3.  `PageController` (ChatGPT) 通过 `window.open('', windowName)` 跨标签页发现主窗口已存在。
 4.  `PageController` (ChatGPT) 发送一个 `create` 消息，其中包含 ChatGPT 的 URL 和会话信息。
 5.  `MainWindowController` 收到第二个 `create` 消息，于是创建并添加第二个 `ChatArea` (ChatGPT) 到主窗口的布局中。
 6.  现在主窗口并排显示了 Kimi 和 ChatGPT 两个内容块。
 7.  用户在主窗口底部的全局输入框提问，`MainWindowController` 将 `chat` 消息广播出去，两个 `PageController` 都会收到并各自驱动自己的页面进行回答。
+
+#### 跨标签页主窗口查找机制
+
+由于 `window.top` 是每个标签页独立的作用域，不同标签页之间无法共享 JavaScript 变量。`SyncChatWindow` 使用以下策略实现跨标签页查找：
+
+1. **快速路径**：检查 `window.top.multiAiChatMainWindow` 本地缓存引用（同标签页内有效）
+2. **跨标签页查找**：通过 `window.open('', 'multi-ai-chat-main-window')` 利用浏览器的命名窗口机制查找
+3. **验证**：检查返回窗口的 `name` 属性是否等于 `multi-ai-chat-main-window`
+4. **缓存**：将找到的引用缓存到 `window.top` 以加速后续查找
+
+### 场景：新建对话
+
+1.  用户在主窗口点击 ➕（new-chat-button）按钮，创建一个空白的 ChatArea（url=null, providerName='New Chat'）。
+2.  ChatArea 显示 `forced-selection` 覆盖层，提示用户选择提供商。
+3.  用户从下拉菜单选择一个提供商（如 Kimi），触发 `_handleProviderChanged`。
+4.  `_handleProviderChanged` 检测到 `oldProvider` 为 null，通过 `window.open` 打开新标签页到提供商 URL，URL 中附加 `_chatAreaId` 参数。
+5.  新标签页加载后，油猴脚本初始化 `PageController`，从 URL 读取 `_chatAreaId` 作为 pageId。
+6.  `PageController` 发送 `create` 消息，`MainWindowController` 发现 pageId 对应的 ChatArea 已存在且 url=null，复用并重新初始化。
+7.  后续消息通信链路正常建立，ChatArea 可接收和显示 AI 的回答。
 
 
 
@@ -220,6 +239,13 @@ function MainWindowController( /* 依赖的基础组件 */) {
 4. 在当前测试窗口中填充主窗口代码，并通过`MainWindowController`设置页面布局为2，持续创建2个ChatArea应该成功，但是创建第三个的时候也应该成功，但是布局自动变更为4。在ChatArea从4个继续创建的时候，布局要变成6，在6个ChatArea满的时候继续创建ChatArea应该返回失败。支持pin住ChatArea，切换布局的时候会优先使用pin住的对象，如果对象数量超过布局容纳，则隐藏其他ChatArea，在切换更多布局（如从2切换到6）的时候显示原来隐藏的ChatArea对象。
 5. 在当前测试窗口中填充主窗口代码，在ChatArea中添加文字、修改模型各种参数，都应该获得Message消息通知
 6. 在当前测试窗口中填充主窗口代码，在主窗口中添加提示词并发送，所有ChatArea都应该自动填入提示词，并发送Message消息给各自关联的消息对象
+7. 测试跨标签页主窗口查找：当 `window.top` 无缓存引用时，`exist()` 应通过 `window.open('', windowName)` 找到已命名的主窗口并返回 true
+8. 测试 `exist()` 对错误名称窗口的过滤：当 `window.open` 返回窗口的 `name` 与目标不匹配时，应返回 false
+9. 测试 `checkAndCreateWindow()` 跨标签页查找：无缓存引用但主窗口已存在时，应找到并聚焦已有窗口
+10. 测试 `_handleProviderChanged` 新建场景：oldProvider 为 null 时应调用 `window.open` 且 URL 包含 `_chatAreaId` 参数
+11. 测试 `_handleProviderChanged` 切换场景：oldProvider 为已有提供商时应调用 `msgClient.changeProvider`
+12. 测试 `PageController` 构造函数读取 `_chatAreaId`：URL 包含有效参数时使用该值作为 pageId
+13. 测试 `addChatArea` 关联复用：ChatArea 已存在且 url=null 时，收到真实提供商数据应复用并重新初始化
 
 ## 附录
 

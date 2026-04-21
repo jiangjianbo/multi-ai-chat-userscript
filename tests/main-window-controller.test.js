@@ -218,17 +218,47 @@ describe('MainWindowController', () => {
         expect(mockMsgClient.thread).toHaveBeenCalledWith('page-chat-1');
     });
 
-    test('_handleShare should call msgClient.focus with chatArea.pageId', () => {
-        // Mock clipboard API
-        Object.assign(navigator, {
-            clipboard: {
-                writeText: jest.fn(),
-            },
-        });
+    test('_handleShare should open new window with url and pageId as window name', () => {
+        const mockWindow = { closed: false, focus: jest.fn() };
+        const openSpy = jest.spyOn(window, 'open').mockReturnValue(mockWindow);
         const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
         controller._handleShare(mockChatArea, 'http://share.url');
-        expect(navigator.clipboard.writeText).toHaveBeenCalledWith('http://share.url');
-        expect(mockMsgClient.focus).toHaveBeenCalledWith('page-chat-1');
+        expect(openSpy).toHaveBeenCalledWith('http://share.url', 'page-chat-1');
+        expect(controller._shareWindowMap.get('http://share.url')).toBe(mockWindow);
+        openSpy.mockRestore();
+    });
+
+    test('_handleShare should focus existing window instead of opening new one', () => {
+        const mockWindow = { closed: false, focus: jest.fn() };
+        controller._shareWindowMap.set('http://existing.url', mockWindow);
+        const openSpy = jest.spyOn(window, 'open');
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
+        controller._handleShare(mockChatArea, 'http://existing.url');
+        expect(mockWindow.focus).toHaveBeenCalled();
+        expect(openSpy).not.toHaveBeenCalled();
+        openSpy.mockRestore();
+    });
+
+    test('_handleShare should reopen window if previous one is closed', () => {
+        const closedWindow = { closed: true, focus: jest.fn() };
+        controller._shareWindowMap.set('http://closed.url', closedWindow);
+        const newMockWindow = { closed: false, focus: jest.fn() };
+        const openSpy = jest.spyOn(window, 'open').mockReturnValue(newMockWindow);
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
+        controller._handleShare(mockChatArea, 'http://closed.url');
+        expect(openSpy).toHaveBeenCalledWith('http://closed.url', 'page-chat-1');
+        expect(controller._shareWindowMap.get('http://closed.url')).toBe(newMockWindow);
+        openSpy.mockRestore();
+    });
+
+    test('_handleShare should do nothing when url is empty', () => {
+        const openSpy = jest.spyOn(window, 'open');
+        const mockChatArea = { id: 'chat-area-1', pageId: 'page-chat-1' };
+        controller._handleShare(mockChatArea, '');
+        controller._handleShare(mockChatArea, null);
+        controller._handleShare(mockChatArea, undefined);
+        expect(openSpy).not.toHaveBeenCalled();
+        openSpy.mockRestore();
     });
 
     test('_handleParamChanged should call msgClient.sendParamChanged with chatArea.pageId', () => {
@@ -368,5 +398,94 @@ describe('MainWindowController', () => {
         layoutContainer.dataset.layout = '2';
         controller.updateNewChatButtonState();
         expect(button.disabled).toBe(false);
+    });
+
+    describe('_handleProviderChanged for new chat flow', () => {
+        test('should open new tab with _chatAreaId when ChatArea has no previous provider', () => {
+            const openSpy = jest.spyOn(window, 'open').mockReturnValue({});
+            const mockChatArea = {
+                id: 'chat-area-1',
+                pageId: 'page-new-123',
+                url: null,
+            };
+
+            controller._handleProviderChanged(mockChatArea, 'Kimi', null);
+
+            expect(openSpy).toHaveBeenCalledWith(
+                'https://example.com/kimi?_chatAreaId=page-new-123',
+                '_blank'
+            );
+            // URL 不在 _handleProviderChanged 中设置，等 PageController 注册时通过重新关联设置
+            expect(mockChatArea.url).toBeNull();
+            expect(mockMsgClient.changeProvider).not.toHaveBeenCalled();
+            openSpy.mockRestore();
+        });
+
+        test('should open new tab with _chatAreaId when old provider is New Chat', () => {
+            const openSpy = jest.spyOn(window, 'open').mockReturnValue({});
+            const mockChatArea = {
+                id: 'chat-area-1',
+                pageId: 'page-new-456',
+                url: null,
+            };
+
+            controller._handleProviderChanged(mockChatArea, 'Gemini', 'New Chat');
+
+            expect(openSpy).toHaveBeenCalledWith(
+                'https://example.com/gemini?_chatAreaId=page-new-456',
+                '_blank'
+            );
+            expect(mockMsgClient.changeProvider).not.toHaveBeenCalled();
+            openSpy.mockRestore();
+        });
+
+        test('should send changeProvider message when switching provider on existing ChatArea', () => {
+            const mockChatArea = {
+                id: 'chat-area-1',
+                pageId: 'page-existing-1',
+                url: 'https://example.com/kimi',
+            };
+
+            controller._handleProviderChanged(mockChatArea, 'Gemini', 'Kimi');
+
+            expect(mockMsgClient.changeProvider).toHaveBeenCalledWith('page-existing-1', 'https://example.com/gemini');
+            expect(mockChatArea.url).toBe('https://example.com/gemini');
+        });
+    });
+
+    describe('addChatArea ChatArea re-association', () => {
+        test('should re-associate existing ChatArea when url is null and real provider data arrives', () => {
+            // 首先创建一个新建的 ChatArea（url=null，模拟 newChatButton 创建）
+            const newChatArea = {
+                id: 'chat-area-page-new-1',
+                pageId: 'page-new-1',
+                url: null,
+                getUrl: jest.fn(() => null),
+                init: jest.fn(),
+                updateTitle: jest.fn(),
+                setReadyForReUse: jest.fn(),
+                getReadyForReUse: jest.fn(() => false),
+                setEventHandler: jest.fn(),
+                connectPage: jest.fn(),
+                container: document.createElement('div'),
+            };
+            controller.chatAreas.set('page-new-1', newChatArea);
+
+            // 模拟原生页面发送 create 消息，关联到同一个 ChatArea
+            const providerData = {
+                id: 'page-new-1',
+                url: 'https://example.com/kimi',
+                providerName: 'Kimi',
+                title: 'New Chat',
+                params: { webAccess: false, longThought: false, models: [], modelVersion: null },
+                conversation: []
+            };
+            controller.addChatArea(providerData);
+
+            expect(newChatArea.url).toBe('https://example.com/kimi');
+            expect(newChatArea.init).toHaveBeenCalledWith(providerData);
+            expect(newChatArea.updateTitle).toHaveBeenCalledWith('Kimi');
+            expect(controller.selectedProviders.get('Kimi')).toBe('page-new-1');
+        });
     });
 });

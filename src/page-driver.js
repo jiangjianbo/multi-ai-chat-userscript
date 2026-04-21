@@ -31,6 +31,7 @@ class GenericPageDriver {
         this.pageProxy = new PageProxy(); // 添加 PageProxy 实例
 
         this.selectors = {
+            syncButtonContainer: 'body', // 同步按钮存放的容器选择器
             promptInput: 'textarea',
             sendButton: 'button[type="submit"]',
             questions: '.question',
@@ -102,6 +103,14 @@ class GenericPageDriver {
      */
     elementConversationArea() {
         return this.util.$(this.selectors.conversationArea);
+    }
+
+    /**
+     * 获取同步按钮容器元素
+     * @returns {HTMLElement|null} 同步按钮容器元素。
+     */
+    elementSyncButtonContainer() {
+        return this.util.$(this.selectors.syncButtonContainer);
     }
 
     /**
@@ -409,6 +418,11 @@ class GenericPageDriver {
                     this.util.setLexicalContent(input, message);
                     break;
 
+                case 'slate':
+                    // 使用专门处理 Slate 编辑器的方法
+                    this.util.setSlateContent(input, message);
+                    break;
+
                 case 'contenteditable':
                     // 对于其他 contenteditable 元素，直接设置内容
                     input.textContent = message;
@@ -552,12 +566,16 @@ class GenericPageDriver {
             });
         });
 
-        const conversationArea = this.util.$(this.selectors.conversationArea);
-        if (conversationArea) {
-            this.observer.observe(conversationArea, { childList: true, subtree: true, attributes: true, characterData: true });
-        } else {
-            console.error('Conversation area not found for monitoring.');
-        }
+        const observeConversationArea = () => {
+            const conversationArea = this.util.$(this.selectors.conversationArea);
+            if (conversationArea) {
+                this.observer.observe(conversationArea, { childList: true, subtree: true, attributes: true, characterData: true });
+            } else {
+                console.warn('Conversation area not found, retrying in 500ms...');
+                setTimeout(observeConversationArea, 500);
+            }
+        };
+        observeConversationArea();
 
         // Monitor for model version changes
         const currentModelVersionElement = this.elementCurrentModelVersion();

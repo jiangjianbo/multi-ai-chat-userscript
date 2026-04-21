@@ -22,10 +22,8 @@ class SyncChatWindow {
      * @returns {boolean} - True if it exists, false otherwise.
      */
     exist() {
-        // The main window is identified by its window.name.
-        // A more robust implementation might involve a BroadcastChannel ping/pong.
-        const win = window.top.multiAiChatMainWindow;
-        return !!(win && !win.closed);
+        const localRef = window.top.multiAiChatMainWindow;
+        return !!(localRef && !localRef.closed);
     }
 
     _addStyles(doc) {
@@ -418,19 +416,44 @@ debugger;
 
     /**
      * @description Checks for the main window and creates it if it doesn't exist.
+     * Supports finding existing main windows created by other tabs by checking document content.
      * @returns {Window} - The main window instance.
      */
     async checkAndCreateWindow() {
-        if (this.exist()) {
-            console.log('Main window already exists. Focusing on it.');
-            const win = window.top.multiAiChatMainWindow;
-            win.focus();
-            return win;
+        // 先尝试获取已缓存的引用
+        let existingWin = window.top.multiAiChatMainWindow;
+        if (existingWin && !existingWin.closed) {
+            console.log('Main window already exists (cached ref). Focusing on it.');
+            existingWin.focus();
+            return existingWin;
         }
 
+        // 通过 window.open 获取命名窗口的引用
+        // 注意：如果该名称的窗口不存在，window.open 会创建一个空白窗口
+        // 所以需要通过检查 document 内容来判断是已有的主窗口还是新空白窗口
         console.log('Creating new main window.');
         const newWindow = window.open('', this.MULTI_AI_CHAT_MAIN_WINDOW, 'width=1200,height=800');
         if (newWindow) {
+            // 检查窗口是否已有主窗口内容（跨标签页找到已存在的主窗口）
+            let isExistingMainWindow = false;
+            try {
+                const rootEl = newWindow.document.getElementById('root');
+                if (rootEl) {
+                    isExistingMainWindow = true;
+                }
+            } catch (e) {
+                // 跨域访问可能抛出异常，说明不是我们的窗口
+                console.debug('Cross-origin check, treating as new window:', e.message);
+            }
+
+            if (isExistingMainWindow) {
+                console.log('Main window already exists (found by name). Focusing on it.');
+                window.top.multiAiChatMainWindow = newWindow;
+                newWindow.focus();
+                return newWindow;
+            }
+
+            // 新空白窗口，填充主窗口内容
             window.top.multiAiChatMainWindow = newWindow;
 
             // 在父窗口监听子窗口的错误

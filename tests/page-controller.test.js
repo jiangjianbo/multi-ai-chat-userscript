@@ -55,7 +55,8 @@ describe('PageController', () => {
             getAnswer: jest.fn(() => ''),
             init: jest.fn().mockResolvedValue(undefined),
             // UI enhancement related methods
-            elementConversationArea: jest.fn(() => null), // Return null during init to prevent UI injection in basic tests
+            elementConversationArea: jest.fn(() => document.body), // Return body so sync button gets injected
+            elementSyncButtonContainer: jest.fn(() => null), // Return null so button goes to body fallback
             elementAnswers: jest.fn(() => []),
             elementQuestion: jest.fn(() => null),
             getAnswerStatus: jest.fn(() => false),
@@ -450,6 +451,64 @@ describe('PageController', () => {
 
             const toolbars = mockAnswer.querySelectorAll('.multi-ai-answer-toolbar');
             expect(toolbars.length).toBe(1);
+        });
+    });
+
+    describe('New chat flow - _chatAreaId parameter', () => {
+        test('should use _chatAreaId from URL as pageId when present', async () => {
+            // 重置 window.location 使其包含 _chatAreaId 参数
+            delete window.location;
+            window.location = {
+                hostname: 'test.com',
+                href: 'http://localhost/?_chatAreaId=page-new-123',
+                search: '?_chatAreaId=page-new-123',
+            };
+
+            const newController = new PageController(
+                mockMessage,
+                {},
+                { getText: key => key },
+                mockUtil
+            );
+
+            expect(newController.pageId).toBe('page-new-123');
+        });
+
+        test('should ignore _chatAreaId that does not start with page-', async () => {
+            delete window.location;
+            window.location = {
+                hostname: 'test.com',
+                href: 'http://localhost/?_chatAreaId=invalid-id',
+                search: '?_chatAreaId=invalid-id',
+            };
+
+            const newController = new PageController(
+                mockMessage,
+                {},
+                { getText: key => key },
+                mockUtil
+            );
+
+            expect(newController.pageId).not.toBe('invalid-id');
+            expect(newController.pageId).toMatch(/^page-/);
+        });
+
+        test('should generate new pageId when no _chatAreaId in URL', async () => {
+            delete window.location;
+            window.location = {
+                hostname: 'test.com',
+                href: 'http://localhost/',
+                search: '',
+            };
+
+            const newController = new PageController(
+                mockMessage,
+                {},
+                { getText: key => key },
+                mockUtil
+            );
+
+            expect(newController.pageId).toMatch(/^page-/);
         });
     });
 });

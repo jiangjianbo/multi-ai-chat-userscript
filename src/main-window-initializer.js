@@ -12,6 +12,7 @@ const resources = require('./lang');
 require('./kimi-page-driver');
 require('./gemini-page-driver');
 require('./chatgpt-page-driver');
+require('./qianwen-page-driver');
 
 /**
  * 主窗口使用的完整代码和依赖全部放在这里，并且会在编译时候嵌入到主窗口的代码中，实现完整的页面功能。

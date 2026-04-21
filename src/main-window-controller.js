@@ -24,6 +24,7 @@ class MainWindowController {
         this.driverFactory = new DriverFactory(); // 只是用来获取提供商URL和模型列表
         this.defaultDriverParams = null; // 默认的页面参数， webAccess, longThought等
         this.selectedProviders = new Map(); // K: providerName, V: chatAreaId
+        this._shareWindowMap = new Map(); // K: url, V: window reference
         this.element = null;
         this.chatAreaContainer = null;
         this.layoutSwitcher = null;
@@ -62,9 +63,34 @@ class MainWindowController {
         this.msgClient.thread(chatArea.pageId);
     }
 
+    /**
+     * @description 处理 share-button 点击：打开或激活原生 AI 页面。
+     * 通过维护 url -> window 引用的映射，实现智能去重：
+     * 如果对应 URL 的窗口已打开且未关闭，则聚焦该窗口；否则新开标签页。
+     * @param {ChatArea} chatArea - 触发事件的 ChatArea 实例
+     * @param {string} url - 要打开的 URL
+     */
     _handleShare(chatArea, url) {
-        navigator.clipboard.writeText(url);
-        this.msgClient.focus(chatArea.pageId);
+        if (!url) return;
+
+        // 检查是否已有该 URL 对应的窗口引用
+        const existingRef = this._shareWindowMap.get(url);
+        if (existingRef && !existingRef.closed) {
+            // 窗口仍然存在，尝试聚焦
+            try {
+                existingRef.focus();
+                return;
+            } catch (e) {
+                // 跨域窗口可能无法调用 focus()，忽略错误，重新打开
+            }
+        }
+
+        // 使用 pageId 作为窗口名称，便于浏览器重用
+        const windowName = chatArea.pageId || '_blank';
+        const newWin = window.open(url, windowName);
+        if (newWin) {
+            this._shareWindowMap.set(url, newWin);
+        }
     }
 
     _handleParamChanged(chatArea, key, newValue, oldValue) {
@@ -80,8 +106,17 @@ class MainWindowController {
 
     _handleProviderChanged(chatArea, newProvider, oldProvider) {
         const newUrl = this.driverFactory.getProviderUrl(newProvider);
-        this.msgClient.changeProvider(chatArea.pageId, newUrl);
-        chatArea.url = newUrl;
+
+        if (!oldProvider || oldProvider === 'New Chat') {
+            // 新建的 ChatArea 选择提供商：打开新标签页
+            // 不在这里设置 chatArea.url，等 PageController 注册时通过重新关联设置
+            const urlWithParam = newUrl + (newUrl.includes('?') ? '&' : '?') + '_chatAreaId=' + encodeURIComponent(chatArea.pageId);
+            window.open(urlWithParam, '_blank');
+        } else {
+            // 已有的 ChatArea 切换提供商：设置 URL 并通知原生页面
+            chatArea.url = newUrl;
+            this.msgClient.changeProvider(chatArea.pageId, newUrl);
+        }
     }
 
     _handlePromptSend(chatArea, text) {
@@ -238,7 +273,7 @@ class MainWindowController {
 
         this.newChatButton.addEventListener('click', () => {
             try {
-                const newId = `chat-area-${Date.now()}`;
+                const newId = `page-new-${Date.now()}`;
                 const webAccess = this.settingsMenu.querySelector('#web-access').checked;
                 const longThought = this.settingsMenu.querySelector('#long-thought').checked;
                 this.addChatArea(
@@ -449,6 +484,19 @@ class MainWindowController {
                 chatArea.setReadyForReUse(false);
                 chatArea.connectPage(data.id); // 重新关联页面id
                 reuse = true;
+            } else if (chatArea.getUrl() === null && data.providerName !== 'New Chat') {
+                // 新建的 ChatArea（url=null）被真实的原生页面关联了
+                // 重新初始化 ChatArea 以绑定真实的提供商数据
+                console.log(`Re-associating existing ChatArea ${data.id} with provider ${data.providerName}.`);
+                chatArea.url = data.url;
+                chatArea.init(data);
+                this.switchLanguage(this.i18n.getCurrentLang(), chatArea.element, true);
+                chatArea.updateTitle(data.providerName);
+
+                if (data.providerName) {
+                    this.selectedProviders.set(data.providerName, data.id);
+                }
+                reuse = true;
             } else {
                 console.warn(`ChatArea with id ${data.id} already exists.`);
                 return;
@@ -473,6 +521,7 @@ class MainWindowController {
                 if (newProvider) {
                     this.selectedProviders.set(newProvider, ca.id);
                 }
+                this._handleProviderChanged(ca, newProvider, oldProvider);
             });
             chatArea.setEventHandler('onEvtPromptSend', this._handlePromptSend.bind(this));
             chatArea.setEventHandler('onEvtExport', this._handleExport.bind(this));

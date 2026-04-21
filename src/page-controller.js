@@ -15,8 +15,16 @@ class PageController {
     constructor(message, config, i18n, util) {
         this.util = util;
         this.driverFactory = new DriverFactory();
-        // 为每个页面实例生成一个唯一的ID
-        this.pageId = this.util.generateUniqueId('page-');
+
+        // 检查 URL 中是否有 _chatAreaId 参数（从主窗口新建对话跳转过来）
+        // 如果有，使用该 ID 作为 pageId，以便主窗口能关联到已有的 ChatArea
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatAreaId = urlParams.get('_chatAreaId');
+        if (chatAreaId && chatAreaId.startsWith('page-')) {
+            this.pageId = chatAreaId;
+        } else {
+            this.pageId = this.util.generateUniqueId('page-');
+        }
 
         this.message = message;
         this.msgClient = new MessageClient(message, this.pageId);
@@ -26,9 +34,7 @@ class PageController {
 
         this.driver = null;
         this.syncChatWindow = null;
-
-        // 注册所有onMsg
-        this.message.register(this.pageId, this);
+        this.syncButton = null;
     }
 
     /**
@@ -73,7 +79,7 @@ class PageController {
 
         // 使用 PageProxy 托管事件监听器
         this.pageProxy.addEventListener(syncButton, 'click', this.handleSyncButtonClick.bind(this));
-        document.body.appendChild(syncButton);
+        this.syncButton = syncButton;
 
         // Wait for conversation area to be available, then inject enhancements
         this.waitForConversationArea();
@@ -86,12 +92,32 @@ class PageController {
         const checkAndInject = () => {
             const conversationArea = this.driver.elementConversationArea();
             if (conversationArea) {
+                this.injectSyncButton();
                 this.injectConversationEnhancements();
             } else {
                 setTimeout(checkAndInject, 500);
             }
         };
         checkAndInject();
+    }
+
+    /**
+     * @description 注入同步按钮到页面
+     */
+    injectSyncButton() {
+        if (!this.syncButton) {
+            // 显示错误日志，说明未找到同步按钮容器
+            console.error('Sync button container not found. Sync button will not be injected.');
+            return;
+        }
+        const syncButtonContainer = this.driver.elementSyncButtonContainer();
+        if (syncButtonContainer) {
+            syncButtonContainer.appendChild(this.syncButton);
+        } else {
+            // 如果驱动没有提供专门的容器，则注入到 body 中
+            document.body.appendChild(this.syncButton);
+            console.warn('No specific container for sync button. Injected into body.');
+        }
     }
 
     /**

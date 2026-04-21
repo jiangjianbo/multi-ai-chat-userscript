@@ -419,7 +419,7 @@ class Util {
     /**
      * @description 检测编辑器类型
      * @param {HTMLElement} element - 要检测的HTML元素
-     * @returns {string} - 编辑器类型：'lexical', 'contenteditable', 'input', 'textarea', 'unknown'
+     * @returns {string} - 编辑器类型：'lexical', 'slate', 'contenteditable', 'input', 'textarea', 'unknown'
      */
     detectEditorType(element) {
         if (!element) {
@@ -429,6 +429,11 @@ class Util {
         // 检查是否为 Lexical 编辑器（通过 data-lexical-editor 属性）
         if (element.hasAttribute && element.hasAttribute('data-lexical-editor')) {
             return 'lexical';
+        }
+
+        // 检查是否为 Slate 编辑器（通过 data-slate-node 属性）
+        if (element.querySelector && element.querySelector('[data-slate-node]')) {
+            return 'slate';
         }
 
         // 检查是否为 contenteditable 元素
@@ -481,6 +486,54 @@ class Util {
             bubbles: true,
             cancelable: true,
             data: text
+        }));
+    }
+
+    /**
+     * @description 设置 Slate 编辑器的内容
+     * @param {HTMLElement} element - Slate 编辑器元素
+     * @param {string} text - 要设置的文本内容
+     */
+    setSlateContent(element, text) {
+        if (!element) {
+            console.warn('setSlateContent: element is null or undefined');
+            return;
+        }
+
+        // 清空现有内容
+        element.innerHTML = '';
+
+        // 创建 Slate 编辑器的 DOM 结构: p[data-slate-node="element"] > span[data-slate-node="text"] > span[data-slate-leaf] > span
+        const paragraph = document.createElement('p');
+        paragraph.setAttribute('data-slate-node', 'element');
+        paragraph.className = 'relative m-0 p-0';
+
+        const textNode = document.createElement('span');
+        textNode.setAttribute('data-slate-node', 'text');
+
+        const leaf = document.createElement('span');
+        leaf.setAttribute('data-slate-leaf', 'true');
+
+        const textSpan = document.createElement('span');
+        textSpan.setAttribute('data-slate-zero-width', 'n');
+        textSpan.setAttribute('data-slate-length', String(text.length));
+        textSpan.textContent = text;
+
+        leaf.appendChild(textSpan);
+        textNode.appendChild(leaf);
+        paragraph.appendChild(textNode);
+        element.appendChild(paragraph);
+
+        // 触发 input 事件通知编辑器内容已改变
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // 触发 Slate 的 InputEvent
+        element.dispatchEvent(new InputEvent('input', {
+            bubbles: true,
+            cancelable: true,
+            data: text,
+            inputType: 'insertText'
         }));
     }
 

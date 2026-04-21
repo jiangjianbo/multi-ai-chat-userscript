@@ -9,7 +9,7 @@
 // @match        *://chatgpt.com/*
 // @match        *://chat.deepseek.com/*
 // @match        *://x.com/i/grok*
-// @match        *://www.tongyi.com/*
+// @match        *://qianwen.com/chat/*
 // @match        *://*/*multi-ai-sync-chat-window*
 // @grant        none
 // ==/UserScript==

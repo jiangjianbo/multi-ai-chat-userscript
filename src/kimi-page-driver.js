@@ -12,7 +12,7 @@ class KimiPageDriver extends GenericPageDriver {
         const kimiSelectors = {
             // ... Kimi.ai 对应的选择器 (占位)
             promptInput: 'div.chat-editor > div.chat-input div.chat-input-editor',
-            sendButton: 'div.chat-editor > div.chat-editor-action div.send-button-container > div.send-button',
+            sendButton: 'div.chat-editor > div.chat-editor-action div.send-button-container',
             questions: 'div.chat-content-item.chat-content-item-user div.segment-content div.segment-content-box',
             answers: 'div.chat-content-item.chat-content-item-assistant div.segment-content div.segment-content-box',
             answer_thinking: '.thinking-container .markdown-container',

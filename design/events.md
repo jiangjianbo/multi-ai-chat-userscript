@@ -201,6 +201,153 @@ c5 --> m5 --> p5 --> d5
 
 ---
 
+## 6. 新建对话事件链路
+
+当用户在主窗口点击"新建对话"按钮并选择一个 AI 提供商时，需要自动打开对应的 AI 平台页面，并建立主窗口与新页面之间的消息通信链路。
+
+### 6.1. 事件链路概述
+
+```mermaid
+sequenceDiagram
+    participant MWC as MainWindowController
+    participant CA as ChatArea<br/>(pageId: page-new-xxx)
+    participant TAB as 新标签页<br/>(AI 平台)
+    participant PC as PageController<br/>(pageId: page-new-xxx)
+    participant MSG as Message Bus
+
+    Note over MWC,CA: 1. 用户点击新建对话按钮
+    MWC->>CA: addChatArea({id: 'page-new-xxx',<br/>url: null, providerName: 'New Chat'})
+    CA-->>CA: 显示 forced-selection 覆盖层
+
+    Note over CA,TAB: 2. 用户从下拉菜单选择提供商（如 Kimi）
+    CA->>MWC: onEvtProviderChanged(ca, 'Kimi', null)
+    MWC->>MWC: _handleProviderChanged<br/>oldProvider=null → 新建场景
+    MWC->>TAB: window.open('https://kimi.com?_chatAreaId=page-new-xxx')
+    MWC->>CA: chatArea.url = newUrl
+
+    Note over TAB,MSG: 3. 新标签页加载，油猴脚本初始化
+    TAB->>PC: 脚本注入，new PageController(...)
+    PC->>PC: 从 URL 读取 _chatAreaId='page-new-xxx'<br/>使用作为 pageId
+    PC->>MSG: register('page-new-xxx', this)
+    PC->>MSG: create({id: 'page-new-xxx', url, providerName, ...})
+
+    Note over MSG,MWC: 4. 主窗口收到 create 消息，复用已有 ChatArea
+    MSG->>MWC: onMsgCreate({id: 'page-new-xxx', ...})
+    MWC->>MWC: addChatArea(data)
+    MWC->>MWC: 发现 chatAreas 已有 page-new-xxx<br/>且 url=null → 复用分支
+    MWC->>CA: chatArea.init(providerData)<br/>重新初始化绑定真实数据
+    MWC->>CA: chatArea.updateTitle('Kimi')
+
+    Note over MWC,PC: 5. 后续正常消息通信
+    PC->>MSG: answer('page-new-xxx', index, content)
+    MSG->>MWC: onMsgAnswer(data)
+    MWC->>CA: handleAnswer(data)
+```
+
+### 6.2. 关键设计决策
+
+#### 6.2.1. URL 参数传递 `_chatAreaId`
+
+新建对话时，主窗口生成的 ChatArea 拥有一个预定义的 pageId（如 `page-new-1703123456`）。为了让新标签页的 `PageController` 使用同一个 pageId，通过 URL 查询参数 `_chatAreaId` 传递：
+
+```
+https://kimi.com?_chatAreaId=page-new-1703123456
+```
+
+`PageController` 构造函数中的处理逻辑：
+
+```javascript
+const urlParams = new URLSearchParams(window.location.search);
+const chatAreaId = urlParams.get('_chatAreaId');
+if (chatAreaId && chatAreaId.startsWith('page-')) {
+    this.pageId = chatAreaId;
+} else {
+    this.pageId = this.util.generateUniqueId('page-');
+}
+```
+
+#### 6.2.2. `_handleProviderChanged` 分支逻辑
+
+| 场景 | oldProvider | 行为 |
+|------|-------------|------|
+| 新建 ChatArea 选择提供商 | `null` 或 `'New Chat'` | `window.open(url + '_chatAreaId=xxx')` 打开新标签页 |
+| 已有 ChatArea 切换提供商 | 非 null（如 `'Kimi'`） | `msgClient.changeProvider(pageId, url)` 通知原生页面 |
+
+#### 6.2.3. `addChatArea` 复用逻辑
+
+当 `addChatArea(data)` 被调用且 `data.id` 对应的 ChatArea 已存在时，有三个分支：
+
+| 分支 | 条件 | 行为 |
+|------|------|------|
+| ReUse 分支 | `getReadyForReUse() === true` | 新会话复用（点击 new-session 按钮后） |
+| 关联分支 | `getUrl() === null` 且 `providerName !== 'New Chat'` | 新建对话被真实原生页面关联，重新初始化 |
+| 冲突分支 | 其他情况 | 忽略，打印警告 |
+
+### 6.3. 消息流图
+
+```mermaid
+flowchart TD
+    A[用户点击新建对话按钮] --> B[addChatArea<br/>id=page-new-xxx<br/>url=null]
+    B --> C[ChatArea 显示<br/>forced-selection 覆盖层]
+    C --> D[用户选择提供商]
+    D --> E[_handleProviderChanged]
+    E --> F{oldProvider?}
+    F -->|null / New Chat| G[window.open<br/>url + _chatAreaId]
+    F -->|已有提供商| H[msgClient.changeProvider]
+    G --> I[新标签页加载]
+    I --> J[PageController 初始化<br/>pageId = _chatAreaId]
+    J --> K[发送 create 消息]
+    K --> L[onMsgCreate]
+    L --> M[addChatArea]
+    M --> N{ChatArea 已存在?}
+    N -->|是, url=null| O[复用并重新初始化]
+    N -->|否| P[新建 ChatArea]
+    O --> Q[ChatArea 绑定真实数据]
+    P --> Q
+    Q --> R[后续正常消息通信]
+```
+
+---
+
+## 7. 跨标签页主窗口查找
+
+### 7.1. 问题描述
+
+`SyncChatWindow` 需要检测主窗口是否已存在。由于 `window.top` 是每个标签页独立的作用域，不同标签页之间无法共享 JavaScript 变量。当标签页 A（如 qianwen）创建主窗口后，标签页 B（如 kimi）无法通过 `window.top.multiAiChatMainWindow` 看到这个引用。
+
+### 7.2. 解决方案
+
+使用 `window.open('', windowName)` 的浏览器特性：当指定名称的窗口已存在时，返回该窗口的引用而不是创建新窗口。
+
+### 7.3. 查找流程
+
+```mermaid
+flowchart TD
+    A[exist / checkAndCreateWindow] --> B{window.top 缓存引用有效?}
+    B -->|是| C[返回 true / 聚焦窗口]
+    B -->|否| D[window.open '', windowName]
+    D --> E{返回窗口有效且 name 匹配?}
+    E -->|是| F[缓存引用到 window.top]
+    F --> C
+    E -->|否| G[返回 false / 创建新窗口]
+```
+
+### 7.4. `exist()` 方法逻辑
+
+1. **快速路径**：检查 `window.top.multiAiChatMainWindow` 是否有效且未关闭
+2. **跨标签页查找**：通过 `window.open('', 'multi-ai-chat-main-window')` 查找已命名的窗口
+3. **验证**：检查返回窗口的 `name` 属性是否匹配 `multi-ai-chat-main-window`
+4. **缓存**：将找到的引用缓存到 `window.top.multiAiChatMainWindow`
+
+### 7.5. 代码位置
+
+| 文件 | 方法 | 说明 |
+|------|------|------|
+| `src/sync-chat-window.js` | `exist()` | 检查主窗口是否存在（支持跨标签页） |
+| `src/sync-chat-window.js` | `checkAndCreateWindow()` | 检查并创建主窗口（支持跨标签页查找） |
+
+---
+
 ## 5. 标识符 (ID) 数据流设计
 
 ### 5.1. 核心标识符定义
