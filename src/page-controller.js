@@ -10,16 +10,19 @@ const { PageProxy } = require('./page-proxy');
  * @param {Config} config
  * @param {I18n} i18n
  * @param {Util} util
+ * @param {BrowserAdaptor} [adaptor] - 浏览器适配器实例
  */
 class PageController {
-    constructor(message, config, i18n, util) {
+    constructor(message, config, i18n, util, adaptor) {
         this.util = util;
+        this.adaptor = adaptor;
         this.driverFactory = new DriverFactory();
 
         // 检查 URL 中是否有 _chatAreaId 参数（从主窗口新建对话跳转过来）
         // 如果有，使用该 ID 作为 pageId，以便主窗口能关联到已有的 ChatArea
-        const urlParams = new URLSearchParams(window.location.search);
-        const chatAreaId = urlParams.get('_chatAreaId');
+        const chatAreaId = adaptor
+            ? adaptor.getUrlParam('_chatAreaId')
+            : new URLSearchParams(window.location.search).get('_chatAreaId');
         if (chatAreaId && chatAreaId.startsWith('page-')) {
             this.pageId = chatAreaId;
         } else {
@@ -41,11 +44,13 @@ class PageController {
      * @description 初始化，注入UI，选择驱动。
      */
     async init() {
-        const hostname = window.location.hostname;
+        const hostname = this.adaptor
+            ? this.adaptor.getCurrentHostname()
+            : window.location.hostname;
         this.driver = this.driverFactory.createDriver(hostname);
         const initialized = this.driver.init();
 
-        this.syncChatWindow = new SyncChatWindow();
+        this.syncChatWindow = new SyncChatWindow(this.adaptor);
 
         this.injectUI();
 
@@ -533,10 +538,11 @@ class PageController {
 
         // 初始化数据，结构为{id, providerName, url, pinned, params:{webAccess,longThought, models}, conversation:[{type, content}]}.
         // 确保窗口创建后再发送消息
+        const currentUrl = this.adaptor ? this.adaptor.getCurrentUrl() : window.location.href;
         setTimeout(() => {
             this.msgClient.create({
                 id: this.pageId,
-                url: window.location.href,
+                url: currentUrl,
                 providerName: this.driver.getProviderName(),
                 title: this.driver.getChatTitle() || document.title,
                 params : {
@@ -677,20 +683,41 @@ class PageController {
 
     /**
      * @description 设置页面卸载时的清理
+     * 只在页面真正关闭时才通知主窗口销毁 ChatArea。
+     * 不监听 visibilitychange：页面隐藏（切换标签页）是正常操作，不应触发清理。
+     * beforeunload 仅做本地资源清理，不发送 destroy 消息，
+     * 因为 AI 平台提交提示词后可能导航到新 URL（如新对话页面），此时页面会重新加载并重新注册。
      */
     setupCleanupHandlers() {
-        // 监听页面卸载事件，确保资源被正确清理
-        this.pageProxy.addEventListener(window, 'beforeunload', () => {
-            this.cleanup();
-        });
+        // 监听页面卸载事件，仅做本地资源清理，不发送 destroy 消息
+        // 原因：AI 平台在提交提示词后可能导航到新 URL（开始新对话），
+        // 此时 beforeunload 会触发，但页面并未真正关闭，不应销毁 ChatArea。
+        if (this.adaptor) {
+            this.adaptor.onBeforeUnload(() => {
+                this._localCleanup();
+            });
+        } else {
+            this.pageProxy.addEventListener(window, 'beforeunload', () => {
+                this._localCleanup();
+            });
+        }
+    }
 
-        // 监听页面隐藏事件（SPA 导航时可能触发）
-        this.pageProxy.addEventListener(document, 'visibilitychange', () => {
-            if (document.hidden) {
-                // 页面被隐藏时清理资源
-                this.cleanup();
-            }
-        });
+    /**
+     * @description 仅清理本地资源（观察器、事件监听器等），不通知主窗口销毁 ChatArea。
+     * 在页面导航时调用，因为页面可能会重新加载并继续运行。
+     */
+    _localCleanup() {
+        // 清理 PageProxy 托管的所有资源
+        this.pageProxy.cleanup();
+
+        // 清理 driver 的资源
+        if (this.driver) {
+            this.driver.stopMonitoring();
+        }
+
+        // 注销消息监听器
+        this.message.unregister(this.pageId);
     }
 }
 

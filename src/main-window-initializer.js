@@ -6,6 +6,7 @@ const Message = require('./message')
 const {DriverFactory} = require('./driver-factory')
 const ChatArea = require('./chat-area')
 const MainWindowController = require('./main-window-controller')
+const TampermonkeyAdaptor = require('./tampermonkey-adaptor')
 const resources = require('./lang');
 
 // 导入所有驱动模块，触发它们的注册代码
@@ -30,14 +31,16 @@ class MainWindowInitializer {
             console.error('Unhandled rejection:\\n' + e.reason);
         });
 
+        const adaptor = new TampermonkeyAdaptor();
         this.util = new Util();
-        this.storage = new Storage();
+        this.storage = new Storage(adaptor);
         this.defaultConfig = { channelName: 'multi-ai-chat' };
         this.config = new Config(this.storage, this.defaultConfig);
         this.i18n = new I18n(this.config, resources);
-        this.message = new Message(this.config.get('channelName'));
+        const channel = adaptor.createChannel(this.config.get('channelName'));
+        this.message = new Message(channel);
 
-        this.mainWindowController = new MainWindowController(window.mainWindowName, this.message, this.config, this.i18n);
+        this.mainWindowController = new MainWindowController(window.mainWindowName, this.message, this.config, this.i18n, adaptor);
         this.mainWindowController.init();
 
         console.log("Main window initializer loaded.");

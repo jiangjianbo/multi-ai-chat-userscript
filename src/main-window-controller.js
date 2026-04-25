@@ -12,13 +12,15 @@ class MainWindowController {
      * @param {object} message - The message bus instance.
      * @param {object} config - The configuration instance.
      * @param {object} i18n - The internationalization instance.
+     * @param {BrowserAdaptor} [adaptor] - 浏览器适配器实例
      */
-    constructor(mainWinId, message, config, i18n) {
+    constructor(mainWinId, message, config, i18n, adaptor) {
         this.mainWinId = mainWinId;
         this.message = message;
         this.msgClient = new MessageClient(message, mainWinId);
         this.config = config;
         this.i18n = i18n;
+        this.adaptor = adaptor;
         this.util = new Util();
         this.chatAreas = new Map();
         this.driverFactory = new DriverFactory(); // 只是用来获取提供商URL和模型列表
@@ -75,21 +77,38 @@ class MainWindowController {
 
         // 检查是否已有该 URL 对应的窗口引用
         const existingRef = this._shareWindowMap.get(url);
-        if (existingRef && !existingRef.closed) {
+        const isAlive = this.adaptor
+            ? this.adaptor.isWindowAlive(existingRef)
+            : !!(existingRef && !existingRef.closed);
+
+        if (isAlive) {
             // 窗口仍然存在，尝试聚焦
-            try {
-                existingRef.focus();
-                return;
-            } catch (e) {
-                // 跨域窗口可能无法调用 focus()，忽略错误，重新打开
+            if (this.adaptor) {
+                this.adaptor.focusWindow(existingRef);
+            } else {
+                try {
+                    existingRef.focus();
+                    return;
+                } catch (e) {
+                    // 跨域窗口可能无法调用 focus()，忽略错误，重新打开
+                }
             }
+            return;
         }
 
         // 使用 pageId 作为窗口名称，便于浏览器重用
         const windowName = chatArea.pageId || '_blank';
-        const newWin = window.open(url, windowName);
-        if (newWin) {
-            this._shareWindowMap.set(url, newWin);
+        if (this.adaptor) {
+            this.adaptor.openTab(url, windowName).then(handle => {
+                if (handle) {
+                    this._shareWindowMap.set(url, handle);
+                }
+            });
+        } else {
+            const newWin = window.open(url, windowName);
+            if (newWin) {
+                this._shareWindowMap.set(url, newWin);
+            }
         }
     }
 
@@ -111,7 +130,11 @@ class MainWindowController {
             // 新建的 ChatArea 选择提供商：打开新标签页
             // 不在这里设置 chatArea.url，等 PageController 注册时通过重新关联设置
             const urlWithParam = newUrl + (newUrl.includes('?') ? '&' : '?') + '_chatAreaId=' + encodeURIComponent(chatArea.pageId);
-            window.open(urlWithParam, '_blank');
+            if (this.adaptor) {
+                this.adaptor.openTab(urlWithParam, '_blank');
+            } else {
+                window.open(urlWithParam, '_blank');
+            }
         } else {
             // 已有的 ChatArea 切换提供商：设置 URL 并通知原生页面
             chatArea.url = newUrl;
@@ -221,7 +244,11 @@ class MainWindowController {
 
         // Close Window
         document.getElementById('main-window-close-button').addEventListener('click', () => {
-            window.close();
+            if (this.adaptor) {
+                this.adaptor.closeCurrentWindow();
+            } else {
+                window.close();
+            }
         });
 
         // Language Switcher

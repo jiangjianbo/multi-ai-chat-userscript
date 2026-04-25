@@ -2,12 +2,18 @@ const Util = require('./util');
 
 /**
  * @description The class for checking and creating the main window.
+ * @param {BrowserAdaptor} [adaptor] - 浏览器适配器实例，如果不提供则使用原生 API
  */
 class SyncChatWindow {
 
-    constructor() {
+    /**
+     * @param {BrowserAdaptor} [adaptor] - 浏览器适配器实例
+     */
+    constructor(adaptor) {
         this.MULTI_AI_CHAT_MAIN_WINDOW = 'multi-ai-chat-main-window';
         SyncChatWindow.MULTI_AI_CHAT_MAIN_WINDOW = this.MULTI_AI_CHAT_MAIN_WINDOW;
+        this.adaptor = adaptor;
+        this.CACHE_KEY = 'multiAiChatMainWindow';
     }
 
     /**
@@ -22,6 +28,9 @@ class SyncChatWindow {
      * @returns {boolean} - True if it exists, false otherwise.
      */
     exist() {
+        if (this.adaptor) {
+            return this.adaptor.isMainWindowCached(this.CACHE_KEY);
+        }
         const localRef = window.top.multiAiChatMainWindow;
         return !!(localRef && !localRef.closed);
     }
@@ -420,7 +429,20 @@ debugger;
      * @returns {Window} - The main window instance.
      */
     async checkAndCreateWindow() {
-        // 先尝试获取已缓存的引用
+        if (this.adaptor) {
+            // 使用 adaptor 路径：委托给 ensureMainWindow 完成全部流程
+            const result = await this.adaptor.ensureMainWindow(
+                this.MULTI_AI_CHAT_MAIN_WINDOW,
+                this.CACHE_KEY,
+                { width: 1200, height: 800 },
+                (doc) => {
+                    this.createWindow(doc);
+                }
+            );
+            return result.handle;
+        }
+
+        // 原生 API 路径（向后兼容）
         let existingWin = window.top.multiAiChatMainWindow;
         if (existingWin && !existingWin.closed) {
             console.log('Main window already exists (cached ref). Focusing on it.');
@@ -428,13 +450,8 @@ debugger;
             return existingWin;
         }
 
-        // 通过 window.open 获取命名窗口的引用
-        // 注意：如果该名称的窗口不存在，window.open 会创建一个空白窗口
-        // 所以需要通过检查 document 内容来判断是已有的主窗口还是新空白窗口
-        console.log('Creating new main window.');
         const newWindow = window.open('', this.MULTI_AI_CHAT_MAIN_WINDOW, 'width=1200,height=800');
         if (newWindow) {
-            // 检查窗口是否已有主窗口内容（跨标签页找到已存在的主窗口）
             let isExistingMainWindow = false;
             try {
                 const rootEl = newWindow.document.getElementById('root');
@@ -442,7 +459,6 @@ debugger;
                     isExistingMainWindow = true;
                 }
             } catch (e) {
-                // 跨域访问可能抛出异常，说明不是我们的窗口
                 console.debug('Cross-origin check, treating as new window:', e.message);
             }
 
@@ -453,15 +469,11 @@ debugger;
                 return newWindow;
             }
 
-            // 新空白窗口，填充主窗口内容
             window.top.multiAiChatMainWindow = newWindow;
-
-            // 在父窗口监听子窗口的错误
             newWindow.onerror = function (msg, url, lineNo, columnNo, error) {
                 console.log('子窗口错误:', { msg, url, lineNo, columnNo, error });
                 return true;
             };
-
             this.createWindow(newWindow.document);
             console.log('Main window created.');
         }

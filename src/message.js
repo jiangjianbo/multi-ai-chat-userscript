@@ -2,16 +2,24 @@ const Util = require('./util');
 
 /**
  * @description 封装 BroadcastChannel 实现跨窗口通信。
+ * @param {string|object} channelOrName - 通信频道的名称，或已创建的频道对象
  */
 class Message {
     /**
-     * @param {string} channelName - 通信频道的名称。
+     * @param {string|object} channelOrName - 通信频道的名称（string），或已创建的频道对象（兼容 BroadcastChannel API 的对象）
      */
-    constructor(channelName) {
-        if (!channelName) {
-            throw new Error('channelName is required for Message module.');
+    constructor(channelOrName) {
+        if (!channelOrName) {
+            throw new Error('channelName or channel object is required for Message module.');
         }
-        this.channel = new BroadcastChannel(channelName);
+
+        // 支持传入字符串名称或已有的 channel 对象
+        if (typeof channelOrName === 'string') {
+            this.channel = new BroadcastChannel(channelOrName);
+        } else {
+            this.channel = channelOrName;
+        }
+
         this.listeners = new Map(); // Map<receiverId, Map<type, Set<function>>>
 
         // 绑定 handleMessage 的 this 上下文

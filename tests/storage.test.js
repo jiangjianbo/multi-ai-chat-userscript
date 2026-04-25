@@ -27,7 +27,7 @@ describe('Storage', () => {
 
     beforeEach(() => {
         localStorage.clear();
-        storage = new Storage(PREFIX);
+        storage = new Storage(null, PREFIX);
     });
 
     test('1. should return null for a non-existent key', () => {

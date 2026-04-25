@@ -113,3 +113,63 @@ describe('SyncChatWindow', () => {
         expect(newWin).toBe(mockWindow);
     });
 });
+
+describe('SyncChatWindow with adaptor', () => {
+    let syncChatWindow;
+    let mockAdaptor;
+
+    beforeEach(() => {
+        mockAdaptor = {
+            isMainWindowCached: jest.fn(() => false),
+            ensureMainWindow: jest.fn(async () => ({ handle: { tabId: 123 } })),
+        };
+        syncChatWindow = new SyncChatWindow(mockAdaptor);
+        syncChatWindow.init();
+    });
+
+    test('exist should call adaptor.isMainWindowCached and return true', () => {
+        mockAdaptor.isMainWindowCached.mockReturnValue(true);
+        expect(syncChatWindow.exist()).toBe(true);
+        expect(mockAdaptor.isMainWindowCached).toHaveBeenCalledWith('multiAiChatMainWindow');
+    });
+
+    test('exist should return false when adaptor says not cached', () => {
+        mockAdaptor.isMainWindowCached.mockReturnValue(false);
+        expect(syncChatWindow.exist()).toBe(false);
+    });
+
+    test('checkAndCreateWindow should delegate to adaptor.ensureMainWindow', async () => {
+        const mockHandle = { tabId: 456 };
+        mockAdaptor.ensureMainWindow.mockResolvedValue({ handle: mockHandle });
+
+        const result = await syncChatWindow.checkAndCreateWindow();
+
+        expect(mockAdaptor.ensureMainWindow).toHaveBeenCalledWith(
+            'multi-ai-chat-main-window',
+            'multiAiChatMainWindow',
+            { width: 1200, height: 800 },
+            expect.any(Function)
+        );
+        expect(result).toBe(mockHandle);
+    });
+
+    test('checkAndCreateWindow should pass createWindow as content callback', async () => {
+        const mockDoc = { title: '', write: jest.fn(), close: jest.fn() };
+        mockAdaptor.ensureMainWindow.mockImplementation(async (name, key, opts, contentFn) => {
+            if (contentFn) contentFn(mockDoc);
+            return { handle: {} };
+        });
+
+        await syncChatWindow.checkAndCreateWindow();
+
+        expect(mockDoc.write).toHaveBeenCalled();
+        expect(mockDoc.close).toHaveBeenCalled();
+    });
+
+    test('checkAndCreateWindow should return null handle when adaptor fails', async () => {
+        mockAdaptor.ensureMainWindow.mockResolvedValue({ handle: null });
+
+        const result = await syncChatWindow.checkAndCreateWindow();
+        expect(result).toBeNull();
+    });
+});

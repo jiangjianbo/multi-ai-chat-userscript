@@ -42,6 +42,7 @@ describe('PageController', () => {
             setPrompt: jest.fn(),
             send: jest.fn(),
             startMonitoring: jest.fn(),
+            stopMonitoring: jest.fn(),
             onAnswer: null,
             onChatTitle: null,
             onOption: null,
@@ -72,7 +73,7 @@ describe('PageController', () => {
             checkAndCreateWindow: jest.fn().mockResolvedValue(undefined),
         }));
         
-        mockMessage = { register: jest.fn(), send: jest.fn() };
+        mockMessage = { register: jest.fn(), send: jest.fn(), unregister: jest.fn() };
         mockMsgClient = new MessageClient();
         mockUtil = {
             generateUniqueId: jest.fn((prefix) => `${prefix}test-id-${Date.now()}`),
@@ -509,6 +510,141 @@ describe('PageController', () => {
             );
 
             expect(newController.pageId).toMatch(/^page-/);
+        });
+    });
+
+    describe('setupCleanupHandlers and cleanup behavior', () => {
+
+        test('should register beforeunload listener via pageProxy (no adaptor)', () => {
+            const pageProxyInstance = pageController.pageProxy;
+            expect(pageProxyInstance.addEventListener).toHaveBeenCalledWith(
+                window,
+                'beforeunload',
+                expect.any(Function)
+            );
+        });
+
+        test('should register beforeunload via adaptor.onBeforeUnload (with adaptor)', async () => {
+            const mockAdaptor = {
+                getCurrentHostname: jest.fn(() => 'test.com'),
+                getCurrentUrl: jest.fn(() => 'http://test.com/'),
+                getUrlParam: jest.fn(() => null),
+                onBeforeUnload: jest.fn(),
+            };
+
+            const adaptorController = new PageController(
+                mockMessage,
+                {},
+                { getText: key => key },
+                mockUtil,
+                mockAdaptor
+            );
+
+            await adaptorController.init();
+
+            expect(mockAdaptor.onBeforeUnload).toHaveBeenCalledWith(expect.any(Function));
+        });
+
+        test('should NOT register visibilitychange listener', () => {
+            const pageProxyInstance = pageController.pageProxy;
+            const calls = pageProxyInstance.addEventListener.mock.calls;
+            const visibilityCalls = calls.filter(call => call[1] === 'visibilitychange');
+            expect(visibilityCalls.length).toBe(0);
+        });
+
+        test('beforeunload should trigger _localCleanup but NOT send destroy', () => {
+            pageController.pageProxy.cleanup.mockClear();
+            mockDriver.stopMonitoring.mockClear();
+            mockMessage.unregister.mockClear();
+            mockMsgClient.destroy.mockClear();
+
+            const event = new Event('beforeunload');
+            window.dispatchEvent(event);
+
+            // Should clean local resources
+            expect(pageController.pageProxy.cleanup).toHaveBeenCalled();
+            expect(mockDriver.stopMonitoring).toHaveBeenCalled();
+            expect(mockMessage.unregister).toHaveBeenCalledWith(pageController.pageId);
+
+            // Should NOT send destroy to main window
+            expect(mockMsgClient.destroy).not.toHaveBeenCalled();
+        });
+
+        test('visibilitychange (hidden=true) should NOT trigger any cleanup', () => {
+            pageController.pageProxy.cleanup.mockClear();
+            mockDriver.stopMonitoring.mockClear();
+            mockMessage.unregister.mockClear();
+            mockMsgClient.destroy.mockClear();
+
+            const event = new Event('visibilitychange');
+            document.dispatchEvent(event);
+
+            expect(pageController.pageProxy.cleanup).not.toHaveBeenCalled();
+            expect(mockDriver.stopMonitoring).not.toHaveBeenCalled();
+            expect(mockMessage.unregister).not.toHaveBeenCalled();
+            expect(mockMsgClient.destroy).not.toHaveBeenCalled();
+        });
+
+        test('cleanup should send destroy, clean local resources, and unregister', () => {
+            pageController.pageProxy.cleanup.mockClear();
+            mockDriver.stopMonitoring.mockClear();
+            mockMessage.unregister.mockClear();
+            mockMsgClient.destroy.mockClear();
+
+            pageController.cleanup();
+
+            expect(mockMsgClient.destroy).toHaveBeenCalledWith(pageController.pageId);
+            expect(pageController.pageProxy.cleanup).toHaveBeenCalled();
+            expect(mockDriver.stopMonitoring).toHaveBeenCalled();
+            expect(mockMessage.unregister).toHaveBeenCalledWith(pageController.pageId);
+        });
+
+        test('_localCleanup should clean local resources without sending destroy', () => {
+            pageController.pageProxy.cleanup.mockClear();
+            mockDriver.stopMonitoring.mockClear();
+            mockMessage.unregister.mockClear();
+            mockMsgClient.destroy.mockClear();
+
+            pageController._localCleanup();
+
+            expect(pageController.pageProxy.cleanup).toHaveBeenCalled();
+            expect(mockDriver.stopMonitoring).toHaveBeenCalled();
+            expect(mockMessage.unregister).toHaveBeenCalledWith(pageController.pageId);
+            expect(mockMsgClient.destroy).not.toHaveBeenCalled();
+        });
+
+        test('receiving chat then beforeunload should NOT destroy ChatArea', () => {
+            mockDriver.setPrompt.mockClear();
+            mockDriver.send.mockClear();
+            mockMsgClient.destroy.mockClear();
+
+            // 1. Main window sends chat message
+            pageController.onMsgChat({ prompt: '第一宇宙速度', senderId: 'multi-ai-chat-main-window' });
+
+            expect(mockDriver.setPrompt).toHaveBeenCalledWith('第一宇宙速度');
+            expect(mockDriver.send).toHaveBeenCalled();
+
+            // 2. AI platform navigates after submit, triggering beforeunload
+            const event = new Event('beforeunload');
+            window.dispatchEvent(event);
+
+            // 3. ChatArea should NOT be destroyed
+            expect(mockMsgClient.destroy).not.toHaveBeenCalled();
+        });
+
+        test('receiving chat should still work after visibilitychange', () => {
+            mockDriver.setPrompt.mockClear();
+            mockDriver.send.mockClear();
+
+            // User switches to main window tab, native page becomes hidden
+            const event = new Event('visibilitychange');
+            document.dispatchEvent(event);
+
+            // Chat message should still be processed normally
+            pageController.onMsgChat({ prompt: 'test prompt', senderId: 'multi-ai-chat-main-window' });
+
+            expect(mockDriver.setPrompt).toHaveBeenCalledWith('test prompt');
+            expect(mockDriver.send).toHaveBeenCalled();
         });
     });
 });

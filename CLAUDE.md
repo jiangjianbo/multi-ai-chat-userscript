@@ -2,6 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 在输出文档内容和解释说明的时候，无论用什么语言输入，回复都优先使用中文！
+在收到bug报告之后，先创建单元测试来复现bug，然后再开始修复。
 
 ## Project Overview
 
